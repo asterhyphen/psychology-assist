@@ -45,7 +45,82 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final theme = Theme.of(context);
     final session = ref.watch(appSessionProvider);
     final profile = session.profile;
-    final upcomingAppointment = session.appointments
+
+    // Demo data for when there are no real entries
+    final demoMoodEntries = [
+      MoodEntry(
+        createdAt: DateTime.now().subtract(const Duration(days: 6)),
+        value: 4,
+        label: 'Good',
+        note: 'Had a productive day at work',
+      ),
+      MoodEntry(
+        createdAt: DateTime.now().subtract(const Duration(days: 5)),
+        value: 3,
+        label: 'Neutral',
+        note: 'Feeling okay, nothing special',
+      ),
+      MoodEntry(
+        createdAt: DateTime.now().subtract(const Duration(days: 4)),
+        value: 5,
+        label: 'Excellent',
+        note: 'Great session with my therapist!',
+      ),
+      MoodEntry(
+        createdAt: DateTime.now().subtract(const Duration(days: 3)),
+        value: 2,
+        label: 'Poor',
+        note: 'Had some anxiety today',
+      ),
+      MoodEntry(
+        createdAt: DateTime.now().subtract(const Duration(days: 2)),
+        value: 4,
+        label: 'Good',
+        note: 'Better day, practiced mindfulness',
+      ),
+      MoodEntry(
+        createdAt: DateTime.now().subtract(const Duration(days: 1)),
+        value: 4,
+        label: 'Good',
+        note: 'Feeling positive about tomorrow',
+      ),
+    ];
+
+    // Use demo data if no real entries, otherwise use real data
+    final moodEntries = session.moodEntries.isEmpty ? demoMoodEntries : session.moodEntries;
+
+    // Demo appointments and prescriptions
+    final demoAppointments = [
+      Appointment(
+        psychologistEmail: 'demo@psychol.com',
+        psychologistName: 'Dr. Sarah Johnson',
+        patientName: profile?.name ?? 'Ahmed',
+        patientEmail: profile?.email,
+        startsAt: DateTime.now().add(const Duration(days: 2, hours: 14)),
+        type: 'Therapy Session',
+        note: 'Weekly check-in and progress review',
+        confirmed: true,
+      ),
+    ];
+
+    final demoPrescriptions = [
+      Prescription(
+        id: 'demo-prescription-1',
+        patientName: profile?.name ?? 'Ahmed',
+        patientEmail: profile?.email,
+        prescribedByName: 'Dr. Sarah Johnson',
+        prescribedByEmail: 'demo@psychol.com',
+        medicines: ['Sertraline'],
+        reminderTimes: [const MedicationTime(hour: 8, minute: 0)],
+        note: 'Take one tablet daily with food',
+        createdAt: DateTime.now().subtract(const Duration(days: 7)),
+      ),
+    ];
+
+    final appointments = session.appointments.isEmpty ? demoAppointments : session.appointments;
+    final prescriptions = session.prescriptions.isEmpty ? demoPrescriptions : session.prescriptions;
+
+    final upcomingAppointment = appointments
         .where((appointment) => appointment.startsAt.isAfter(DateTime.now()))
         .toList()
       ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
@@ -53,7 +128,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         ? 'No upcoming sessions'
         : '${upcomingAppointment.first.type} at ${upcomingAppointment.first.startsAt.hour.toString().padLeft(2, '0')}:${upcomingAppointment.first.startsAt.minute.toString().padLeft(2, '0')}';
 
-    final relatedPrescriptions = session.prescriptions.where((item) {
+    final relatedPrescriptions = prescriptions.where((item) {
       if (profile?.role == UserRole.psychologist) {
         return item.prescribedByEmail == profile?.email;
       }
@@ -227,7 +302,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              '${ref.watch(appSessionProvider).moodEntries.length} saved',
+                              '${moodEntries.length} saved',
                               style: AppTypography.labelMedium.copyWith(
                                 color: theme.colorScheme.primary,
                                 fontWeight: FontWeight.w600,
@@ -245,7 +320,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                           7,
                           (i) => _MoodBar(
                             height: _heightForDay(
-                              ref.watch(appSessionProvider).moodEntries,
+                              moodEntries,
                               i,
                             ),
                             label: [
@@ -285,7 +360,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         icon: Icons.trending_up,
                         title: 'Latest Mood',
                         value: _latestMoodLabel(
-                          ref.watch(appSessionProvider).moodEntries,
+                          moodEntries,
                         ),
                         theme: theme,
                       ),
@@ -299,7 +374,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         icon: Icons.calendar_today,
                         title: 'Total Entries',
                         value:
-                            '${ref.watch(appSessionProvider).moodEntries.length}',
+                            '${moodEntries.length}',
                         theme: theme,
                       ),
                       const SizedBox(height: 12),
