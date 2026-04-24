@@ -45,20 +45,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('Your Wellness'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: Text(
-                'This week',
-                style: AppTypography.bodySmall.copyWith(
-                  color: theme.textTheme.bodySmall?.color,
-                ),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12),
+          child: CircleAvatar(
+            backgroundColor: Color(
+              profile?.avatarColorValue ?? AppColors.neonViolet.value,
+            ),
+            child: Icon(
+              _avatarIconFor(
+                profile?.avatarIconCodePoint ?? Icons.person.codePoint,
               ),
+              color: Colors.white,
             ),
           ),
-        ],
+        ),
+        title: const Text('Your Wellness'),
       ),
       body: GradientBackground(
         child: SingleChildScrollView(
@@ -151,7 +152,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              '↑ +8%',
+                              '${ref.watch(appSessionProvider).moodEntries.length} saved',
                               style: AppTypography.labelMedium.copyWith(
                                 color: theme.colorScheme.primary,
                                 fontWeight: FontWeight.w600,
@@ -168,7 +169,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         children: List.generate(
                           7,
                           (i) => _MoodBar(
-                            height: 30 + (i % 3) * 20,
+                            height: _heightForDay(
+                              ref.watch(appSessionProvider).moodEntries,
+                              i,
+                            ),
                             label: [
                               'Mon',
                               'Tue',
@@ -178,15 +182,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                               'Sat',
                               'Sun'
                             ][i],
-                            color: [
-                              AppColors.moodPoor,
-                              AppColors.moodGood,
-                              AppColors.moodGood,
-                              AppColors.moodExcellent,
-                              AppColors.moodNeutral,
-                              AppColors.moodGood,
-                              AppColors.moodExcellent,
-                            ][i],
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                       ),
@@ -212,8 +208,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       const SizedBox(height: 16),
                       _InsightRow(
                         icon: Icons.trending_up,
-                        title: 'Best Mood',
-                        value: 'Thursday',
+                        title: 'Latest Mood',
+                        value: _latestMoodLabel(
+                          ref.watch(appSessionProvider).moodEntries,
+                        ),
                         theme: theme,
                       ),
                       const SizedBox(height: 12),
@@ -225,102 +223,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       _InsightRow(
                         icon: Icons.calendar_today,
                         title: 'Total Entries',
-                        value: '5 of 7 days',
+                        value:
+                            '${ref.watch(appSessionProvider).moodEntries.length}',
                         theme: theme,
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                SmoothCard(
-                  padding: const EdgeInsets.all(20),
-                  backgroundColor: Colors.white.withOpacity(0.82),
-                  borderColor: AppColors.neonViolet.withOpacity(0.22),
-                  borderRadius: 22,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.neonViolet.withOpacity(0.14),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.summarize_outlined,
-                          color: AppColors.deepViolet,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Ollama Summary',
-                              style: AppTypography.labelLarge.copyWith(
-                                color: theme.textTheme.labelLarge?.color,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Demo link active for $demoPsychologistEmail. Mood and appointment summaries are ready for the Ollama endpoint when configured.',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: theme.textTheme.bodySmall?.color,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Wellness Tip Card
-                SmoothCard(
-                  padding: const EdgeInsets.all(20),
-                  backgroundColor: Colors.white.withOpacity(0.78),
-                  borderColor: AppColors.neonPink.withOpacity(0.25),
-                  borderRadius: 22,
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.lightbulb_outline,
-                          color: theme.colorScheme.primary,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Wellness Tip',
-                              style: AppTypography.labelLarge.copyWith(
-                                  color: theme.textTheme.labelLarge?.color),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Regular mood tracking helps identify patterns and triggers.',
-                              style: AppTypography.bodySmall.copyWith(
-                                  color: theme.textTheme.bodySmall?.color),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
 
                 // Main CTA Button
                 SizedBox(
@@ -341,6 +251,49 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
         ),
       ),
+    );
+  }
+
+  double _heightForDay(List<MoodEntry> entries, int dayIndex) {
+    final now = DateTime.now();
+    final weekStart = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
+    final day = weekStart.add(Duration(days: dayIndex));
+    final dayEntries = entries.where(
+      (entry) =>
+          entry.createdAt.year == day.year &&
+          entry.createdAt.month == day.month &&
+          entry.createdAt.day == day.day,
+    );
+    if (dayEntries.isEmpty) {
+      return 20;
+    }
+    final average =
+        dayEntries.map((entry) => entry.value).reduce((a, b) => a + b) /
+            dayEntries.length;
+    return 18 + average * 18;
+  }
+
+  String _latestMoodLabel(List<MoodEntry> entries) {
+    if (entries.isEmpty) {
+      return 'None yet';
+    }
+    return entries.last.label;
+  }
+
+  IconData _avatarIconFor(int codePoint) {
+    const icons = [
+      Icons.person,
+      Icons.self_improvement,
+      Icons.favorite,
+      Icons.psychology_alt,
+    ];
+    return icons.firstWhere(
+      (icon) => icon.codePoint == codePoint,
+      orElse: () => Icons.person,
     );
   }
 }

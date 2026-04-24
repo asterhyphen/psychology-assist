@@ -60,7 +60,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
     }
   }
 
-  void _bookAppointment() {
+  Future<void> _bookAppointment() async {
     final email = _emailController.text.trim();
     if (!email.contains('@')) {
       _showMessage('Enter your psychologist email.');
@@ -78,13 +78,33 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
       _selectedTime!.hour,
       _selectedTime!.minute,
     );
+    if (startsAt.isBefore(DateTime.now())) {
+      _showMessage('Choose a future time.');
+      return;
+    }
+
+    final psychologist = demoPsychologists.firstWhere(
+      (item) => item.email == email,
+      orElse: () => AppPsychologist(
+        name: 'Linked psychologist',
+        email: email,
+        specialty: 'Care provider',
+        availability: 'By request',
+      ),
+    );
+    final confirmed = await _confirmAppointment(psychologist, startsAt);
+    if (!confirmed) {
+      return;
+    }
 
     ref.read(appSessionProvider.notifier).addAppointment(
           Appointment(
             psychologistEmail: email,
+            psychologistName: psychologist.name,
             startsAt: startsAt,
             type: _type,
             note: _noteController.text.trim(),
+            confirmed: true,
           ),
         );
 
@@ -93,7 +113,38 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
       _selectedDate = null;
       _selectedTime = null;
     });
-    _showMessage('Appointment requested.');
+    _showMessage('Appointment confirmed.');
+  }
+
+  Future<bool> _confirmAppointment(
+    AppPsychologist psychologist,
+    DateTime startsAt,
+  ) async {
+    final minutes = startsAt.minute.toString().padLeft(2, '0');
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Confirm appointment'),
+            content: Text(
+              '${psychologist.name}\n'
+              '${startsAt.day}/${startsAt.month}/${startsAt.year} at '
+              '${startsAt.hour}:$minutes\n\n'
+              'This will replace any other future appointment.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.of(context).pop(true),
+                icon: const Icon(Icons.check),
+                label: const Text('Confirm'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   void _showMessage(String message) {
@@ -143,6 +194,39 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                         ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: demoPsychologists
+                              .map(
+                                (psychologist) => ChoiceChip(
+                                  selected:
+                                      _emailController.text == psychologist.email,
+                                  avatar: const Icon(
+                                    Icons.psychology_alt_outlined,
+                                    size: 18,
+                                  ),
+                                  label: Text(psychologist.name),
+                                  onSelected: (_) {
+                                    setState(() {
+                                      _emailController.text =
+                                          psychologist.email;
+                                    });
+                                  },
+                                ),
+                              )
+                              .toList(),
+                        ),
+                        if (appointments.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            'Only one appointment can be active. Booking a new one replaces the current future appointment.',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.lightSubtext,
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 14),
                         Wrap(
                           spacing: 10,
@@ -201,9 +285,9 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: SmoothButton(
-                            label: 'Request Appointment',
+                            label: 'Confirm Appointment',
                             icon: const Icon(
-                              Icons.bolt,
+                              Icons.check_circle_outline,
                               color: Colors.white,
                               size: 18,
                             ),
@@ -282,7 +366,7 @@ class _AppointmentsHero extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Linked demo psychologist: $linkedEmail',
+            'Linked psychologist: $linkedEmail',
             style: AppTypography.bodySmall.copyWith(
               color: Colors.white.withOpacity(0.86),
             ),
@@ -346,7 +430,10 @@ class _AppointmentCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(appointment.type, style: AppTypography.labelLarge),
+                Text(
+                  '${appointment.type} with ${appointment.psychologistName}',
+                  style: AppTypography.labelLarge,
+                ),
                 const SizedBox(height: 4),
                 Text(
                   '${date.day}/${date.month}/${date.year} at ${date.hour}:$minutes',
@@ -358,6 +445,23 @@ class _AppointmentCard extends StatelessWidget {
                   style: AppTypography.caption.copyWith(
                     color: AppColors.neonViolet,
                   ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.verified_outlined,
+                      size: 14,
+                      color: AppColors.success,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      appointment.confirmed ? 'Confirmed' : 'Requested',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

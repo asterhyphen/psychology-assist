@@ -4,6 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/mood_log/mood_log_screen.dart';
 import '../../features/appointments/appointments_screen.dart';
+import '../../features/psychologists/psychologists_screen.dart';
 import '../../features/settings/settings_screen.dart';
 
 final selectedTabProvider = StateProvider<int>((ref) => 0);
@@ -19,12 +20,20 @@ class HomeScreen extends ConsumerWidget {
     final pages = [
       const DashboardScreen(),
       const MoodLogScreen(),
+      const PsychologistsScreen(),
       const AppointmentsScreen(),
       const SettingsScreen(),
     ];
 
     return Scaffold(
       body: IndexedStack(index: selectedTab, children: pages),
+      floatingActionButton: selectedTab == 0
+          ? FloatingActionButton(
+              onPressed: () => _showAiChat(context),
+              tooltip: 'AI chat',
+              child: const Icon(Icons.smart_toy_outlined),
+            )
+          : null,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.surface.withOpacity(0.92),
@@ -65,6 +74,11 @@ class HomeScreen extends ConsumerWidget {
               label: 'Log Mood',
             ),
             BottomNavigationBarItem(
+              icon: Icon(Icons.psychology_alt_outlined),
+              activeIcon: Icon(Icons.psychology_alt),
+              label: 'Care',
+            ),
+            BottomNavigationBarItem(
               icon: Icon(Icons.event_available_outlined),
               activeIcon: Icon(Icons.event_available),
               label: 'Appointments',
@@ -73,6 +87,34 @@ class HomeScreen extends ConsumerWidget {
               icon: Icon(Icons.settings_outlined),
               activeIcon: Icon(Icons.settings),
               label: 'Settings',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAiChat(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.smart_toy_outlined),
+                SizedBox(width: 10),
+                Text('AI chat', style: TextStyle(fontWeight: FontWeight.w700)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'The chat entry point is ready. Connect it to the Ollama service when the endpoint is configured.',
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
         ),

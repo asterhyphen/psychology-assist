@@ -63,12 +63,18 @@ class AppSessionStore {
       'profile':
           session.profile == null ? null : _profileToJson(session.profile!),
       'appointments': session.appointments.map(_appointmentToJson).toList(),
+      'moodEntries': session.moodEntries.map(_moodEntryToJson).toList(),
+      'lastUnlockedAt': session.lastUnlockedAt?.toIso8601String(),
+      'lockTimeoutMinutes': session.lockTimeoutMinutes,
     };
   }
 
   AppSession _sessionFromJson(Map<String, dynamic> json) {
     final appointments = (json['appointments'] as List<dynamic>? ?? [])
         .map((item) => _appointmentFromJson(item as Map<String, dynamic>))
+        .toList();
+    final moodEntries = (json['moodEntries'] as List<dynamic>? ?? [])
+        .map((item) => _moodEntryFromJson(item as Map<String, dynamic>))
         .toList();
 
     return AppSession(
@@ -79,6 +85,11 @@ class AppSessionStore {
           ? null
           : _profileFromJson(json['profile'] as Map<String, dynamic>),
       appointments: appointments,
+      moodEntries: moodEntries,
+      lastUnlockedAt: json['lastUnlockedAt'] == null
+          ? null
+          : DateTime.tryParse(json['lastUnlockedAt'] as String),
+      lockTimeoutMinutes: json['lockTimeoutMinutes'] as int? ?? 10,
     );
   }
 
@@ -89,6 +100,8 @@ class AppSessionStore {
       'dateOfBirth': profile.dateOfBirth?.toIso8601String(),
       'email': profile.email,
       'psychologistEmail': profile.psychologistEmail,
+      'avatarIconCodePoint': profile.avatarIconCodePoint,
+      'avatarColorValue': profile.avatarColorValue,
     };
   }
 
@@ -104,15 +117,19 @@ class AppSessionStore {
           : DateTime.parse(json['dateOfBirth'] as String),
       email: json['email'] as String?,
       psychologistEmail: json['psychologistEmail'] as String?,
+      avatarIconCodePoint: json['avatarIconCodePoint'] as int? ?? 0xe7fd,
+      avatarColorValue: json['avatarColorValue'] as int? ?? 0xFF8B5CF6,
     );
   }
 
   Map<String, dynamic> _appointmentToJson(Appointment appointment) {
     return {
       'psychologistEmail': appointment.psychologistEmail,
+      'psychologistName': appointment.psychologistName,
       'startsAt': appointment.startsAt.toIso8601String(),
       'type': appointment.type,
       'note': appointment.note,
+      'confirmed': appointment.confirmed,
     };
   }
 
@@ -120,9 +137,46 @@ class AppSessionStore {
     return Appointment(
       psychologistEmail:
           json['psychologistEmail'] as String? ?? demoPsychologistEmail,
+      psychologistName: json['psychologistName'] as String? ??
+          _psychologistNameForEmail(
+            json['psychologistEmail'] as String? ?? demoPsychologistEmail,
+          ),
       startsAt: DateTime.parse(json['startsAt'] as String),
       type: json['type'] as String? ?? 'Video session',
       note: json['note'] as String? ?? '',
+      confirmed: json['confirmed'] as bool? ?? true,
     );
+  }
+
+  Map<String, dynamic> _moodEntryToJson(MoodEntry entry) {
+    return {
+      'createdAt': entry.createdAt.toIso8601String(),
+      'value': entry.value,
+      'label': entry.label,
+      'note': entry.note,
+    };
+  }
+
+  MoodEntry _moodEntryFromJson(Map<String, dynamic> json) {
+    return MoodEntry(
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      value: json['value'] as int? ?? 3,
+      label: json['label'] as String? ?? 'Neutral',
+      note: json['note'] as String? ?? '',
+    );
+  }
+
+  String _psychologistNameForEmail(String email) {
+    return demoPsychologists
+        .firstWhere(
+          (psychologist) => psychologist.email == email,
+          orElse: () => AppPsychologist(
+            name: 'Linked psychologist',
+            email: email,
+            specialty: 'Care provider',
+            availability: 'By request',
+          ),
+        )
+        .name;
   }
 }

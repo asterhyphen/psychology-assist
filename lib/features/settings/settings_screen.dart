@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../app/app_state.dart';
 import '../../app/theme_provider.dart';
 import '../../app/user_preferences_provider.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/smooth_widgets.dart';
@@ -39,6 +41,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     final theme = Theme.of(context);
     final currentTheme = ref.watch(themeModeProvider);
     final preferences = ref.watch(userPreferencesProvider);
+    final session = ref.watch(appSessionProvider);
+    final profile = session.profile;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -50,6 +54,59 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             duration: const Duration(milliseconds: 600),
             delay: const Duration(milliseconds: 80),
             children: [
+              if (profile != null) ...[
+                _SettingsSection(
+                  title: 'Profile',
+                  children: [
+                    SmoothCard(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 28,
+                            backgroundColor: Color(profile.avatarColorValue),
+                            child: Icon(
+                              _avatarIconFor(profile.avatarIconCodePoint),
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  profile.name,
+                                  style: AppTypography.labelLarge.copyWith(
+                                    color: theme.textTheme.labelLarge?.color,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  profile.role == UserRole.psychologist
+                                      ? profile.email ?? 'Psychologist'
+                                      : profile.psychologistEmail ??
+                                          'No psychologist linked',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: theme.textTheme.bodySmall?.color,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Edit profile',
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: () => _editProfile(profile),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
+
               // Theme Section
               _SettingsSection(
                 title: 'Appearance',
@@ -133,6 +190,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                             ref
                                 .read(userPreferencesProvider.notifier)
                                 .updateNotificationsEnabled(value);
+                            if (!value) {
+                              NotificationService().cancelAllNotifications();
+                            }
                           },
                         ),
                         const SizedBox(height: 16),
@@ -148,6 +208,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                             ref
                                 .read(userPreferencesProvider.notifier)
                                 .updateMoodCheckInsEnabled(value);
+                            if (value) {
+                              _scheduleMoodCheckIn();
+                            } else {
+                              NotificationService().cancelNotification(1009);
+                            }
                           },
                           enabled: preferences.notificationsEnabled,
                         ),
@@ -198,6 +263,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                               ref
                                   .read(userPreferencesProvider.notifier)
                                   .updateMoodCheckInInterval(value.toInt());
+                              _scheduleMoodCheckIn();
                             },
                           ),
                           Text(
@@ -209,6 +275,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         ],
                       ),
                     ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              _SettingsSection(
+                title: 'App Lock',
+                children: [
+                  SmoothCard(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'PIN timeout',
+                          style: AppTypography.labelLarge.copyWith(
+                            color: theme.textTheme.labelLarge?.color,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Slider(
+                          value: session.lockTimeoutMinutes.toDouble(),
+                          min: 1,
+                          max: 60,
+                          divisions: 59,
+                          label: '${session.lockTimeoutMinutes} min',
+                          onChanged: (value) {
+                            ref
+                                .read(appSessionProvider.notifier)
+                                .updateLockTimeout(value.toInt());
+                          },
+                        ),
+                        Text(
+                          'Ask for PIN after ${session.lockTimeoutMinutes} minutes away from the app.',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: theme.textTheme.bodySmall?.color,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
@@ -261,6 +367,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       ],
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  SmoothCard(
+                    padding: const EdgeInsets.all(8),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.privacy_tip_outlined),
+                          title: const Text('Privacy Policy'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: _showPrivacyPolicy,
+                        ),
+                        Divider(height: 1, color: theme.dividerColor),
+                        ListTile(
+                          leading: const Icon(Icons.bug_report_outlined),
+                          title: const Text('Report a Bug'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: _showBugReport,
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
@@ -308,6 +435,170 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _scheduleMoodCheckIn() async {
+    await NotificationService().scheduleMoodCheckIn(hour: 9, minute: 0);
+  }
+
+  void _editProfile(AppProfile profile) {
+    final nameController = TextEditingController(text: profile.name);
+    final emailController = TextEditingController(
+      text: profile.role == UserRole.psychologist
+          ? profile.email
+          : profile.psychologistEmail,
+    );
+    var iconCodePoint = profile.avatarIconCodePoint;
+    var colorValue = profile.avatarColorValue;
+    final icons = [
+      Icons.person,
+      Icons.self_improvement,
+      Icons.favorite,
+      Icons.psychology_alt,
+    ];
+    final colors = [
+      AppColors.neonViolet,
+      AppColors.neonCyan,
+      AppColors.success,
+      AppColors.info,
+    ];
+
+    showDialog<void>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit profile'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: emailController,
+                  decoration: InputDecoration(
+                    labelText: profile.role == UserRole.psychologist
+                        ? 'Professional email'
+                        : 'Psychologist email',
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 8,
+                  children: icons
+                      .map(
+                        (icon) => ChoiceChip(
+                          selected: iconCodePoint == icon.codePoint,
+                          avatar: Icon(icon, size: 18),
+                          label: const Text(''),
+                          onSelected: (_) => setDialogState(
+                            () => iconCodePoint = icon.codePoint,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: colors
+                      .map(
+                        (color) => ChoiceChip(
+                          selected: colorValue == color.value,
+                          label: CircleAvatar(
+                            radius: 9,
+                            backgroundColor: color,
+                          ),
+                          onSelected: (_) => setDialogState(
+                            () => colorValue = color.value,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final updated = profile.copyWith(
+                  name: nameController.text.trim(),
+                  email: profile.role == UserRole.psychologist
+                      ? emailController.text.trim()
+                      : profile.email,
+                  psychologistEmail: profile.role == UserRole.patient
+                      ? emailController.text.trim()
+                      : profile.psychologistEmail,
+                  avatarIconCodePoint: iconCodePoint,
+                  avatarColorValue: colorValue,
+                );
+                ref.read(appSessionProvider.notifier).updateProfile(updated);
+                Navigator.of(context).pop();
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPrivacyPolicy() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Privacy Policy'),
+        content: const Text(
+          'Psychol stores profile, moods, PIN settings, and appointments locally on this device for this prototype. Do not enter emergency or highly sensitive clinical information until production security and consent flows are finalized.',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBugReport() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Report a Bug'),
+        content: const Text(
+          'Send issue details to support@psychol.demo with your device, steps to reproduce, and screenshots if available.',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _avatarIconFor(int codePoint) {
+    const icons = [
+      Icons.person,
+      Icons.self_improvement,
+      Icons.favorite,
+      Icons.psychology_alt,
+    ];
+    return icons.firstWhere(
+      (icon) => icon.codePoint == codePoint,
+      orElse: () => Icons.person,
     );
   }
 }

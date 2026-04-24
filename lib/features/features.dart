@@ -17,6 +17,9 @@ export 'mood_log/mood_log_screen.dart';
 // Appointments
 export 'appointments/appointments_screen.dart';
 
+// Psychologists
+export 'psychologists/psychologists_screen.dart';
+
 // Settings
 export 'settings/settings_screen.dart';
 

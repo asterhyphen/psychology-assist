@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/theme_provider.dart';
 import 'app/app_state.dart';
 import 'core/services/app_session_store.dart';
+import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'app/navigation/app_router.dart';
 import 'features/app_lock/app_lock_gate.dart';
@@ -12,6 +13,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final store = AppSessionStore();
   final initialSession = await store.load();
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+  await notificationService.requestPermissions();
 
   runApp(
     ProviderScope(

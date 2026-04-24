@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../app/app_state.dart';
 import '../../app/home_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -21,33 +22,33 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
 
   final List<_MoodOption> _moods = [
     _MoodOption(
-      emoji: '😞',
+      icon: Icons.sentiment_very_dissatisfied,
       label: 'Terrible',
-      color: AppColors.moodTerrible,
+      color: AppColors.error,
       value: 1,
     ),
     _MoodOption(
-      emoji: '😟',
+      icon: Icons.sentiment_dissatisfied,
       label: 'Poor',
-      color: AppColors.moodPoor,
+      color: AppColors.warning,
       value: 2,
     ),
     _MoodOption(
-      emoji: '😐',
+      icon: Icons.sentiment_neutral,
       label: 'Neutral',
-      color: AppColors.moodNeutral,
+      color: AppColors.info,
       value: 3,
     ),
     _MoodOption(
-      emoji: '😊',
+      icon: Icons.sentiment_satisfied_alt,
       label: 'Good',
-      color: AppColors.moodGood,
+      color: AppColors.success,
       value: 4,
     ),
     _MoodOption(
-      emoji: '😄',
+      icon: Icons.sentiment_very_satisfied,
       label: 'Excellent',
-      color: AppColors.moodExcellent,
+      color: AppColors.neonViolet,
       value: 5,
     ),
   ];
@@ -81,25 +82,27 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
       return;
     }
 
-    setState(() {
-      _isSubmitted = true;
-    });
-
-    // Simulate save (in real app, would save to database)
-    Future.delayed(const Duration(milliseconds: 800), () {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Mood logged successfully 🎉'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            duration: const Duration(milliseconds: 2000),
+    final mood = _moods[_selectedMoodIndex!];
+    ref.read(appSessionProvider.notifier).addMoodEntry(
+          MoodEntry(
+            createdAt: DateTime.now(),
+            value: mood.value,
+            label: mood.label,
+            note: _journalController.text.trim(),
           ),
         );
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) {
-            ref.read(selectedTabProvider.notifier).state = 0;
-          }
-        });
+
+    setState(() => _isSubmitted = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Mood saved'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        duration: const Duration(milliseconds: 1200),
+      ),
+    );
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        ref.read(selectedTabProvider.notifier).state = 0;
       }
     });
   }
@@ -299,13 +302,13 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
 
 /// Mood option data class
 class _MoodOption {
-  final String emoji;
+  final IconData icon;
   final String label;
   final Color color;
   final int value;
 
   _MoodOption({
-    required this.emoji,
+    required this.icon,
     required this.label,
     required this.color,
     required this.value,
@@ -383,7 +386,13 @@ class _MoodSelectorState extends State<_MoodSelector>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(widget.mood.emoji, style: const TextStyle(fontSize: 32)),
+              Icon(
+                widget.mood.icon,
+                color: widget.isSelected
+                    ? widget.mood.color
+                    : Theme.of(context).colorScheme.primary,
+                size: 32,
+              ),
               const SizedBox(height: 8),
               Text(
                 widget.mood.label,
