@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_colors.dart';
 
 class BreathingExerciseScreen extends StatefulWidget {
   const BreathingExerciseScreen({super.key});
@@ -94,13 +93,13 @@ class _BreathingExerciseScreenState extends State<BreathingExerciseScreen>
                   height: 150 * _breathAnimation.value,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFFB7C97B).withOpacity(0.3),
+                    color: const Color(0xFFB7C97B).withValues(alpha: 0.3),
                     border: Border.all(
                       color: const Color(0xFFB7C97B),
                       width: 3,
                     ),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.air,
                     size: 50,
                     color: const Color(0xFFB7C97B),

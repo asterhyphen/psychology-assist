@@ -168,6 +168,7 @@ class _SmoothButtonState extends State<SmoothButton> {
                         )
                       : Row(
                           mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             if (widget.icon != null) ...[
                               widget.icon!,

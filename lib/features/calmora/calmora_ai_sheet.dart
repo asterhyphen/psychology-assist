@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/app_state.dart';
 import '../../core/services/ollama_service.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_snackbar.dart';
 
 enum CalmoraAiMode { chat, journal }
@@ -86,7 +85,7 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
           ? 'I could not summarize your journal entry. Try again in a moment.'
           : summary);
       if (summary.isNotEmpty) {
-        ref.read(appSessionProvider.notifier).updateJournalSummary(summary);
+        ref.read(appSessionProvider.notifier).addJournalEntry(summary);
       }
     } catch (_) {
       final fallback = _generateMockResponse(text);
@@ -148,155 +147,313 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final profile = ref.watch(appSessionProvider).profile;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 18,
-        right: 18,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 24,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.auto_awesome, color: const Color(0xFFB7C97B)),
-              const SizedBox(width: 10),
-              Text(
-                _mode == CalmoraAiMode.chat ? 'Calmora AI' : 'Calmora Journal',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 12,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: scheme.onSurface.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-              ),
-              const Spacer(),
-              Text(
-                'Quantized',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              ChoiceChip(
-                label: const Text('Chat'),
-                selected: _mode == CalmoraAiMode.chat,
-                onSelected: (_) {
-                  setState(() {
-                    _mode = CalmoraAiMode.chat;
-                    _reply =
-                        'Ask for a grounding exercise, journaling prompt, or appointment prep.';
-                    _alreadyShared = false;
-                  });
-                },
-              ),
-              const SizedBox(width: 10),
-              ChoiceChip(
-                label: const Text('Journal'),
-                selected: _mode == CalmoraAiMode.journal,
-                onSelected: (_) {
-                  setState(() {
-                    _mode = CalmoraAiMode.journal;
-                    _reply =
-                        'Write a journal entry, then summarize it for your own reflection or your therapist.';
-                    _alreadyShared = false;
-                  });
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withOpacity(0.72),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: theme.dividerColor),
-            ),
-            child: _loading
-                ? const LinearProgressIndicator()
-                : Text(_reply, style: theme.textTheme.bodyMedium),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _controller,
-            minLines: 1,
-            maxLines: 6,
-            decoration: InputDecoration(
-              hintText: _mode == CalmoraAiMode.chat
-                  ? 'Type what is on your mind'
-                  : 'Write your journal entry here...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              suffixIcon: IconButton(
-                tooltip: _mode == CalmoraAiMode.chat ? 'Send' : 'Summarize',
-                onPressed:
-                    _mode == CalmoraAiMode.chat ? _send : _summarizeJournal,
-                icon: Icon(_mode == CalmoraAiMode.chat
-                    ? Icons.send_rounded
-                    : Icons.notes_rounded),
               ),
             ),
-            onSubmitted: (_) =>
-                _mode == CalmoraAiMode.chat ? _send() : _summarizeJournal(),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _mode == CalmoraAiMode.journal
-                      ? _summarizeJournal
-                      : _send,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black87,
+            const SizedBox(height: 16),
+            // Header
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        scheme.primary.withValues(alpha: 0.15),
+                        scheme.tertiary.withValues(alpha: 0.10),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    _mode == CalmoraAiMode.journal
-                        ? 'Summarize Entry'
-                        : 'Send to Calmora',
-                  ),
+                  child: Icon(Icons.auto_awesome, color: scheme.primary, size: 20),
                 ),
-              ),
-              if (_mode == CalmoraAiMode.journal) ...[
                 const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _shareWithTherapist,
-                    child: const Text('Send to therapist'),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _mode == CalmoraAiMode.chat ? 'Calmora AI' : 'Calmora Journal',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      'Quantized',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: scheme.onSurface.withValues(alpha: 0.45),
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: Icon(
+                    Icons.close,
+                    color: scheme.onSurface.withValues(alpha: 0.4),
                   ),
                 ),
               ],
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (_mode == CalmoraAiMode.journal)
-            Text(
-              profile?.hasPsychologist == true
-                  ? 'Sharing available to ${profile!.psychologistEmail}.'
-                  : 'No therapist connected yet. Add one from Care.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.72),
-              ),
             ),
-          if (_alreadyShared)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                'Journal summary shared successfully.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.secondary,
-                  fontWeight: FontWeight.w600,
+            const SizedBox(height: 16),
+            // Mode tabs
+            Row(
+              children: [
+                _ModeChip(
+                  label: 'Chat',
+                  icon: Icons.chat_bubble_outline,
+                  isSelected: _mode == CalmoraAiMode.chat,
+                  onTap: () {
+                    setState(() {
+                      _mode = CalmoraAiMode.chat;
+                      _reply =
+                          'Ask for a grounding exercise, journaling prompt, or appointment prep.';
+                      _alreadyShared = false;
+                    });
+                  },
+                  scheme: scheme,
+                ),
+                const SizedBox(width: 10),
+                _ModeChip(
+                  label: 'Journal',
+                  icon: Icons.edit_note,
+                  isSelected: _mode == CalmoraAiMode.journal,
+                  onTap: () {
+                    setState(() {
+                      _mode = CalmoraAiMode.journal;
+                      _reply =
+                          'Write a journal entry, then summarize it for your own reflection or your therapist.';
+                      _alreadyShared = false;
+                    });
+                  },
+                  scheme: scheme,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Response area
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(minHeight: 80, maxHeight: 200),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: scheme.onSurface.withValues(alpha: 0.08),
                 ),
               ),
+              child: _loading
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          color: scheme.primary,
+                          backgroundColor: scheme.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Thinking...',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurface.withValues(alpha: 0.45),
+                          ),
+                        ),
+                      ],
+                    )
+                  : SingleChildScrollView(
+                      child: Text(
+                        _reply,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
             ),
-        ],
+            const SizedBox(height: 14),
+            // Input
+            TextField(
+              controller: _controller,
+              minLines: 1,
+              maxLines: 6,
+              decoration: InputDecoration(
+                hintText: _mode == CalmoraAiMode.chat
+                    ? 'Type what is on your mind'
+                    : 'Write your journal entry here...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                suffixIcon: IconButton(
+                  tooltip: _mode == CalmoraAiMode.chat ? 'Send' : 'Summarize',
+                  onPressed:
+                      _mode == CalmoraAiMode.chat ? _send : _summarizeJournal,
+                  icon: Icon(_mode == CalmoraAiMode.chat
+                      ? Icons.send_rounded
+                      : Icons.notes_rounded),
+                ),
+              ),
+              onSubmitted: (_) =>
+                  _mode == CalmoraAiMode.chat ? _send() : _summarizeJournal(),
+            ),
+            const SizedBox(height: 14),
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _mode == CalmoraAiMode.journal
+                        ? _summarizeJournal
+                        : _send,
+                    icon: Icon(
+                      _mode == CalmoraAiMode.journal
+                          ? Icons.notes_rounded
+                          : Icons.send_rounded,
+                      size: 18,
+                    ),
+                    label: Text(
+                      _mode == CalmoraAiMode.journal
+                          ? 'Summarize Entry'
+                          : 'Send to Calmora',
+                    ),
+                  ),
+                ),
+                if (_mode == CalmoraAiMode.journal) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _shareWithTherapist,
+                      icon: const Icon(Icons.share_outlined, size: 18),
+                      label: const Text('Send to therapist'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (_mode == CalmoraAiMode.journal)
+              Text(
+                profile?.hasPsychologist == true
+                    ? 'Sharing available to ${profile!.psychologistEmail}.'
+                    : 'No therapist connected yet. Add one from Care.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            if (_alreadyShared)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, size: 16, color: scheme.primary),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Journal summary shared successfully.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final ColorScheme scheme;
+
+  const _ModeChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+    required this.scheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? scheme.primary.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? scheme.primary.withValues(alpha: 0.3)
+                : scheme.onSurface.withValues(alpha: 0.12),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected
+                  ? scheme.primary
+                  : scheme.onSurface.withValues(alpha: 0.5),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected
+                    ? scheme.primary
+                    : scheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

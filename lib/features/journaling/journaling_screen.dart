@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/app_state.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/smooth_widgets.dart';
+import '../../app/home_screen.dart';
+import 'journal_history_screen.dart';
 
 class JournalingScreen extends ConsumerStatefulWidget {
   const JournalingScreen({super.key});
@@ -20,8 +21,7 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
   @override
   void initState() {
     super.initState();
-    final session = ref.read(appSessionProvider);
-    _controller.text = session.journalSummary;
+    // No longer loading existing content - each entry is new
   }
 
   @override
@@ -37,14 +37,19 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
 
     try {
       final notes = _controller.text.trim();
-      ref.read(appSessionProvider.notifier).updateJournalSummary(notes);
+      if (notes.isNotEmpty) {
+        ref.read(appSessionProvider.notifier).addJournalEntry(notes);
+      }
 
       if (mounted) {
         AppSnackBar.showSuccess(
           context,
           title: 'Notes saved',
-          message: 'Your journal notes have been updated.',
+          message: 'Your journal entry has been saved.',
         );
+        // Clear content and navigate back
+        _controller.clear();
+        ref.read(selectedTabProvider.notifier).state = 0;
       }
     } catch (e) {
       if (mounted) {
@@ -69,6 +74,17 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
       appBar: AppBar(
         title: const Text('Journal Notes'),
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const JournalHistoryScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.history_outlined),
+            tooltip: 'View history',
+          ),
           TextButton(
             onPressed: _isSaving ? null : _saveNotes,
             child: _isSaving
@@ -80,7 +96,7 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
                 : Text(
                     'Save',
                     style: TextStyle(
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -102,14 +118,14 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
             Text(
               'Write down your thoughts, feelings, or anything you want to remember. These notes are private and stored locally.',
               style: AppTypography.bodySmall.copyWith(
-                color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 24),
             Expanded(
               child: SmoothCard(
-                backgroundColor: theme.colorScheme.surface.withOpacity(0.8),
-                borderColor: const Color(0xFFB7C97B).withOpacity(0.2),
+                backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.8),
+                borderColor: const Color(0xFFB7C97B).withValues(alpha: 0.2),
                 borderRadius: 16,
                 padding: const EdgeInsets.all(16),
                 child: TextField(
@@ -122,7 +138,7 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
                     border: InputBorder.none,
                     hintStyle: AppTypography.bodyMedium.copyWith(
                       color:
-                          theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                          theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                     ),
                   ),
                   style: AppTypography.bodyMedium.copyWith(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/app_state.dart';
-import '../../app/home_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_snackbar.dart';
@@ -104,6 +103,97 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
     );
   }
 
+  IconData _getMoodIcon(int value) {
+    switch (value) {
+      case 1:
+        return Icons.sentiment_very_dissatisfied;
+      case 2:
+        return Icons.sentiment_dissatisfied;
+      case 3:
+        return Icons.sentiment_neutral;
+      case 4:
+        return Icons.sentiment_satisfied_alt;
+      case 5:
+        return Icons.sentiment_very_satisfied;
+      default:
+        return Icons.sentiment_neutral;
+    }
+  }
+
+  Color _getMoodColor(int value) {
+    switch (value) {
+      case 1:
+        return AppColors.error;
+      case 2:
+        return AppColors.warning;
+      case 3:
+        return AppColors.info;
+      case 4:
+        return AppColors.success;
+      case 5:
+        return AppColors.neonViolet;
+      default:
+        return AppColors.info;
+    }
+  }
+
+  Widget _buildTruncatedText(String text) {
+    const maxLength = 200;
+    if (text.length <= maxLength) {
+      return Text(
+        text,
+        style: AppTypography.bodyMedium.copyWith(
+          color: Theme.of(context).textTheme.bodyMedium?.color,
+        ),
+      );
+    }
+
+    final truncatedText = text.substring(0, maxLength);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$truncatedText...',
+          style: AppTypography.bodyMedium.copyWith(
+            color: Theme.of(context).textTheme.bodyMedium?.color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Full Entry'),
+                content: SingleChildScrollView(
+                  child: Text(
+                    text,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Close'),
+                  ),
+                ],
+              ),
+            );
+          },
+          child: Text(
+            'Read more',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.neonViolet,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -114,12 +204,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Log Your Mood'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            ref.read(selectedTabProvider.notifier).state = 0;
-          },
-        ),
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -177,7 +262,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                       Text(
                         'Feeling ${_moods[_selectedMoodIndex!].label.toLowerCase()}',
                         style: AppTypography.labelLarge.copyWith(
-                          color: Colors.black87,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                   ],
@@ -221,7 +306,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Your entries are private and stored locally on this device.',
+                      'Your entries are private* and stored locally on this device.',
                       style: AppTypography.captionSmall.copyWith(
                         color: theme.textTheme.bodySmall?.color,
                         fontStyle: FontStyle.italic,
@@ -236,8 +321,8 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                 child: SmoothButton(
                   onPressed: _submitMood,
                   label: 'Save Mood Entry',
-                  backgroundColor: Colors.black87,
-                  textColor: Colors.white,
+                  backgroundColor: theme.colorScheme.primary,
+                  textColor: theme.colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
@@ -260,7 +345,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                               borderRadius: 18,
                               padding: const EdgeInsets.all(16),
                               backgroundColor:
-                                  theme.colorScheme.surface.withOpacity(0.8),
+                                  theme.colorScheme.surface.withValues(alpha: 0.8),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -268,9 +353,19 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        entry.label,
-                                        style: AppTypography.labelLarge,
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            _getMoodIcon(entry.value),
+                                            color: _getMoodColor(entry.value),
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            entry.label,
+                                            style: AppTypography.labelLarge,
+                                          ),
+                                        ],
                                       ),
                                       Text(
                                         '${entry.createdAt.day}/${entry.createdAt.month} ${entry.createdAt.hour.toString().padLeft(2, '0')}:${entry.createdAt.minute.toString().padLeft(2, '0')}',
@@ -282,14 +377,9 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                                     ],
                                   ),
                                   const SizedBox(height: 10),
-                                  Text(
-                                    entry.note.isEmpty
-                                        ? 'No additional note provided.'
-                                        : entry.note,
-                                    style: AppTypography.bodyMedium.copyWith(
-                                      color: theme.textTheme.bodyMedium?.color,
-                                    ),
-                                  ),
+                                  _buildTruncatedText(entry.note.isEmpty
+                                      ? 'No additional note provided.'
+                                      : entry.note),
                                 ],
                               ),
                             ),
@@ -301,7 +391,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                 SmoothCard(
                   borderRadius: 18,
                   padding: const EdgeInsets.all(18),
-                  backgroundColor: theme.colorScheme.surface.withOpacity(0.72),
+                  backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.72),
                   child: Text(
                     'No journal entries yet. Save a mood entry to start building your notes.',
                     style: AppTypography.bodySmall.copyWith(
@@ -391,7 +481,7 @@ class _MoodSelectorState extends State<_MoodSelector>
           height: 90,
           decoration: BoxDecoration(
             color: widget.isSelected
-                ? widget.mood.color.withOpacity(0.15)
+                ? widget.mood.color.withValues(alpha: 0.15)
                 : Colors.transparent,
             border: Border.all(
               color: widget.isSelected

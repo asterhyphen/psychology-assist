@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../app/app_state.dart';
+import '../../app/home_screen.dart';
 import '../../app/theme_provider.dart';
 import '../../app/user_preferences_provider.dart';
 import '../../core/services/notification_service.dart';
@@ -302,10 +303,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   if (preferences.moodCheckInsEnabled)
                     SmoothCard(
                       padding: const EdgeInsets.all(16),
-                      backgroundColor: Colors.black87.withOpacity(
-                        0.05,
+                      backgroundColor: Colors.black87.withValues(
+                        alpha: 0.05,
                       ),
-                      borderColor: Colors.black87.withOpacity(0.2),
+                      borderColor: Colors.black87.withValues(alpha: 0.2),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -389,15 +390,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 children: [
                   SmoothCard(
                     padding: const EdgeInsets.all(16),
-                    backgroundColor: AppColors.success.withOpacity(0.05),
-                    borderColor: AppColors.success.withOpacity(0.2),
+                    backgroundColor: AppColors.success.withValues(alpha: 0.05),
+                    borderColor: AppColors.success.withValues(alpha: 0.2),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.2),
+                            color: AppColors.success.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
@@ -463,10 +464,99 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     padding: const EdgeInsets.all(16),
                     backgroundColor: Theme.of(context)
                         .colorScheme
+                        .secondaryContainer
+                        .withValues(alpha: 0.12),
+                    borderColor: Theme.of(context)
+                        .colorScheme
+                        .secondary
+                        .withValues(alpha: 0.2),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          profile?.role == UserRole.psychologist
+                              ? 'Switch to Patient View'
+                              : 'Switch to Psychologist View',
+                          style: AppTypography.labelLarge.copyWith(
+                            color: theme.textTheme.labelLarge?.color,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          profile?.role == UserRole.psychologist
+                              ? 'View the app as a patient'
+                              : 'View patient requests and manage appointments as Dr. Panipuri',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: theme.textTheme.bodySmall?.color,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: theme
+                                .colorScheme.secondaryContainer
+                                .withValues(alpha: 0.9),
+                          ),
+                          onPressed: () {
+                            if (profile?.role == UserRole.psychologist) {
+                              ref.read(appSessionProvider.notifier).updateProfile(
+                                    AppProfile(
+                                      role: UserRole.patient,
+                                      name: 'Demo Patient',
+                                      email: 'patient@example.com',
+                                      psychologistEmail: demoPsychologistEmail,
+                                      avatarColorValue: 0xFF8B5CF6,
+                                      avatarIconCodePoint: Icons.person.codePoint,
+                                    ),
+                                  );
+                              ref.read(selectedTabProvider.notifier).state = 0;
+                              AppSnackBar.showSuccess(
+                                context,
+                                title: 'Switched to Patient',
+                                message: 'You are now viewing as Demo Patient.',
+                              );
+                            } else {
+                              ref.read(appSessionProvider.notifier).updateProfile(
+                                    AppProfile(
+                                      role: UserRole.psychologist,
+                                      name: 'Dr. Panipuri',
+                                      email: demoPsychologistEmail,
+                                      avatarColorValue: 0xFF4A6CF7,
+                                      avatarIconCodePoint:
+                                          Icons.psychology_alt.codePoint,
+                                    ),
+                                  );
+                              ref.read(selectedTabProvider.notifier).state = 0;
+                              AppSnackBar.showSuccess(
+                                context,
+                                title: 'Switched to Psychologist',
+                                message: 'You are now viewing as Dr. Panipuri.',
+                              );
+                            }
+                          },
+                          icon: Icon(
+                            profile?.role == UserRole.psychologist
+                                ? Icons.person
+                                : Icons.switch_account,
+                          ),
+                          label: Text(
+                            profile?.role == UserRole.psychologist
+                                ? 'Switch to Patient'
+                                : 'Switch to Psychologist',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SmoothCard(
+                    padding: const EdgeInsets.all(16),
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
                         .errorContainer
-                        .withOpacity(0.12),
+                        .withValues(alpha: 0.12),
                     borderColor:
-                        Theme.of(context).colorScheme.error.withOpacity(0.2),
+                        Theme.of(context).colorScheme.error.withValues(alpha: 0.2),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -480,10 +570,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         FilledButton.icon(
                           style: FilledButton.styleFrom(
                             backgroundColor: theme.colorScheme.errorContainer
-                                .withOpacity(0.9),
+                                .withValues(alpha: 0.9),
                           ),
                           onPressed: () {
                             ref.read(appSessionProvider.notifier).logout();
+                            ref.read(selectedTabProvider.notifier).state = 0;
                             AppSnackBar.showInfo(
                               context,
                               title: 'Logged out',
@@ -674,13 +765,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   children: colors
                       .map(
                         (color) => ChoiceChip(
-                          selected: colorValue == color.value,
+                          selected: colorValue == color.toARGB32(),
                           label: CircleAvatar(
                             radius: 9,
                             backgroundColor: color,
                           ),
                           onSelected: (_) => setDialogState(
-                            () => colorValue = color.value,
+                            () => colorValue = color.toARGB32(),
                           ),
                         ),
                       )
@@ -822,7 +913,7 @@ class _ThemeButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
           color:
-              isSelected ? Colors.black87.withOpacity(0.1) : Colors.transparent,
+              isSelected ? Colors.black87.withValues(alpha: 0.1) : Colors.transparent,
           border: Border.all(
             color: isSelected ? Colors.black87 : theme.dividerColor,
             width: isSelected ? 2 : 1,
@@ -892,7 +983,7 @@ class _SettingsToggle extends StatelessWidget {
                     size: 20,
                     color: enabled
                         ? Colors.black87
-                        : theme.textTheme.bodySmall?.color?.withOpacity(0.5),
+                        : theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -901,8 +992,8 @@ class _SettingsToggle extends StatelessWidget {
                       style: AppTypography.labelLarge.copyWith(
                         color: enabled
                             ? theme.textTheme.labelLarge?.color
-                            : theme.textTheme.labelLarge?.color?.withOpacity(
-                                0.5,
+                            : theme.textTheme.labelLarge?.color?.withValues(
+                                alpha: 0.5,
                               ),
                       ),
                     ),
@@ -917,7 +1008,7 @@ class _SettingsToggle extends StatelessWidget {
                   style: AppTypography.bodySmall.copyWith(
                     color: enabled
                         ? theme.textTheme.bodySmall?.color
-                        : theme.textTheme.bodySmall?.color?.withOpacity(0.5),
+                        : theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
                   ),
                 ),
               ),
@@ -927,7 +1018,7 @@ class _SettingsToggle extends StatelessWidget {
         Switch(
           value: enabled ? value : false,
           onChanged: enabled ? onChanged : null,
-          activeColor: Colors.black87,
+          activeThumbColor: Colors.black87,
         ),
       ],
     );

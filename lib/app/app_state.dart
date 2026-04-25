@@ -194,6 +194,26 @@ class MoodEntry {
   });
 }
 
+class JournalEntry {
+  final DateTime createdAt;
+  final String content;
+
+  const JournalEntry({
+    required this.createdAt,
+    required this.content,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'createdAt': createdAt.toIso8601String(),
+        'content': content,
+      };
+
+  factory JournalEntry.fromJson(Map<String, dynamic> json) => JournalEntry(
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        content: json['content'] as String,
+      );
+}
+
 class AppPsychologist {
   final String name;
   final String email;
@@ -251,13 +271,12 @@ class AppSession {
   final List<Appointment> appointments;
   final List<Prescription> prescriptions;
   final List<MoodEntry> moodEntries;
+  final List<JournalEntry> journalEntries;
   final bool isLocked;
   final DateTime? lastUnlockedAt;
   final int lockTimeoutMinutes;
   final int currentStreak;
   final int longestStreak;
-  final String journalSummary;
-  final DateTime? journalUpdatedAt;
 
   const AppSession({
     this.onboardingComplete = false,
@@ -267,13 +286,12 @@ class AppSession {
     this.appointments = const [],
     this.prescriptions = const [],
     this.moodEntries = const [],
+    this.journalEntries = const [],
     this.isLocked = false,
     this.lastUnlockedAt,
     this.lockTimeoutMinutes = 10,
     this.currentStreak = 0,
     this.longestStreak = 0,
-    this.journalSummary = '',
-    this.journalUpdatedAt,
   });
 
   AppSession copyWith({
@@ -284,13 +302,12 @@ class AppSession {
     List<Appointment>? appointments,
     List<Prescription>? prescriptions,
     List<MoodEntry>? moodEntries,
+    List<JournalEntry>? journalEntries,
     bool? isLocked,
     DateTime? lastUnlockedAt,
     int? lockTimeoutMinutes,
     int? currentStreak,
     int? longestStreak,
-    String? journalSummary,
-    DateTime? journalUpdatedAt,
   }) {
     return AppSession(
       onboardingComplete: onboardingComplete ?? this.onboardingComplete,
@@ -300,13 +317,12 @@ class AppSession {
       appointments: appointments ?? this.appointments,
       prescriptions: prescriptions ?? this.prescriptions,
       moodEntries: moodEntries ?? this.moodEntries,
+      journalEntries: journalEntries ?? this.journalEntries,
       isLocked: isLocked ?? this.isLocked,
       lastUnlockedAt: lastUnlockedAt ?? this.lastUnlockedAt,
       lockTimeoutMinutes: lockTimeoutMinutes ?? this.lockTimeoutMinutes,
       currentStreak: currentStreak ?? this.currentStreak,
       longestStreak: longestStreak ?? this.longestStreak,
-      journalSummary: journalSummary ?? this.journalSummary,
-      journalUpdatedAt: journalUpdatedAt ?? this.journalUpdatedAt,
     );
   }
 }
@@ -404,11 +420,13 @@ class AppSessionNotifier extends StateNotifier<AppSession> {
     _persist();
   }
 
-  void updateJournalSummary(String summary) {
-    state = state.copyWith(
-      journalSummary: summary,
-      journalUpdatedAt: DateTime.now(),
+  void addJournalEntry(String content) {
+    final entry = JournalEntry(
+      createdAt: DateTime.now(),
+      content: content,
     );
+    final updated = [...state.journalEntries, entry];
+    state = state.copyWith(journalEntries: updated);
     _persist();
   }
 

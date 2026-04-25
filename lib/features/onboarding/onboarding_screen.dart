@@ -4,7 +4,6 @@ import '../../app/app_state.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_snackbar.dart';
-import '../../core/widgets/gradient_background.dart';
 import '../../core/widgets/smooth_widgets.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {

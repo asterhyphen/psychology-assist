@@ -5,7 +5,6 @@ import 'app/app_state.dart';
 import 'core/services/app_session_store.dart';
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
-import 'features/dashboard/dashboard_screen.dart'; // add this
 import 'app/navigation/app_router.dart';
 import 'features/app_lock/app_lock_gate.dart';
 import 'features/onboarding/onboarding_screen.dart';

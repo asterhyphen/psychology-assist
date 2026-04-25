@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/app_state.dart';
-import '../../app/home_screen.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/services/notification_service.dart';
-import '../../app/user_preferences_provider.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_snackbar.dart';
-import '../../core/widgets/gradient_background.dart';
 import '../../core/widgets/smooth_widgets.dart';
 
 class PsychologistsScreen extends ConsumerWidget {
@@ -18,6 +14,11 @@ class PsychologistsScreen extends ConsumerWidget {
     final session = ref.watch(appSessionProvider);
     final profile = session.profile;
     final isPsychologist = profile?.role == UserRole.psychologist;
+
+    if (isPsychologist) {
+      return const _PsychologistDashboard();
+    }
+
     final psychologists = _dynamicPsychologists(profile);
 
     return Scaffold(
@@ -28,30 +29,23 @@ class PsychologistsScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
             children: [
               Text(
-                isPsychologist ? 'Patient Requests' : 'Psychologists',
+                'Psychologists',
                 style: AppTypography.headingLarge,
               ),
               const SizedBox(height: 8),
               Text(
-                isPsychologist
-                    ? 'Appointments linked to your professional email appear here.'
-                    : 'Choose a care provider, then book from the appointments tab.',
+                'Choose a care provider, then book from the appointments tab.',
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.lightSubtext,
                 ),
               ),
               const SizedBox(height: 18),
-              _PrescriptionSection(session: session),
-              const SizedBox(height: 18),
-              if (isPsychologist)
-                _PsychologistPracticeView(session: session)
-              else
-                ...psychologists.map(
-                  (psychologist) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _PsychologistCard(psychologist: psychologist),
-                  ),
+              ...psychologists.map(
+                (psychologist) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _PsychologistCard(psychologist: psychologist),
                 ),
+              ),
             ],
           ),
         ),
@@ -77,199 +71,199 @@ class PsychologistsScreen extends ConsumerWidget {
   }
 }
 
-class _PsychologistPracticeView extends ConsumerWidget {
-  final AppSession session;
 
-  const _PsychologistPracticeView({required this.session});
+class _PsychologistDashboard extends ConsumerWidget {
+  const _PsychologistDashboard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(appSessionProvider);
     final email = session.profile?.email ?? demoPsychologistEmail;
-    final linkedAppointments = session.appointments
-        .where((appointment) => appointment.psychologistEmail == email)
+    final pendingAppointments = session.appointments
+        .where((appointment) =>
+            appointment.psychologistEmail == email && !appointment.confirmed)
         .toList();
-    final doctorPrescriptions = session.prescriptions
+    final confirmedAppointments = session.appointments
+        .where((appointment) =>
+            appointment.psychologistEmail == email && appointment.confirmed)
+        .toList();
+    final prescriptions = session.prescriptions
         .where((prescription) => prescription.prescribedByEmail == email)
         .toList();
-    final patients = <String>{};
-    for (final appointment in linkedAppointments) {
-      patients.add(appointment.patientName);
-    }
 
-    if (linkedAppointments.isEmpty) {
-      return SmoothCard(
-        borderRadius: 18,
-        backgroundColor:
-            Theme.of(context).colorScheme.surface.withOpacity(0.72),
-        child: const Row(
-          children: [
-            Icon(Icons.inbox_outlined, color: AppColors.neonViolet),
-            SizedBox(width: 12),
-            Expanded(child: Text('No linked patient appointments yet.')),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SmoothCard(
-          borderRadius: 18,
-          backgroundColor:
-              Theme.of(context).colorScheme.surface.withOpacity(0.72),
-          borderColor: const Color(0xFFB7C97B).withOpacity(0.24),
-          child: Row(
-            children: [
-              const Icon(Icons.groups_2_outlined,
-                  color: const Color(0xFFB7C97B)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  '${patients.length} active patients',
-                  style: AppTypography.labelLarge.copyWith(
-                    color: Theme.of(context).textTheme.labelLarge?.color,
-                  ),
-                ),
-              ),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dr. Panipuri Dashboard'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: () {
+              ref.read(appSessionProvider.notifier).updateProfile(
+                    AppProfile(
+                      role: UserRole.patient,
+                      name: 'Patient',
+                      email: 'patient@example.com',
+                      psychologistEmail: demoPsychologistEmail,
+                    ),
+                  );
+              AppSnackBar.showInfo(
+                context,
+                title: 'Switched to Patient',
+                message: 'You are now viewing as a patient.',
+              );
+            },
+            icon: const Icon(Icons.switch_account),
+            tooltip: 'Switch to Patient View',
           ),
-        ),
-        const SizedBox(height: 12),
-        SmoothCard(
-          borderRadius: 18,
-          backgroundColor:
-              Theme.of(context).colorScheme.surface.withOpacity(0.72),
-          borderColor: AppColors.success.withOpacity(0.24),
-          child: Row(
-            children: [
-              const Icon(Icons.medical_information_outlined,
-                  color: AppColors.success),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Prescriptions issued: ${doctorPrescriptions.length}',
-                  style: AppTypography.labelLarge.copyWith(
-                    color: Theme.of(context).textTheme.labelLarge?.color,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        ...linkedAppointments.map(
-          (appointment) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: SmoothCard(
-              borderRadius: 18,
-              backgroundColor:
-                  Theme.of(context).colorScheme.surface.withOpacity(0.72),
-              borderColor: appointment.confirmed
-                  ? AppColors.success.withOpacity(0.22)
-                  : AppColors.warning.withOpacity(0.32),
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(
-                  backgroundColor: appointment.confirmed
-                      ? AppColors.success
-                      : AppColors.warning,
-                  child: const Icon(Icons.person_outline, color: Colors.white),
-                ),
-                title: Text(
-                  appointment.patientName,
-                  style: AppTypography.labelLarge.copyWith(
-                    color: Theme.of(context).textTheme.labelLarge?.color,
-                  ),
-                ),
-                subtitle: Text(
-                  '${appointment.type}\n${appointment.startsAt.day}/${appointment.startsAt.month}/${appointment.startsAt.year}'
-                  ' at ${appointment.startsAt.hour}:${appointment.startsAt.minute.toString().padLeft(2, '0')}'
-                  '${appointment.note.isEmpty ? '' : '\n${appointment.note}'}',
-                ),
-                isThreeLine: appointment.note.isNotEmpty,
-                trailing: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
+        ],
+      ),
+      body: Container(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Summary Cards
+                Row(
                   children: [
-                    if (appointment.confirmed)
-                      const Icon(
-                        Icons.verified_outlined,
+                    Expanded(
+                      child: _SummaryCard(
+                        title: 'Pending Requests',
+                        value: pendingAppointments.length.toString(),
+                        icon: Icons.pending_actions,
+                        color: AppColors.warning,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _SummaryCard(
+                        title: 'Confirmed Sessions',
+                        value: confirmedAppointments.length.toString(),
+                        icon: Icons.check_circle,
                         color: AppColors.success,
-                      )
-                    else
-                      FilledButton.icon(
-                        onPressed: () {
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SummaryCard(
+                        title: 'Active Patients',
+                        value: _getUniquePatients(confirmedAppointments).length.toString(),
+                        icon: Icons.groups,
+                        color: AppColors.neonViolet,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _SummaryCard(
+                        title: 'Prescriptions',
+                        value: prescriptions.length.toString(),
+                        icon: Icons.medical_services,
+                        color: AppColors.neonCyan,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Pending Appointments
+                if (pendingAppointments.isNotEmpty) ...[
+                  Text(
+                    'Pending Appointment Requests',
+                    style: AppTypography.headingMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  ...pendingAppointments.map(
+                    (appointment) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _AppointmentRequestCard(
+                        appointment: appointment,
+                        onApprove: () {
                           ref
                               .read(appSessionProvider.notifier)
                               .approveAppointment(appointment);
                           AppSnackBar.showSuccess(
                             context,
                             title: 'Approved',
-                            message: 'Appointment approved.',
+                            message: 'Appointment confirmed.',
                           );
                         },
-                        icon: const Icon(Icons.check, size: 16),
-                        label: const Text('Approve'),
+                        onPrescribe: () => _showPrescriptionDialog(context, ref, appointment),
                       ),
-                    const SizedBox(height: 8),
-                    FilledButton.icon(
-                      onPressed: () {
-                        _showPrescriptionDialog(context, ref, appointment);
-                      },
-                      icon: const Icon(Icons.medical_services, size: 16),
-                      label: const Text('Prescribe'),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                ],
+
+                // Confirmed Appointments
+                if (confirmedAppointments.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'Upcoming Confirmed Sessions',
+                    style: AppTypography.headingMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  ...confirmedAppointments.map(
+                    (appointment) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _ConfirmedAppointmentCard(appointment: appointment),
+                    ),
+                  ),
+                ],
+
+                // Recent Prescriptions
+                if (prescriptions.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'Recent Prescriptions',
+                    style: AppTypography.headingMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  ...prescriptions.take(3).map(
+                    (prescription) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: SmoothCard(
+                        borderRadius: 12,
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              prescription.patientName,
+                              style: AppTypography.labelLarge,
+                            ),
+                            Text(
+                              prescription.medicines.join(', '),
+                              style: AppTypography.bodySmall,
+                            ),
+                            Text(
+                              'Created: ${_formatDate(prescription.createdAt)}',
+                              style: AppTypography.caption,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
-        if (doctorPrescriptions.isNotEmpty) ...[
-          const SizedBox(height: 18),
-          Text(
-            'Prescription history',
-            style: AppTypography.headingSmall,
-          ),
-          const SizedBox(height: 12),
-          ...doctorPrescriptions.map(
-            (prescription) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: SmoothCard(
-                borderRadius: 18,
-                backgroundColor:
-                    Theme.of(context).colorScheme.surface.withOpacity(0.72),
-                child: ListTile(
-                  title: Text(prescription.patientName,
-                      style: AppTypography.labelLarge),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${prescription.medicines.join(', ')}\n${prescription.note}',
-                      ),
-                      if (prescription.reminderTimes.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          'Reminders: ${prescription.reminderTimes.map((t) => t.toDisplayString()).join(', ')}',
-                          style: AppTypography.bodySmall.copyWith(
-                            color: const Color(0xFFB7C97B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  isThreeLine: prescription.note.isNotEmpty ||
-                      prescription.reminderTimes.isNotEmpty,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
+      ),
     );
+  }
+
+  List<String> _getUniquePatients(List<Appointment> appointments) {
+    return appointments.map((a) => a.patientName).toSet().toList();
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   Future<void> _showPrescriptionDialog(
@@ -283,7 +277,7 @@ class _PsychologistPracticeView extends ConsumerWidget {
     final noteController = TextEditingController();
     final patientName = appointment.patientName;
     final patientEmail = appointment.patientEmail;
-    final doctorName = session.profile?.name ?? 'Dr.';
+    final doctorName = session.profile?.name ?? 'Dr. Panipuri';
     final doctorEmail = session.profile?.email ?? demoPsychologistEmail;
 
     await showDialog<void>(
@@ -351,55 +345,13 @@ class _PsychologistPracticeView extends ConsumerWidget {
                     .toList(),
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Text('Reminder Times:'),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () async {
-                      final time = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.now(),
-                      );
-                      if (time != null) {
-                        final medicationTime = MedicationTime(
-                          hour: time.hour,
-                          minute: time.minute,
-                        );
-                        if (!selectedTimes.contains(medicationTime)) {
-                          setDialogState(
-                              () => selectedTimes.add(medicationTime));
-                        }
-                      }
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: selectedTimes
-                    .map(
-                      (time) => InputChip(
-                        label: Text(time.toDisplayString()),
-                        onDeleted: () {
-                          setDialogState(() => selectedTimes.remove(time));
-                        },
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 12),
               TextField(
                 controller: noteController,
-                minLines: 2,
-                maxLines: 4,
                 decoration: const InputDecoration(
-                  labelText: 'Prescription notes',
-                  hintText: 'Dose, timing, or pharmacy instructions',
+                  labelText: 'Notes',
+                  hintText: 'Dosage instructions, etc.',
                 ),
+                maxLines: 2,
               ),
             ],
           ),
@@ -411,49 +363,199 @@ class _PsychologistPracticeView extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () {
-              if (selectedMedicines.isEmpty) {
-                AppSnackBar.showInfo(
+              if (selectedMedicines.isNotEmpty) {
+                ref.read(appSessionProvider.notifier).addPrescription(
+                      Prescription(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        patientName: patientName,
+                        patientEmail: patientEmail,
+                        prescribedByName: doctorName,
+                        prescribedByEmail: doctorEmail,
+                        medicines: selectedMedicines,
+                        reminderTimes: selectedTimes,
+                        note: noteController.text.trim(),
+                        createdAt: DateTime.now(),
+                      ),
+                    );
+                Navigator.of(context).pop();
+                AppSnackBar.showSuccess(
                   context,
-                  message: 'Add at least one medicine to prescribe.',
-                );
-                return;
-              }
-
-              final prescription = Prescription(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                patientName: patientName,
-                patientEmail: patientEmail,
-                prescribedByName: doctorName,
-                prescribedByEmail: doctorEmail,
-                medicines: List<String>.from(selectedMedicines),
-                reminderTimes: List<MedicationTime>.from(selectedTimes),
-                note: noteController.text.trim(),
-                createdAt: DateTime.now(),
-              );
-
-              ref
-                  .read(appSessionProvider.notifier)
-                  .addPrescription(prescription);
-
-              // Schedule medication reminders
-              if (selectedTimes.isNotEmpty) {
-                final notificationService = NotificationService();
-                notificationService.scheduleMedicationReminders(
-                  medicines: selectedMedicines,
-                  times: selectedTimes
-                      .map((t) => (hour: t.hour, minute: t.minute))
-                      .toList(),
+                  title: 'Prescription added',
+                  message: 'Medication prescribed successfully.',
                 );
               }
-
-              Navigator.of(context).pop();
-              AppSnackBar.showSuccess(
-                context,
-                title: 'Prescription saved',
-                message: 'Medicine list added for $patientName.',
-              );
             },
-            child: const Text('Save'),
+            child: const Text('Prescribe'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _SummaryCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SmoothCard(
+      borderRadius: 16,
+      padding: const EdgeInsets.all(16),
+      backgroundColor: color.withOpacity(0.1),
+      borderColor: color.withOpacity(0.2),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: AppTypography.headingLarge.copyWith(color: color),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: AppTypography.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AppointmentRequestCard extends StatelessWidget {
+  final Appointment appointment;
+  final VoidCallback onApprove;
+  final VoidCallback onPrescribe;
+
+  const _AppointmentRequestCard({
+    required this.appointment,
+    required this.onApprove,
+    required this.onPrescribe,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SmoothCard(
+      borderRadius: 16,
+      padding: const EdgeInsets.all(16),
+      backgroundColor: AppColors.warning.withOpacity(0.1),
+      borderColor: AppColors.warning.withOpacity(0.3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: AppColors.warning,
+                child: const Icon(Icons.person, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appointment.patientName,
+                      style: AppTypography.labelLarge,
+                    ),
+                    Text(
+                      '${appointment.type} - ${appointment.startsAt.day}/${appointment.startsAt.month}/${appointment.startsAt.year} at ${appointment.startsAt.hour}:${appointment.startsAt.minute.toString().padLeft(2, '0')}',
+                      style: AppTypography.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (appointment.note.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Note: ${appointment.note}',
+              style: AppTypography.bodySmall.copyWith(
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: onApprove,
+                  icon: const Icon(Icons.check, size: 16),
+                  label: const Text('Approve'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onPrescribe,
+                  icon: const Icon(Icons.medical_services, size: 16),
+                  label: const Text('Prescribe'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConfirmedAppointmentCard extends StatelessWidget {
+  final Appointment appointment;
+
+  const _ConfirmedAppointmentCard({required this.appointment});
+
+  @override
+  Widget build(BuildContext context) {
+    return SmoothCard(
+      borderRadius: 16,
+      padding: const EdgeInsets.all(16),
+      backgroundColor: AppColors.success.withOpacity(0.1),
+      borderColor: AppColors.success.withOpacity(0.3),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: AppColors.success,
+            child: const Icon(Icons.check_circle, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  appointment.patientName,
+                  style: AppTypography.labelLarge,
+                ),
+                Text(
+                  '${appointment.type} - ${appointment.startsAt.day}/${appointment.startsAt.month}/${appointment.startsAt.year} at ${appointment.startsAt.hour}:${appointment.startsAt.minute.toString().padLeft(2, '0')}',
+                  style: AppTypography.bodySmall,
+                ),
+                if (appointment.note.isNotEmpty)
+                  Text(
+                    'Note: ${appointment.note}',
+                    style: AppTypography.bodySmall.copyWith(
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
@@ -509,338 +611,31 @@ class _PsychologistCard extends ConsumerWidget {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
+                    icon: const Icon(Icons.calendar_today, size: 16),
+                    label: const Text('Book appointment'),
                     onPressed: () {
-                      ref.read(selectedTabProvider.notifier).state = 3;
-                    },
-                    icon: const Icon(Icons.event_available_outlined),
-                    label: const Text('Book'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PrescriptionSection extends ConsumerWidget {
-  final AppSession session;
-
-  const _PrescriptionSection({required this.session});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profile = session.profile;
-    final isPsychologist = profile?.role == UserRole.psychologist;
-    final email = profile?.email?.toLowerCase() ?? '';
-    final prescriptions = session.prescriptions.where((item) {
-      if (isPsychologist) {
-        return item.prescribedByEmail.toLowerCase() == email;
-      }
-      return profile?.email != null &&
-          item.patientEmail?.toLowerCase() == profile!.email!.toLowerCase();
-    }).toList();
-    final theme = Theme.of(context);
-
-    return SmoothCard(
-      padding: const EdgeInsets.all(18),
-      borderRadius: 22,
-      backgroundColor: theme.colorScheme.surface.withOpacity(0.78),
-      borderColor: Colors.black87.withOpacity(0.18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            isPsychologist ? 'Prescriptions' : 'Your prescriptions',
-            style: AppTypography.headingSmall.copyWith(
-              color: theme.textTheme.titleMedium?.color,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            isPsychologist
-                ? 'Set daily medication reminders for each patient at a fixed time.'
-                : 'Medication reminders appear here when your psychologist assigns them.',
-            style: AppTypography.bodySmall.copyWith(
-              color: theme.textTheme.bodySmall?.color,
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (prescriptions.isEmpty)
-            SmoothCard(
-              borderRadius: 18,
-              padding: const EdgeInsets.all(16),
-              backgroundColor: theme.colorScheme.surface.withOpacity(0.75),
-              child: Row(
-                children: [
-                  Icon(
-                    isPsychologist ? Icons.add_circle_outline : Icons.inbox,
-                    color: Colors.black87,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      isPsychologist
-                          ? 'No prescriptions yet. Add one to schedule reminders for a patient.'
-                          : 'No prescriptions found for your email yet.',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: theme.textTheme.bodySmall?.color,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            Column(
-              children: prescriptions
-                  .map(
-                    (prescription) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _PrescriptionCard(
-                        prescription: prescription,
-                        isPsychologist: isPsychologist,
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
-          if (isPsychologist) ...[
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Add prescription'),
-                onPressed: () {
-                  _showPrescriptionForm(
-                      context, ref, profile?.email ?? demoPsychologistEmail);
-                },
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  void _showPrescriptionForm(
-    BuildContext context,
-    WidgetRef ref,
-    String doctorEmail,
-  ) {
-    final medicationController = TextEditingController();
-    final patientEmailController = TextEditingController();
-    final instructionsController = TextEditingController();
-    var selectedTime = const TimeOfDay(hour: 20, minute: 0);
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => Padding(
-          padding: EdgeInsets.only(
-            left: 18,
-            right: 18,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            top: 18,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'New Prescription',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 18),
-                TextField(
-                  controller: medicationController,
-                  decoration: const InputDecoration(
-                    labelText: 'Medication name',
-                    hintText: 'e.g. Sertraline 50mg',
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: patientEmailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Patient email',
-                    hintText: 'patient@example.com',
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: instructionsController,
-                  minLines: 2,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes / instructions',
-                    hintText: 'Take with food, morning dose, etc.',
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        icon: const Icon(Icons.schedule),
-                        label: Text('Time: ${selectedTime.format(context)}'),
-                        onPressed: () async {
-                          final picked = await showTimePicker(
-                            context: context,
-                            initialTime: selectedTime,
+                      ref.read(appSessionProvider.notifier).updateProfile(
+                            AppProfile(
+                              role: UserRole.patient,
+                              name: ref.read(appSessionProvider).profile?.name ??
+                                  'Patient',
+                              email: ref.read(appSessionProvider).profile?.email ??
+                                  'patient@example.com',
+                              psychologistEmail: psychologist.email,
+                            ),
                           );
-                          if (picked != null) {
-                            setState(() {
-                              selectedTime = picked;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () {
-                      final medication = medicationController.text.trim();
-                      final patientEmail = patientEmailController.text.trim();
-                      final doctorName =
-                          ref.read(appSessionProvider).profile?.name ?? 'Dr.';
-                      final doctorEmail =
-                          ref.read(appSessionProvider).profile?.email ??
-                              demoPsychologistEmail;
-                      if (medication.isEmpty || !patientEmail.contains('@')) {
-                        AppSnackBar.showError(
-                          context,
-                          title: 'Need more details',
-                          message:
-                              'Add a medication and a valid patient email.',
-                        );
-                        return;
-                      }
-                      final prescription = Prescription(
-                        id: DateTime.now().millisecondsSinceEpoch.toString(),
-                        patientName: 'Self',
-                        patientEmail: patientEmail,
-                        prescribedByName: doctorName,
-                        prescribedByEmail: doctorEmail,
-                        medicines: [medication],
-                        reminderTimes: [
-                          MedicationTime(
-                              hour: selectedTime.hour,
-                              minute: selectedTime.minute)
-                        ],
-                        note: instructionsController.text.trim(),
-                        createdAt: DateTime.now(),
-                      );
-                      ref
-                          .read(appSessionProvider.notifier)
-                          .addPrescription(prescription);
-
-                      if (ref
-                          .read(userPreferencesProvider)
-                          .medicationRemindersEnabled) {
-                        NotificationService().scheduleMedicationReminders(
-                          medicines: [medication],
-                          times: [
-                            (
-                              hour: selectedTime.hour,
-                              minute: selectedTime.minute
-                            )
-                          ],
-                        );
-                      }
-
                       AppSnackBar.showSuccess(
                         context,
-                        title: 'Prescription added',
-                        message:
-                            'Daily reminder scheduled for ${selectedTime.format(context)}.',
+                        title: 'Psychologist selected',
+                        message: 'Go to Appointments to book a session.',
                       );
-                      Navigator.of(context).pop();
                     },
-                    child: const Text('Save prescription'),
                   ),
                 ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PrescriptionCard extends ConsumerWidget {
-  final Prescription prescription;
-  final bool isPsychologist;
-
-  const _PrescriptionCard({
-    required this.prescription,
-    required this.isPsychologist,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    return SmoothCard(
-      borderRadius: 18,
-      backgroundColor: theme.colorScheme.surface.withOpacity(0.74),
-      borderColor: Colors.black87.withOpacity(0.18),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        leading: CircleAvatar(
-          backgroundColor: Colors.black87,
-          child: const Icon(Icons.medication, color: Colors.white),
-        ),
-        title: Text(prescription.medicines.join(', '),
-            style: AppTypography.labelLarge),
-        subtitle: Text(
-          '${prescription.patientEmail?.isNotEmpty == true ? '${isPsychologist ? 'Patient' : 'From'}: ${prescription.patientEmail}\n' : ''}'
-          'Time: ${prescription.reminderTimes.isNotEmpty ? prescription.reminderTimes.first.toDisplayString() : 'No time set'}'
-          '${prescription.note.isNotEmpty ? '\n${prescription.note}' : ''}',
-          style: AppTypography.bodySmall,
-        ),
-        isThreeLine: prescription.note.isNotEmpty,
-        trailing: isPsychologist
-            ? IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () {
-                  ref
-                      .read(appSessionProvider.notifier)
-                      .removePrescription(prescription.id);
-                  final prescriptions =
-                      ref.read(appSessionProvider).prescriptions;
-                  if (prescriptions.isNotEmpty) {
-                    final medicines = prescriptions
-                        .expand((p) => p.medicines)
-                        .toSet()
-                        .toList();
-                    final times = prescriptions
-                        .expand((p) => p.reminderTimes
-                            .map((t) => (hour: t.hour, minute: t.minute)))
-                        .toSet()
-                        .toList();
-                    NotificationService().scheduleMedicationReminders(
-                      medicines: medicines,
-                      times: times,
-                    );
-                  }
-                },
-              )
-            : null,
+        ],
       ),
     );
   }

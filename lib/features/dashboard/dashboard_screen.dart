@@ -6,11 +6,8 @@ import '../../app/app_state.dart';
 import '../../app/home_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/services/ollama_service.dart';
-import '../../core/widgets/gradient_background.dart';
 import '../../core/widgets/smooth_widgets.dart';
 import '../../core/widgets/animations.dart';
-import '../../core/widgets/wavy_surface.dart';
 import 'stats_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -43,11 +40,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final session = ref.watch(appSessionProvider);
     final profile = session.profile;
-    final upcomingAppointment = session.appointments
-        .where((appointment) => appointment.startsAt.isAfter(DateTime.now()))
-        .toList()
+    final upcomingAppointment = session.appointments.where((appointment) {
+      if (profile?.role == UserRole.psychologist) {
+        return appointment.psychologistEmail == profile?.email &&
+            appointment.startsAt.isAfter(DateTime.now());
+      }
+      return profile?.email != null &&
+          appointment.patientEmail?.toLowerCase() ==
+              profile!.email!.toLowerCase() &&
+          appointment.startsAt.isAfter(DateTime.now());
+    }).toList()
       ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
     final nextAppointment = upcomingAppointment.isEmpty
         ? 'No upcoming sessions'
@@ -80,93 +85,150 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 12),
-          child: CircleAvatar(
-            backgroundColor: Color(
-              profile?.avatarColorValue ?? AppColors.neonViolet.value,
+          padding: const EdgeInsets.only(left: 14),
+          child: GestureDetector(
+            onTap: () {
+              ref.read(selectedTabProvider.notifier).state = 4; // Go to settings
+            },
+            child: CircleAvatar(
+              backgroundColor: Color(
+                profile?.avatarColorValue ?? AppColors.neonViolet.value,
+              ),
+              backgroundImage: profile?.profileImagePath == null
+                  ? null
+                  : FileImage(File(profile!.profileImagePath!)),
+              child: profile?.profileImagePath == null
+                  ? Icon(
+                      _avatarIconFor(
+                        profile?.avatarIconCodePoint ?? Icons.person.codePoint,
+                      ),
+                      color: Colors.white,
+                      size: 20,
+                    )
+                  : null,
             ),
-            backgroundImage: profile?.profileImagePath == null
-                ? null
-                : FileImage(File(profile!.profileImagePath!)),
-            child: profile?.profileImagePath == null
-                ? Icon(
-                    _avatarIconFor(
-                      profile?.avatarIconCodePoint ?? Icons.person.codePoint,
-                    ),
-                    color: Colors.white,
-                  )
-                : null,
           ),
         ),
-        title: Text('Hey ${profile?.name ?? 'Ahmed'}'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _greeting(),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurface.withValues(alpha: 0.55),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              profile?.name ?? 'Welcome',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const StatsScreen(),
+                ),
+              );
+            },
+            icon: Icon(
+              Icons.insights_outlined,
+              color: scheme.onSurface.withValues(alpha: 0.7),
+            ),
+            tooltip: 'View stats',
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: Container(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: theme.scaffoldBackgroundColor,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.only(top: 92),
+          padding: const EdgeInsets.only(top: 100, bottom: 24),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
             child: StaggeredAnimationBuilder(
               duration: const Duration(milliseconds: 600),
               delay: const Duration(milliseconds: 80),
               children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.black, width: 1.2),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Hello ${profile?.name ?? 'there'}',
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w600,
-                        ),
+                // ── Streak Banner ──
+                if (session.currentStreak > 0 || session.moodEntries.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          scheme.primary.withValues(alpha: 0.12),
+                          scheme.tertiary.withValues(alpha: 0.08),
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      const Text('Writing for today...'),
-                    ],
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: scheme.primary.withValues(alpha: 0.15),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.local_fire_department,
+                          color: scheme.secondary,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            session.currentStreak > 0
+                                ? '${session.currentStreak} day streak — keep it going!'
+                                : 'Log a mood today to start your streak',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                 const SizedBox(height: 16),
-                SmoothCard(
-                  backgroundColor: theme.colorScheme.surface.withOpacity(0.82),
-                  borderColor: const Color(0xFFB7C97B).withOpacity(0.16),
-                  borderRadius: 22,
-                  elevation: 12,
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _DashboardStat(
-                          label: 'Next session',
-                          value: nextAppointment,
-                          icon: Icons.event_available_outlined,
-                        ),
+
+                // ── Quick Stats Row ──
+                _SectionLabel(title: 'Quick Overview', scheme: scheme),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DashboardStat(
+                        label: 'Next session',
+                        value: nextAppointment,
+                        icon: Icons.event_available_outlined,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _DashboardStat(
-                          label: 'Next reminder',
-                          value: nextPrescription,
-                          icon: Icons.medication,
-                        ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _DashboardStat(
+                        label: 'Next reminder',
+                        value: nextPrescription,
+                        icon: Icons.medication_outlined,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                // Weekly Mood Trend Card
+                const SizedBox(height: 20),
+
+                // ── Weekly Mood Trend Card ──
+                _SectionLabel(title: 'Mood Trend', scheme: scheme),
+                const SizedBox(height: 10),
                 SmoothCard(
-                  backgroundColor: theme.colorScheme.surface.withOpacity(0.72),
-                  borderColor: AppColors.neonViolet.withOpacity(0.18),
-                  elevation: 14,
-                  borderRadius: 22,
+                  backgroundColor: scheme.surface.withValues(alpha: 0.72),
+                  borderColor: scheme.primary.withValues(alpha: 0.12),
+                  elevation: 0,
+                  borderRadius: 20,
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,23 +237,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Mood Trend',
-                            style: AppTypography.headingSmall.copyWith(
-                                color: theme.textTheme.titleMedium?.color),
+                            'This Week',
+                            style: AppTypography.labelLarge.copyWith(
+                              color: scheme.onSurface,
+                            ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+                              horizontal: 10,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.black87.withOpacity(0.1),
+                              color: scheme.primary.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              '${ref.watch(appSessionProvider).moodEntries.length} saved',
-                              style: AppTypography.labelMedium.copyWith(
-                                color: Colors.black87,
+                              '${session.moodEntries.length} saved',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: scheme.primary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -199,17 +262,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         ],
                       ),
                       const SizedBox(height: 20),
-                      // Simple bar chart
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: List.generate(
                           7,
                           (i) => _MoodBar(
-                            height: _heightForDay(
-                              ref.watch(appSessionProvider).moodEntries,
-                              i,
-                            ),
+                            height: _heightForDay(session.moodEntries, i),
                             label: [
                               'Mon',
                               'Tue',
@@ -219,70 +278,57 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                               'Sat',
                               'Sun'
                             ][i],
-                            color: Colors.black87,
+                            color: scheme.primary,
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-                // Quick Insights Card
+                // ── Quick Insights Card ──
+                _SectionLabel(title: 'Insights', scheme: scheme),
+                const SizedBox(height: 10),
                 SmoothCard(
-                  backgroundColor: theme.colorScheme.surface.withOpacity(0.72),
-                  borderColor: const Color(0xFFB7C97B).withOpacity(0.24),
-                  borderRadius: 22,
+                  backgroundColor: scheme.surface.withValues(alpha: 0.72),
+                  borderColor: scheme.secondary.withValues(alpha: 0.12),
+                  borderRadius: 20,
                   padding: const EdgeInsets.all(20),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'This Week\'s Insights',
-                        style: AppTypography.headingSmall.copyWith(
-                            color: theme.textTheme.titleMedium?.color),
-                      ),
-                      const SizedBox(height: 16),
                       _InsightRow(
                         icon: Icons.trending_up,
                         title: 'Latest Mood',
-                        value: _latestMoodLabel(
-                          ref.watch(appSessionProvider).moodEntries,
-                        ),
+                        value: _latestMoodLabel(session.moodEntries),
                         theme: theme,
                       ),
-                      const SizedBox(height: 12),
-                      Divider(
-                        height: 1,
-                        color: theme.dividerColor,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Divider(height: 1, color: scheme.onSurface.withValues(alpha: 0.08)),
                       ),
-                      const SizedBox(height: 12),
                       _InsightRow(
                         icon: Icons.calendar_today,
                         title: 'Total Entries',
-                        value:
-                            '${ref.watch(appSessionProvider).moodEntries.length}',
+                        value: '${session.moodEntries.length}',
                         theme: theme,
                       ),
-                      const SizedBox(height: 12),
-                      Divider(
-                        height: 1,
-                        color: theme.dividerColor,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Divider(height: 1, color: scheme.onSurface.withValues(alpha: 0.08)),
                       ),
-                      const SizedBox(height: 12),
                       _InsightRow(
                         icon: Icons.local_fire_department,
-                        title: 'Current Streak',
-                        value:
-                            '${ref.watch(appSessionProvider).currentStreak} days',
+                        title: 'Longest Streak',
+                        value: '${session.longestStreak} days',
                         theme: theme,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
-                // Main CTA Button
+                // ── Main CTA Button ──
                 SizedBox(
                   width: double.infinity,
                   child: SmoothButton(
@@ -290,15 +336,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       ref.read(selectedTabProvider.notifier).state = 1;
                     },
                     label: '+ Log Mood',
-                    backgroundColor: Colors.black87,
-                    textColor: Colors.white,
+                    backgroundColor: scheme.primary,
+                    textColor: scheme.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    borderRadius: 16,
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
-                  child: OutlinedButton(
+                  child: OutlinedButton.icon(
                     onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
@@ -306,7 +353,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         ),
                       );
                     },
-                    child: const Text('View full stats'),
+                    icon: const Icon(Icons.insights_outlined, size: 18),
+                    label: const Text('View full stats'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -316,6 +370,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         ),
       ),
     );
+  }
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
   }
 
   double _heightForDay(List<MoodEntry> entries, int dayIndex) {
@@ -362,135 +423,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   }
 }
 
-/// Calmora AI Sheet
-class _CalmoraAiSheet extends StatefulWidget {
-  const _CalmoraAiSheet();
+/// Section label widget
+class _SectionLabel extends StatelessWidget {
+  final String title;
+  final ColorScheme scheme;
 
-  @override
-  State<_CalmoraAiSheet> createState() => _CalmoraAiSheetState();
-}
-
-class _CalmoraAiSheetState extends State<_CalmoraAiSheet> {
-  final _controller = TextEditingController();
-  final _ai = OllamaService(
-    endpoint: Uri.parse('http://10.0.2.2:8000/chat'),
-  );
-  String _reply =
-      'Ask for a grounding exercise, journaling prompt, or appointment prep.';
-  bool _loading = false;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _send() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty || _loading) {
-      return;
-    }
-    setState(() => _loading = true);
-    try {
-      final response = await _ai.summarize(
-        prompt: 'You are Calmora, a concise mental wellness assistant. '
-            'Be warm, practical, non-clinical, and suggest emergency help for crisis risk.\n\nUser: $text',
-      );
-      setState(() => _reply = response.trim().isEmpty
-          ? 'I could not generate a useful response. Try again in a moment.'
-          : response.trim());
-    } catch (_) {
-      // Fallback to mock AI for hackathon demo
-      final mockResponse = _generateMockResponse(text);
-      setState(() => _reply = mockResponse);
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
-    }
-  }
-
-  String _generateMockResponse(String userInput) {
-    final input = userInput.toLowerCase();
-    if (input.contains('sad') || input.contains('depressed')) {
-      return 'I\'m sorry you\'re feeling down. Try a 4-7-8 breathing exercise: Inhale for 4 seconds, hold for 7, exhale for 8. If this persists, consider talking to a professional.';
-    } else if (input.contains('anxious') || input.contains('worried')) {
-      return 'Anxiety can be tough. Ground yourself by naming 5 things you can see, 4 you can touch, 3 you can hear, 2 you can smell, and 1 you can taste.';
-    } else if (input.contains('happy') || input.contains('good')) {
-      return 'That\'s great to hear! Keep nurturing positive moments. What\'s one thing that made you smile today?';
-    } else if (input.contains('exercise') || input.contains('workout')) {
-      return 'Physical activity is excellent for mental health. Even a 10-minute walk can boost your mood. What\'s your favorite way to move?';
-    } else if (input.contains('sleep')) {
-      return 'Good sleep is crucial. Try maintaining a consistent bedtime routine and avoiding screens an hour before bed.';
-    } else {
-      return 'Thanks for sharing. Remember, it\'s okay to not be okay. If you need immediate help, contact a crisis hotline. What\'s on your mind right now?';
-    }
-  }
+  const _SectionLabel({required this.title, required this.scheme});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 18,
-        right: 18,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.auto_awesome, color: const Color(0xFFB7C97B)),
-              const SizedBox(width: 10),
-              Text(
-                'Calmora AI',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                'Q4 local',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withOpacity(0.72),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: theme.dividerColor),
-            ),
-            child: _loading
-                ? const LinearProgressIndicator()
-                : Text(_reply, style: theme.textTheme.bodyMedium),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _controller,
-            decoration: InputDecoration(
-              hintText: 'Ask me anything...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              suffixIcon: IconButton(
-                onPressed: _send,
-                icon: const Icon(Icons.send),
-              ),
-            ),
-            maxLines: 3,
-            minLines: 1,
-            textInputAction: TextInputAction.send,
-            onSubmitted: (_) => _send(),
-          ),
-        ],
+    return Text(
+      title,
+      style: AppTypography.labelLarge.copyWith(
+        color: scheme.onSurface.withValues(alpha: 0.5),
+        letterSpacing: 0.8,
+        fontSize: 12,
       ),
     );
   }
@@ -510,6 +457,7 @@ class _MoodBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -518,8 +466,15 @@ class _MoodBar extends StatelessWidget {
           height: height,
           width: 28,
           decoration: BoxDecoration(
-            color: color,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                color.withValues(alpha: 0.9),
+                color.withValues(alpha: 0.5),
+              ],
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
           ),
           curve: Curves.easeOutCubic,
         ),
@@ -527,7 +482,7 @@ class _MoodBar extends StatelessWidget {
         Text(
           label,
           style: AppTypography.labelSmall.copyWith(
-            color: Theme.of(context).textTheme.bodySmall?.color,
+            color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
           ),
         ),
       ],
@@ -551,33 +506,34 @@ class _InsightRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = theme.colorScheme;
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: Colors.black87,
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: scheme.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: scheme.primary,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            title,
+            style: AppTypography.bodySmall.copyWith(
+              color: scheme.onSurface.withValues(alpha: 0.6),
             ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.bodySmall
-                      .copyWith(color: theme.textTheme.bodySmall?.color),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
         Text(
           value,
           style: AppTypography.labelLarge.copyWith(
-            color: theme.textTheme.titleMedium?.color,
+            color: scheme.onSurface,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -600,36 +556,45 @@ class _DashboardStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
+    final scheme = theme.colorScheme;
+    return SmoothCard(
+      backgroundColor: scheme.surface.withValues(alpha: 0.85),
+      borderColor: scheme.primary.withValues(alpha: 0.1),
+      borderRadius: 18,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: theme.colorScheme.surface.withOpacity(0.92),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: Colors.black87, size: 18),
-              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Icon(icon, color: scheme.primary, size: 16),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   label,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: theme.textTheme.bodySmall?.color,
+                  style: AppTypography.labelSmall.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.55),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             value,
-            style: AppTypography.labelLarge.copyWith(
-              color: theme.textTheme.titleMedium?.color,
+            style: AppTypography.bodySmall.copyWith(
+              color: scheme.onSurface,
               fontWeight: FontWeight.w700,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

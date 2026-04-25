@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/app_state.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/widgets/gradient_background.dart';
 import '../../core/widgets/smooth_widgets.dart';
 
 class AppLockScreen extends ConsumerStatefulWidget {

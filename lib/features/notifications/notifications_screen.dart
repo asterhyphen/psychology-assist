@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../core/services/notification_service.dart';
 import '../../core/widgets/app_snackbar.dart';
-import '../../core/widgets/gradient_background.dart';
 import '../../core/widgets/smooth_widgets.dart';
 import '../../core/widgets/wavy_surface.dart';
 

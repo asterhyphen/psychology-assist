@@ -24,64 +24,26 @@ class AppSessionStore {
   }
 
   Future<AppSession> load() async {
-  return AppSession(
-    onboardingComplete: true,
-    appLockSet: true,
+    try {
+      final db = await _open();
+      final results = await db.query(
+        _tableName,
+        where: 'id = ?',
+        whereArgs: [_stateKey],
+      );
 
-    profile: AppProfile(
-      role: UserRole.patient,
-      name: 'Aster',
-      email: 'aster@calmora.dev',
-      psychologistEmail: demoPsychologistEmail,
-      avatarColorValue: 0xFF7C4DFF,
-      avatarIconCodePoint: Icons.psychology_alt.codePoint,
-    ),
+      if (results.isEmpty) {
+        // Return a fresh session if nothing was saved
+        return const AppSession();
+      }
 
-    moodEntries: [
-      MoodEntry(
-        createdAt: DateTime.now(),
-        value: 4,
-        label: 'Good',
-        note: 'Calm day',
-      ),
-      MoodEntry(
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        value: 2,
-        label: 'Low',
-        note: 'Bit off',
-      ),
-    ],
-
-    appointments: [
-      Appointment(
-        psychologistEmail: demoPsychologistEmail,
-        psychologistName: 'Dr. Aisha Mehta',
-        patientName: 'Aster',
-        patientEmail: 'aster@calmora.dev',
-        startsAt: DateTime.now().add(const Duration(hours: 3)),
-        type: 'Therapy',
-        note: 'First session',
-        confirmed: true,
-      ),
-    ],
-
-    prescriptions: [
-      Prescription(
-        id: 'rx1',
-        patientName: 'Aster',
-        patientEmail: 'aster@calmora.dev',
-        prescribedByName: 'Dr. Aisha Mehta',
-        prescribedByEmail: demoPsychologistEmail,
-        medicines: ['Sertraline'],
-        reminderTimes: [
-          const MedicationTime(hour: 9, minute: 0),
-        ],
-        note: 'After breakfast',
-        createdAt: DateTime.now(),
-      ),
-    ],
-  );
-}
+      final payload = jsonDecode(results.first['payload'] as String);
+      return _sessionFromJson(payload as Map<String, dynamic>);
+    } catch (e) {
+      // Return a fresh session on any error
+      return const AppSession();
+    }
+  }
 
   Future<void> save(AppSession session) async {
     final db = await _open();
@@ -105,10 +67,10 @@ class AppSessionStore {
       'appointments': session.appointments.map(_appointmentToJson).toList(),
       'prescriptions': session.prescriptions.map(_prescriptionToJson).toList(),
       'moodEntries': session.moodEntries.map(_moodEntryToJson).toList(),
+      'journalEntries':
+          session.journalEntries.map(_journalEntryToJson).toList(),
       'lastUnlockedAt': session.lastUnlockedAt?.toIso8601String(),
       'lockTimeoutMinutes': session.lockTimeoutMinutes,
-      'journalSummary': session.journalSummary,
-      'journalUpdatedAt': session.journalUpdatedAt?.toIso8601String(),
     };
   }
 
@@ -122,6 +84,9 @@ class AppSessionStore {
     final moodEntries = (json['moodEntries'] as List<dynamic>? ?? [])
         .map((item) => _moodEntryFromJson(item as Map<String, dynamic>))
         .toList();
+    final journalEntries = (json['journalEntries'] as List<dynamic>? ?? [])
+        .map((item) => _journalEntryFromJson(item as Map<String, dynamic>))
+        .toList();
 
     return AppSession(
       onboardingComplete: json['onboardingComplete'] as bool? ?? false,
@@ -133,14 +98,11 @@ class AppSessionStore {
       appointments: appointments,
       prescriptions: prescriptions,
       moodEntries: moodEntries,
+      journalEntries: journalEntries,
       lastUnlockedAt: json['lastUnlockedAt'] == null
           ? null
           : DateTime.parse(json['lastUnlockedAt'] as String),
       lockTimeoutMinutes: json['lockTimeoutMinutes'] as int? ?? 10,
-      journalSummary: json['journalSummary'] as String? ?? '',
-      journalUpdatedAt: json['journalUpdatedAt'] == null
-          ? null
-          : DateTime.parse(json['journalUpdatedAt'] as String),
     );
   }
 
@@ -259,6 +221,20 @@ class AppSessionStore {
       value: json['value'] as int? ?? 3,
       label: json['label'] as String? ?? 'Neutral',
       note: json['note'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> _journalEntryToJson(JournalEntry entry) {
+    return {
+      'createdAt': entry.createdAt.toIso8601String(),
+      'content': entry.content,
+    };
+  }
+
+  JournalEntry _journalEntryFromJson(Map<String, dynamic> json) {
+    return JournalEntry(
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      content: json['content'] as String? ?? '',
     );
   }
 

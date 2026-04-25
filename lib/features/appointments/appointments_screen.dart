@@ -4,8 +4,8 @@ import '../../app/app_state.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_snackbar.dart';
-import '../../core/widgets/gradient_background.dart';
 import '../../core/widgets/smooth_widgets.dart';
+import '../psychologists/psychologists_screen.dart';
 
 class AppointmentsScreen extends ConsumerStatefulWidget {
   const AppointmentsScreen({super.key});
@@ -163,6 +163,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
   Widget build(BuildContext context) {
     final session = ref.watch(appSessionProvider);
     final profile = session.profile;
+    final isPsychologist = profile?.role == UserRole.psychologist;
     final appointments = session.appointments
         .where((appointment) => appointment.startsAt.isAfter(DateTime.now()))
         .toList();
@@ -176,7 +177,10 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
-                  child: _AppointmentsHero(profile: profile),
+                  child: _AppointmentsHero(
+                    profile: profile,
+                    isPsychologist: isPsychologist,
+                  ),
                 ),
               ),
               SliverToBoxAdapter(
@@ -186,8 +190,8 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                     borderRadius: 22,
                     elevation: 16,
                     backgroundColor:
-                        Theme.of(context).colorScheme.surface.withOpacity(0.72),
-                    borderColor: AppColors.neonViolet.withOpacity(0.2),
+                        Theme.of(context).colorScheme.surface.withValues(alpha: 0.72),
+                    borderColor: AppColors.neonViolet.withValues(alpha: 0.2),
                     padding: const EdgeInsets.all(18),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,7 +334,10 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                   }
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
-                    child: _AppointmentCard(appointment: appointments[index]),
+                    child: _AppointmentCard(
+                      appointment: appointments[index],
+                      isPsychologist: profile?.role == UserRole.psychologist,
+                    ),
                   );
                 },
               ),
@@ -373,8 +380,9 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
 
 class _AppointmentsHero extends StatelessWidget {
   final AppProfile? profile;
+  final bool isPsychologist;
 
-  const _AppointmentsHero({this.profile});
+  const _AppointmentsHero({this.profile, this.isPsychologist = false});
 
   @override
   Widget build(BuildContext context) {
@@ -388,7 +396,7 @@ class _AppointmentsHero extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.neonViolet.withOpacity(0.35),
+            color: AppColors.neonViolet.withValues(alpha: 0.35),
             blurRadius: 30,
             offset: const Offset(0, 14),
           ),
@@ -405,11 +413,31 @@ class _AppointmentsHero extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Linked psychologist: $linkedEmail',
+            isPsychologist
+                ? 'Your patient sessions'
+                : 'Linked psychologist: $linkedEmail',
             style: AppTypography.bodySmall.copyWith(
-              color: Colors.white.withOpacity(0.86),
+              color: Colors.white.withValues(alpha: 0.86),
             ),
           ),
+          if (!isPsychologist) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const PsychologistsScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.search, size: 16),
+              label: const Text('Find a Psychologist'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -432,84 +460,162 @@ class _PickerChip extends StatelessWidget {
     return ActionChip(
       avatar: Icon(icon, color: AppColors.neonViolet, size: 18),
       label: Text(label),
-      backgroundColor: AppColors.neonViolet.withOpacity(0.08),
-      side: BorderSide(color: AppColors.neonViolet.withOpacity(0.24)),
+      backgroundColor: AppColors.neonViolet.withValues(alpha: 0.08),
+      side: BorderSide(color: AppColors.neonViolet.withValues(alpha: 0.24)),
       onPressed: onTap,
     );
   }
 }
 
-class _AppointmentCard extends StatelessWidget {
+class _AppointmentCard extends ConsumerWidget {
   final Appointment appointment;
+  final bool isPsychologist;
 
-  const _AppointmentCard({required this.appointment});
+  const _AppointmentCard({
+    required this.appointment,
+    this.isPsychologist = false,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final date = appointment.startsAt;
     final minutes = date.minute.toString().padLeft(2, '0');
-    return SmoothCard(
-      borderRadius: 20,
-      backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.72),
-      borderColor: const Color(0xFFB7C97B).withOpacity(0.3),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFFB7C97B).withOpacity(0.16),
+    return GestureDetector(
+      onTap: () => _showAppointmentDetails(context, ref),
+      child: SmoothCard(
+        borderRadius: 20,
+        backgroundColor:
+            Theme.of(context).colorScheme.surface.withValues(alpha: 0.72),
+        borderColor: const Color(0xFFB7C97B).withValues(alpha: 0.3),
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFB7C97B).withValues(alpha: 0.16),
+              ),
+              child: const Icon(Icons.video_call, color: AppColors.deepViolet),
             ),
-            child: const Icon(Icons.video_call, color: AppColors.deepViolet),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${appointment.type} with ${appointment.psychologistName}',
-                  style: AppTypography.labelLarge,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${date.day}/${date.month}/${date.year} at ${date.hour}:$minutes',
-                  style: AppTypography.bodySmall,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  appointment.psychologistEmail,
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.neonViolet,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${appointment.type} with ${isPsychologist ? appointment.patientName : appointment.psychologistName}',
+                    style: AppTypography.labelLarge,
                   ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      appointment.confirmed
-                          ? Icons.verified_outlined
-                          : Icons.pending_actions_outlined,
-                      size: 14,
-                      color: appointment.confirmed
-                          ? AppColors.success
-                          : AppColors.warning,
+                  const SizedBox(height: 4),
+                  Text(
+                    '${date.day}/${date.month}/${date.year} at ${date.hour}:$minutes',
+                    style: AppTypography.bodySmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isPsychologist
+                        ? (appointment.patientEmail ?? 'Unknown')
+                        : appointment.psychologistEmail,
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.neonViolet,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      appointment.confirmed ? 'Confirmed' : 'Requested',
-                      style: AppTypography.caption.copyWith(
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        appointment.confirmed
+                            ? Icons.verified_outlined
+                            : Icons.pending_actions_outlined,
+                        size: 14,
                         color: appointment.confirmed
                             ? AppColors.success
                             : AppColors.warning,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 4),
+                      Text(
+                        appointment.confirmed ? 'Confirmed' : 'Requested',
+                        style: AppTypography.caption.copyWith(
+                          color: appointment.confirmed
+                              ? AppColors.success
+                              : AppColors.warning,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.neonViolet),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAppointmentDetails(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${appointment.type} Details'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'With: ${isPsychologist ? appointment.patientName : appointment.psychologistName}',
+                style: AppTypography.labelLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Date: ${appointment.startsAt.day}/${appointment.startsAt.month}/${appointment.startsAt.year}',
+                style: AppTypography.bodyMedium,
+              ),
+              Text(
+                'Time: ${appointment.startsAt.hour.toString().padLeft(2, '0')}:${appointment.startsAt.minute.toString().padLeft(2, '0')}',
+                style: AppTypography.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Status: ${appointment.confirmed ? 'Confirmed' : 'Pending'}',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: appointment.confirmed
+                      ? AppColors.success
+                      : AppColors.warning,
+                ),
+              ),
+              if (appointment.note.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Notes:',
+                  style: AppTypography.labelMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  appointment.note,
+                  style: AppTypography.bodyMedium,
                 ),
               ],
+            ],
+          ),
+        ),
+        actions: [
+          if (isPsychologist && !appointment.confirmed)
+            TextButton(
+              onPressed: () {
+                ref
+                    .read(appSessionProvider.notifier)
+                    .approveAppointment(appointment);
+                Navigator.of(context).pop();
+              },
+              child: const Text('Approve'),
             ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -524,42 +630,113 @@ class _PrescriptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SmoothCard(
-      borderRadius: 20,
-      backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.72),
-      borderColor: AppColors.success.withOpacity(0.3),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Prescription from ${prescription.prescribedByName}',
-            style: AppTypography.labelLarge,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Patient: ${prescription.patientName}',
-            style: AppTypography.bodySmall,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: prescription.medicines
-                .map((medicine) => Chip(label: Text(medicine)))
-                .toList(),
-          ),
-          if (prescription.note.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              prescription.note,
-              style: AppTypography.bodySmall,
+    return GestureDetector(
+      onTap: () => _showPrescriptionDetails(context),
+      child: SmoothCard(
+        borderRadius: 20,
+        backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.72),
+        borderColor: AppColors.success.withValues(alpha: 0.3),
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.success.withValues(alpha: 0.16),
+              ),
+              child: const Icon(Icons.medical_services, color: AppColors.success),
             ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'From ${prescription.prescribedByName}',
+                    style: AppTypography.labelLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    prescription.medicines.take(2).join(', ') +
+                        (prescription.medicines.length > 2 ? '...' : ''),
+                    style: AppTypography.bodySmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Issued ${prescription.createdAt.day}/${prescription.createdAt.month}/${prescription.createdAt.year}',
+                    style: AppTypography.caption,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.neonViolet),
           ],
-          const SizedBox(height: 8),
-          Text(
-            'Issued ${prescription.createdAt.day}/${prescription.createdAt.month}/${prescription.createdAt.year}',
-            style: AppTypography.caption,
+        ),
+      ),
+    );
+  }
+
+  void _showPrescriptionDetails(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Prescription Details'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Prescribed by: ${prescription.prescribedByName}',
+                style: AppTypography.labelLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Patient: ${prescription.patientName}',
+                style: AppTypography.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Medicines:',
+                style: AppTypography.labelMedium,
+              ),
+              const SizedBox(height: 4),
+              ...prescription.medicines.map((medicine) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    const Icon(Icons.medication, size: 16, color: AppColors.success),
+                    const SizedBox(width: 8),
+                    Text(medicine, style: AppTypography.bodyMedium),
+                  ],
+                ),
+              )),
+              if (prescription.note.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Notes:',
+                  style: AppTypography.labelMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  prescription.note,
+                  style: AppTypography.bodyMedium,
+                ),
+              ],
+              const SizedBox(height: 12),
+              Text(
+                'Prescribed on: ${prescription.createdAt.day}/${prescription.createdAt.month}/${prescription.createdAt.year} at ${prescription.createdAt.hour.toString().padLeft(2, '0')}:${prescription.createdAt.minute.toString().padLeft(2, '0')}',
+                style: AppTypography.caption,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -574,7 +751,7 @@ class _EmptyAppointments extends StatelessWidget {
   Widget build(BuildContext context) {
     return SmoothCard(
       borderRadius: 20,
-      backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.72),
+      backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.72),
       padding: const EdgeInsets.all(20),
       child: const Row(
         children: [
