@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Enum for available themes
-enum AppThemeMode { light, dark, medical, journal }
+enum AppThemeMode { light, dark, journal }
 
 /// Riverpod provider for theme mode state
 final themeModeProvider =

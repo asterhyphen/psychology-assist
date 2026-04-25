@@ -87,8 +87,6 @@ class _MyAppState extends ConsumerState<MyApp> {
           return AppThemes.lightTheme;
         case AppThemeMode.dark:
           return AppThemes.darkTheme;
-        case AppThemeMode.medical:
-          return AppThemes.medicalTheme;
         case AppThemeMode.journal:
           return AppThemes.journalTheme;
       }
@@ -101,11 +99,11 @@ class _MyAppState extends ConsumerState<MyApp> {
       themeMode:
           themeMode == AppThemeMode.dark ? ThemeMode.dark : ThemeMode.light,
       home: AnimatedSwitcher(
-  duration: const Duration(milliseconds: 500),
-  child: !session.onboardingComplete
-      ? const OnboardingScreen()
-      : const AppLockGate(),
-),
+        duration: const Duration(milliseconds: 500),
+        child: !session.onboardingComplete
+            ? const OnboardingScreen()
+            : const AppLockGate(),
+      ),
       onGenerateRoute: AppRouter.generateRoute,
       debugShowCheckedModeBanner: false,
     );

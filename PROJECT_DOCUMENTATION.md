@@ -25,7 +25,7 @@ lib/
 │       └── app_router.dart       # Route definitions
 ├── core/
 │   ├── theme/
-│   │   ├── app_colors.dart       # Color palettes (light/dark/medical)
+│   │   ├── app_colors.dart       # Color palettes (light/dark)
 │   │   ├── app_typography.dart   # Text styles
 │   │   └── app_theme.dart        # Material 3 themes
 │   ├── widgets/
@@ -48,7 +48,7 @@ lib/
 ### State Management
 
 **Riverpod** is used for state management:
-- `themeModeProvider`: Manages light/dark/medical theme switching
+- `themeModeProvider`: Manages light/dark/journal theme switching
 - `userPreferencesProvider`: Stores notification preferences, intervals
 - `selectedTabProvider`: Tracks bottom navigation state
 
@@ -68,10 +68,7 @@ Three complete color palettes:
    - Secondary: `#7FD9BE` (lighter green)
    - Accent: `#F5B5AA` (lighter coral)
 
-3. **Medical Theme** - Clinical, professional
-   - Primary: `#4A90E2` (healthcare blue)
-   - Secondary: `#50C878` (healthcare green)
-   - Accent: `#FFBA47` (soft amber)
+3. **Journal Theme** - Handwritten, artistic
 
 ### Mood Colors
 
@@ -109,7 +106,7 @@ Clean, professional hierarchy:
 - **Theme Switcher**: Light / Dark / Medical themes
 - **Notification Controls**:
   - Master enable/disable
-  - Mood check-in frequency (2-12 hours)
+  - Mood check-in frequency (2-12 houJourn
   - Medication reminders
 - **Privacy Banner**: Highlights data security practices
 - **About Section**: App version and tech stack
@@ -404,7 +401,7 @@ This is a demonstration project showing:
 - Medical/clinical UI design
 
 Feel free to use as a template or reference.
-
+Beautifu
 ---
 
 **Built with care for mental wellness.** ✨

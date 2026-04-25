@@ -351,7 +351,7 @@ To migrate from one theme to another:
 enum AppThemeMode {
   light,
   dark,
-  medical,
+  journal,
   ios,  // Add new mode
 }
 

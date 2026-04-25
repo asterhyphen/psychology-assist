@@ -72,7 +72,6 @@ class PsychologistsScreen extends ConsumerWidget {
   }
 }
 
-
 class _PsychologistDashboard extends ConsumerWidget {
   const _PsychologistDashboard();
 
@@ -157,7 +156,9 @@ class _PsychologistDashboard extends ConsumerWidget {
                     Expanded(
                       child: _SummaryCard(
                         title: 'Active Patients',
-                        value: _getUniquePatients(confirmedAppointments).length.toString(),
+                        value: _getUniquePatients(confirmedAppointments)
+                            .length
+                            .toString(),
                         icon: Icons.groups,
                         color: AppColors.neonViolet,
                       ),
@@ -167,7 +168,7 @@ class _PsychologistDashboard extends ConsumerWidget {
                       child: _SummaryCard(
                         title: 'Prescriptions',
                         value: prescriptions.length.toString(),
-                        icon: Icons.medical_services,
+                        icon: Icons.assignment,
                         color: AppColors.neonCyan,
                       ),
                     ),
@@ -186,7 +187,8 @@ class _PsychologistDashboard extends ConsumerWidget {
                   child: SmoothCard(
                     borderRadius: 16,
                     padding: const EdgeInsets.all(16),
-                    backgroundColor: AppColors.neonViolet.withValues(alpha: 0.1),
+                    backgroundColor:
+                        AppColors.neonViolet.withValues(alpha: 0.1),
                     borderColor: AppColors.neonViolet.withValues(alpha: 0.3),
                     child: Row(
                       children: [
@@ -222,9 +224,11 @@ class _PsychologistDashboard extends ConsumerWidget {
                                         type: 'Therapy',
                                         note: '',
                                       );
-                                      _showPrescriptionDialog(context, ref, mockAppt);
+                                      _showPrescriptionDialog(
+                                          context, ref, mockAppt);
                                     },
-                                    icon: const Icon(Icons.medical_services, size: 16),
+                                    icon:
+                                        const Icon(Icons.assignment, size: 16),
                                     label: const Text('Prescribe'),
                                     style: OutlinedButton.styleFrom(
                                       visualDensity: VisualDensity.compact,
@@ -236,14 +240,15 @@ class _PsychologistDashboard extends ConsumerWidget {
                                       Navigator.of(context).push(
                                         MaterialPageRoute<void>(
                                           builder: (_) => ChatScreen(
-                                            otherUserId: 'patient', 
+                                            otherUserId: 'patient',
                                             otherUserName: 'Demo Patient',
                                             currentUserId: email,
                                           ),
                                         ),
                                       );
                                     },
-                                    icon: const Icon(Icons.chat_bubble, size: 16),
+                                    icon:
+                                        const Icon(Icons.chat_bubble, size: 16),
                                     label: const Text('Message'),
                                     style: FilledButton.styleFrom(
                                       visualDensity: VisualDensity.compact,
@@ -282,7 +287,8 @@ class _PsychologistDashboard extends ConsumerWidget {
                             message: 'Appointment confirmed.',
                           );
                         },
-                        onPrescribe: () => _showPrescriptionDialog(context, ref, appointment),
+                        onPrescribe: () =>
+                            _showPrescriptionDialog(context, ref, appointment),
                       ),
                     ),
                   ),
@@ -301,14 +307,16 @@ class _PsychologistDashboard extends ConsumerWidget {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: _ConfirmedAppointmentCard(
                         appointment: appointment,
-                        onPrescribe: () => _showPrescriptionDialog(context, ref, appointment),
+                        onPrescribe: () =>
+                            _showPrescriptionDialog(context, ref, appointment),
                         onMessage: () {
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(
                               builder: (_) => ChatScreen(
                                 otherUserId: 'patient', // Demo patient ID
                                 otherUserName: appointment.patientName,
-                                currentUserId: appointment.psychologistEmail, // Current psychologist ID
+                                currentUserId: appointment
+                                    .psychologistEmail, // Current psychologist ID
                               ),
                             ),
                           );
@@ -368,11 +376,15 @@ class _PsychologistDashboard extends ConsumerWidget {
                                   children: [
                                     Row(
                                       children: [
-                                        Icon(Icons.auto_awesome, size: 14, color: AppColors.neonViolet),
+                                        Icon(Icons.auto_awesome,
+                                            size: 14,
+                                            color: AppColors.neonViolet),
                                         const SizedBox(width: 6),
                                         Text(
                                           'AI Summary',
-                                          style: AppTypography.labelSmall.copyWith(color: AppColors.neonViolet),
+                                          style: AppTypography.labelSmall
+                                              .copyWith(
+                                                  color: AppColors.neonViolet),
                                         ),
                                       ],
                                     ),
@@ -401,31 +413,31 @@ class _PsychologistDashboard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   ...prescriptions.take(3).map(
-                    (prescription) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: SmoothCard(
-                        borderRadius: 12,
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              prescription.patientName,
-                              style: AppTypography.labelLarge,
+                        (prescription) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: SmoothCard(
+                            borderRadius: 12,
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  prescription.patientName,
+                                  style: AppTypography.labelLarge,
+                                ),
+                                Text(
+                                  prescription.medicines.join(', '),
+                                  style: AppTypography.bodySmall,
+                                ),
+                                Text(
+                                  'Created: ${_formatDate(prescription.createdAt)}',
+                                  style: AppTypography.caption,
+                                ),
+                              ],
                             ),
-                            Text(
-                              prescription.medicines.join(', '),
-                              style: AppTypography.bodySmall,
-                            ),
-                            Text(
-                              'Created: ${_formatDate(prescription.createdAt)}',
-                              style: AppTypography.caption,
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  ),
                 ],
               ],
             ),
@@ -533,7 +545,8 @@ class _PsychologistDashboard extends ConsumerWidget {
                         initialTime: TimeOfDay.now(),
                       );
                       if (time != null) {
-                        final newTime = MedicationTime(hour: time.hour, minute: time.minute);
+                        final newTime = MedicationTime(
+                            hour: time.hour, minute: time.minute);
                         if (!selectedTimes.contains(newTime)) {
                           setDialogState(() => selectedTimes.add(newTime));
                         }
@@ -719,7 +732,7 @@ class _AppointmentRequestCard extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: onPrescribe,
-                  icon: const Icon(Icons.medical_services, size: 16),
+                  icon: const Icon(Icons.assignment, size: 16),
                   label: const Text('Prescribe'),
                 ),
               ),
@@ -780,7 +793,7 @@ class _ConfirmedAppointmentCard extends StatelessWidget {
                   children: [
                     OutlinedButton.icon(
                       onPressed: onPrescribe,
-                      icon: const Icon(Icons.medical_services, size: 16),
+                      icon: const Icon(Icons.assignment, size: 16),
                       label: const Text('Prescribe'),
                       style: OutlinedButton.styleFrom(
                         visualDensity: VisualDensity.compact,
@@ -860,10 +873,12 @@ class _PsychologistCard extends ConsumerWidget {
                       ref.read(appSessionProvider.notifier).updateProfile(
                             AppProfile(
                               role: UserRole.patient,
-                              name: ref.read(appSessionProvider).profile?.name ??
-                                  'Patient',
-                              email: ref.read(appSessionProvider).profile?.email ??
-                                  'patient@example.com',
+                              name:
+                                  ref.read(appSessionProvider).profile?.name ??
+                                      'Patient',
+                              email:
+                                  ref.read(appSessionProvider).profile?.email ??
+                                      'patient@example.com',
                               psychologistEmail: psychologist.email,
                             ),
                           );

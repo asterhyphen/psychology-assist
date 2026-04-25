@@ -32,17 +32,6 @@ class AppColors {
   static const Color darkBorder = Color(0xFF374151); // Dark gray
   static const Color darkDivider = Color(0xFF1F2937); // Very dark gray
 
-  // Medical Theme (Soft & Clinical)
-  static const Color medicalBg = Color(0xFFF8FAFB);
-  static const Color medicalSurface = Color(0xFFFFFFFF);
-  static const Color medicalPrimary = neonViolet;
-  static const Color medicalSecondary = neonCyan;
-  static const Color medicalAccent = neonPink;
-  static const Color medicalText = Color(0xFF2C3E50);
-  static const Color medicalSubtext = Color(0xFF7F8C8D);
-  static const Color medicalBorder = Color(0xFFECF0F1);
-  static const Color medicalDivider = Color(0xFFF5F7FA);
-
   // Universal semantic colors
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);

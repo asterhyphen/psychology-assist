@@ -190,8 +190,10 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                   child: SmoothCard(
                     borderRadius: 22,
                     elevation: 16,
-                    backgroundColor:
-                        Theme.of(context).colorScheme.surface.withValues(alpha: 0.72),
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
+                        .surface
+                        .withValues(alpha: 0.72),
                     borderColor: AppColors.neonViolet.withValues(alpha: 0.2),
                     padding: const EdgeInsets.all(18),
                     child: Column(
@@ -439,7 +441,8 @@ class _AppointmentsHero extends StatelessWidget {
                   label: const Text('Find a Psychologist'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
+                    side:
+                        BorderSide(color: Colors.white.withValues(alpha: 0.5)),
                   ),
                 ),
                 if (profile?.hasPsychologist == true)
@@ -661,7 +664,8 @@ class _PrescriptionCard extends StatelessWidget {
       onTap: () => _showPrescriptionDetails(context),
       child: SmoothCard(
         borderRadius: 20,
-        backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.72),
+        backgroundColor:
+            Theme.of(context).colorScheme.surface.withValues(alpha: 0.72),
         borderColor: AppColors.success.withValues(alpha: 0.3),
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -673,7 +677,7 @@ class _PrescriptionCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: AppColors.success.withValues(alpha: 0.16),
               ),
-              child: const Icon(Icons.medical_services, color: AppColors.success),
+              child: const Icon(Icons.check_circle, color: AppColors.success),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -731,15 +735,16 @@ class _PrescriptionCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               ...prescription.medicines.map((medicine) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    const Icon(Icons.medication, size: 16, color: AppColors.success),
-                    const SizedBox(width: 8),
-                    Text(medicine, style: AppTypography.bodyMedium),
-                  ],
-                ),
-              )),
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.medication,
+                            size: 16, color: AppColors.success),
+                        const SizedBox(width: 8),
+                        Text(medicine, style: AppTypography.bodyMedium),
+                      ],
+                    ),
+                  )),
               if (prescription.note.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
@@ -778,7 +783,8 @@ class _EmptyAppointments extends StatelessWidget {
   Widget build(BuildContext context) {
     return SmoothCard(
       borderRadius: 20,
-      backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.72),
+      backgroundColor:
+          Theme.of(context).colorScheme.surface.withValues(alpha: 0.72),
       padding: const EdgeInsets.all(20),
       child: const Row(
         children: [

@@ -6,7 +6,6 @@ class AppThemes {
 
   static ThemeData get lightTheme => AppTheme.light();
   static ThemeData get darkTheme => AppTheme.dark();
-  static ThemeData get medicalTheme => AppTheme.light();
   static ThemeData get journalTheme => AppTheme.journal();
 }
 

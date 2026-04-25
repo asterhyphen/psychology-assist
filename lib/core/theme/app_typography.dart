@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Consistent typography for medical aesthetic: clean, readable, professional
+/// Consistent typography for professional aesthetic: clean, readable, modern
 class AppTypography {
   // Display/Large Headings
   static const TextStyle displayLarge = TextStyle(

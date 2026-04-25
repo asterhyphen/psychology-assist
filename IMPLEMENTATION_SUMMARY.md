@@ -11,7 +11,7 @@
 ### Core Architecture
 - ✅ **Modular folder structure** - Organized by features (dashboard, mood_log, settings)
 - ✅ **Riverpod state management** - Theme switching, user preferences
-- ✅ **Material 3 theme system** - 3 complete palettes (light, dark, medical)
+- ✅ **Material 3 theme system** - Complete light, dark and journal palettes
 - ✅ **Clean code patterns** - Reusable components, separation of concerns
 
 ### Screens (3 Fully Implemented)
@@ -33,7 +33,7 @@
 - Back navigation with state management
 
 #### 3. Settings Screen (`lib/features/settings/settings_screen.dart`)
-- Theme switcher (Light, Dark, Medical)
+- Theme switcher (Light, Dark, Journal)
 - Master notification enable/disable toggle
 - Mood check-in frequency slider (2-12 hours)
 - Medication reminder toggle
@@ -60,13 +60,12 @@
 **Colors** (`lib/core/theme/app_colors.dart`):
 - Light theme: Calm blue, soft green, soft coral
 - Dark theme: Lighter variants for low-light
-- Medical theme: Professional healthcare colors
 - Semantic colors: Success, warning, error, info
 - Mood colors: 5-tier emotion representation
 
 **Typography** (`lib/core/theme/app_typography.dart`):
 - 10 text styles from display to caption
-- Professional medical aesthetic
+- Professional aesthetic
 - Optimized for readability and accessibility
 - Consistent letter spacing and line height
 
@@ -79,7 +78,7 @@
 ### State Management
 
 **Theme Provider** (`lib/app/theme_provider.dart`):
-- `AppThemeMode` enum (light, dark, medical)
+- `AppThemeMode` enum (light, dark, journal)
 - `themeModeProvider` for app-wide theme state
 - `ThemeModeNotifier` for theme switching
 - Persistent across navigation
@@ -173,7 +172,7 @@ psychol/
 
 ### Visual Design
 - **Minimal UI**: Only essential elements, zero clutter
-- **Clinical Aesthetic**: Professional medical-inspired colors
+- **Professional Aesthetic**: Clean, modern design
 - **Rounded Cards**: 16dp border radius throughout
 - **Soft Shadows**: Subtle elevation without aggression
 - **Ample Whitespace**: Breathing room between elements
@@ -302,7 +301,7 @@ This project demonstrates:
 - ✅ Material 3 implementation
 - ✅ Custom animation systems
 - ✅ Reusable component design
-- ✅ Clinical/medical UI aesthetics
+- ✅ Professional UI aesthetics
 - ✅ Local notification handling
 - ✅ Theme system architecture
 - ✅ Modular code organization
@@ -325,7 +324,7 @@ flutter run
 
 ### Test Themes
 - Access Settings → Appearance
-- Switch between Light, Dark, Medical themes
+- Switch between Light, Dark, Journal themes
 - Changes persist across tabs
 
 ### Test Mood Logging
