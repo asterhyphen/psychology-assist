@@ -843,7 +843,30 @@ class _PsychologistCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(psychologist.name, style: AppTypography.labelLarge),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: Text(psychologist.name, style: AppTypography.labelLarge)),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 16),
+                        const SizedBox(width: 4),
+                        Text(psychologist.rating.toStringAsFixed(1), style: AppTypography.labelMedium),
+                      ],
+                    ),
+                  ],
+                ),
+                if (psychologist.rating >= 4.8) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('🌟 Highly Recommended', style: AppTypography.caption.copyWith(color: AppColors.success, fontWeight: FontWeight.bold)),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Text(psychologist.specialty, style: AppTypography.bodySmall),
                 const SizedBox(height: 6),

@@ -5,11 +5,62 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/smooth_widgets.dart';
 
-class StatsScreen extends ConsumerWidget {
+import 'package:uuid/uuid.dart';
+
+class StatsScreen extends ConsumerStatefulWidget {
   const StatsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StatsScreen> createState() => _StatsScreenState();
+}
+
+class _StatsScreenState extends ConsumerState<StatsScreen> {
+  bool _isGenerating = false;
+
+  Future<void> _generateAndSendReport(AppSession session) async {
+    setState(() => _isGenerating = true);
+    
+    // Simulate AI generation delay without feeling "too AI-y"
+    await Future.delayed(const Duration(seconds: 2));
+    
+    final doctorEmail = session.profile?.psychologistEmail ?? demoPsychologistEmail;
+    final patientEmail = session.profile?.email ?? 'patient@example.com';
+    final patientName = session.profile?.name ?? 'Patient';
+    
+    final recentMoods = session.moodEntries.reversed.take(5).map((e) => e.label).join(', ');
+    final driftIndex = (session.profile?.driftIndex ?? 0.0).toStringAsFixed(2);
+    
+    final reportContent = '''
+**Wellness Report for $patientName**
+Generated on: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}
+
+**Recent Mood Trends**: $recentMoods
+**Overall Drift Index**: $driftIndex
+
+**Insights**:
+Based on recent check-ins and journal patterns, the patient is showing steady engagement but may benefit from discussing cognitive reframing strategies during the next session.
+''';
+
+    ref.read(appSessionProvider.notifier).addMessage(
+      ChatMessage(
+        id: const Uuid().v4(),
+        senderId: patientEmail,
+        receiverId: doctorEmail,
+        content: reportContent,
+        timestamp: DateTime.now(),
+      ),
+    );
+
+    if (mounted) {
+      setState(() => _isGenerating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Wellness report compiled and securely sent to your doctor.')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final session = ref.watch(appSessionProvider);
     final entries = session.moodEntries.toList();
     final averageMood = entries.isEmpty
@@ -118,6 +169,21 @@ class StatsScreen extends ConsumerWidget {
                         child: _JournalPreview(entry: entry),
                       ),
                     ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _isGenerating ? null : () => _generateAndSendReport(session),
+                      icon: _isGenerating 
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Icon(Icons.send_rounded, size: 18),
+                      label: Text(_isGenerating ? 'Compiling Report...' : 'Compile & Send Wellness Report'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.neonViolet,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

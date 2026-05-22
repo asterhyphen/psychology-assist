@@ -13,8 +13,8 @@ class CalmoraAiSheet extends ConsumerStatefulWidget {
 class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
   final _controller = TextEditingController();
   final _endpoint = Uri.parse('http://10.16.209.73:8000/chat');
-  String _chatHistory = 'CalmoraAI: Hello! I am CalmoraAI, your privacy-focused assistant. How can I support you today?\n\n';
-  String _aiContext = 'You are Calmora, a concise mental wellness assistant. Be warm, practical, non-clinical, and suggest emergency help for crisis risk.\n\n';
+  String _chatHistory = 'CalmoraAI: Hello! I am CalmoraAI, your privacy-focused assistant. Let\'s explore what\'s on your mind together.\n\n';
+  String _aiContext = 'You are Calmora, a concise mental wellness assistant. Use Cognitive Behavioral Therapy (CBT) guided responses. Focus on cognitive restructuring, identifying cognitive distortions, and gentle behavioral activation. Be warm, practical, non-clinical, and suggest emergency help for crisis risk.\n\n';
   bool _loading = false;
   final String _selectedModel = OllamaService.defaultQuantizedModel;
 
@@ -69,17 +69,17 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
   String _generateMockResponse(String userInput) {
     final input = userInput.toLowerCase();
     if (input.contains('sad') || input.contains('depressed')) {
-      return 'I\'m sorry you\'re feeling down. Try a 4-7-8 breathing exercise: Inhale for 4 seconds, hold for 7, exhale for 8. If this persists, consider talking to a professional.';
+      return 'It sounds like you\'re carrying a heavy weight. Let\'s look at your thoughts right now. Are you perhaps engaging in "all-or-nothing" thinking? What\'s a small, gentle action you could take today to break the cycle?';
     } else if (input.contains('anxious') || input.contains('worried')) {
-      return 'Anxiety can be tough. Ground yourself by naming 5 things you can see, 4 you can touch, 3 you can hear, 2 you can smell, and 1 you can taste.';
+      return 'Anxiety often tells us a story about the worst-case scenario. Can we try to challenge that thought? Is there concrete evidence that the worst will happen, or is it a "what if"? Let\'s try to find a more balanced perspective.';
     } else if (input.contains('happy') || input.contains('good')) {
-      return 'That\'s great to hear! Keep nurturing positive moments. What\'s one thing that made you smile today?';
-    } else if (input.contains('exercise') || input.contains('workout')) {
-      return 'Physical activity is excellent for mental health. Even a 10-minute walk can boost your mood. What\'s your favorite way to move?';
-    } else if (input.contains('sleep')) {
-      return 'Good sleep is crucial. Try maintaining a consistent bedtime routine and avoiding screens an hour before bed.';
+      return 'I\'m glad you\'re feeling positive! It\'s important to recognize and savor these moments. What specific thought or action helped you feel this way?';
+    } else if (input.contains('overwhelmed') || input.contains('stress')) {
+      return 'When we feel overwhelmed, our mind can "catastrophize." Let\'s break this down into smaller, manageable steps. What is one tiny thing you can focus on right now instead of the whole picture?';
+    } else if (input.contains('worthless') || input.contains('failure')) {
+      return 'That sounds like a very painful "labeling" thought. Remember, a single mistake or difficult moment doesn\'t define your worth. What would you say to a good friend who told you they felt this way?';
     } else {
-      return 'Thanks for sharing. Remember, it\'s okay to not be okay. If you need immediate help, contact a crisis hotline. What\'s on your mind right now?';
+      return 'Thank you for sharing that. It\'s completely normal to have complex feelings. Let\'s explore the thought behind the emotion—what\'s the main story your mind is telling you right now?';
     }
   }
 

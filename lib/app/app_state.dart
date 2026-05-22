@@ -305,6 +305,7 @@ class AppPsychologist {
   final String specialty;
   final String availability;
   final bool acceptingPatients;
+  final double rating;
 
   const AppPsychologist({
     required this.name,
@@ -312,6 +313,7 @@ class AppPsychologist {
     required this.specialty,
     required this.availability,
     this.acceptingPatients = true,
+    this.rating = 4.8,
   });
 }
 
@@ -321,18 +323,21 @@ const demoPsychologists = [
     email: demoPsychologistEmail,
     specialty: 'Anxiety and young adult care',
     availability: 'Mon, Wed, Fri',
+    rating: 4.9,
   ),
   AppPsychologist(
     name: 'Dr. Rohan Sen',
     email: 'rohan.sen@psychol.demo',
     specialty: 'CBT and stress management',
     availability: 'Tue, Thu',
+    rating: 4.7,
   ),
   AppPsychologist(
     name: 'Dr. Kavya Iyer',
     email: 'kavya.iyer@psychol.demo',
     specialty: 'Mood support and sleep',
     availability: 'Weekends',
+    rating: 4.8,
   ),
 ];
 
