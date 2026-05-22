@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../app/app_state.dart';
 import '../../core/services/ollama_service.dart';
 
 class CalmoraAiSheet extends ConsumerStatefulWidget {
