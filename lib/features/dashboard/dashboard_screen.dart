@@ -9,6 +9,8 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/smooth_widgets.dart';
 import '../../core/widgets/animations.dart';
 import '../calmora/calmora_ai_sheet.dart';
+import '../breathing_exercise/breathing_exercise_screen.dart';
+import '../journaling/typing_test_screen.dart';
 import 'stats_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -330,6 +332,42 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 24),
+
+                // ── Tools ──
+                _SectionLabel(title: 'Wellness Tools', scheme: scheme),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SmoothButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const BreathingExerciseScreen()),
+                          );
+                        },
+                        label: 'Breathe',
+                        icon: const Icon(Icons.air, color: Colors.white, size: 18),
+                        backgroundColor: scheme.tertiary,
+                        textColor: scheme.onTertiary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SmoothButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const TypingTestScreen()),
+                          );
+                        },
+                        label: 'Typing Test',
+                        icon: const Icon(Icons.keyboard, color: Colors.white, size: 18),
+                        backgroundColor: scheme.secondary,
+                        textColor: scheme.onSecondary,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
 

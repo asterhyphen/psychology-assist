@@ -14,6 +14,7 @@ class AppProfile {
   final int avatarIconCodePoint;
   final int avatarColorValue;
   final String? profileImagePath;
+  final double driftIndex;
 
   const AppProfile({
     required this.role,
@@ -24,6 +25,7 @@ class AppProfile {
     this.avatarIconCodePoint = 0xe7fd,
     this.avatarColorValue = 0xFF8B5CF6,
     this.profileImagePath,
+    this.driftIndex = 0.0,
   });
 
   bool get hasPsychologist =>
@@ -38,6 +40,7 @@ class AppProfile {
     int? avatarIconCodePoint,
     int? avatarColorValue,
     String? profileImagePath,
+    double? driftIndex,
   }) {
     return AppProfile(
       role: role ?? this.role,
@@ -48,6 +51,7 @@ class AppProfile {
       avatarIconCodePoint: avatarIconCodePoint ?? this.avatarIconCodePoint,
       avatarColorValue: avatarColorValue ?? this.avatarColorValue,
       profileImagePath: profileImagePath ?? this.profileImagePath,
+      driftIndex: driftIndex ?? this.driftIndex,
     );
   }
 }
@@ -61,6 +65,7 @@ class Appointment {
   final String type;
   final String note;
   final bool confirmed;
+  final double driftIndex;
 
   const Appointment({
     required this.psychologistEmail,
@@ -71,6 +76,7 @@ class Appointment {
     required this.type,
     required this.note,
     this.confirmed = false,
+    this.driftIndex = 0.0,
   });
 
   Appointment copyWith({
@@ -82,6 +88,7 @@ class Appointment {
     String? type,
     String? note,
     bool? confirmed,
+    double? driftIndex,
   }) {
     return Appointment(
       psychologistEmail: psychologistEmail ?? this.psychologistEmail,
@@ -92,6 +99,7 @@ class Appointment {
       type: type ?? this.type,
       note: note ?? this.note,
       confirmed: confirmed ?? this.confirmed,
+      driftIndex: driftIndex ?? this.driftIndex,
     );
   }
 }

@@ -18,10 +18,21 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
   final _controller = TextEditingController();
   bool _isSaving = false;
 
+  int _backspaceCount = 0;
+  int _previousLength = 0;
+
   @override
   void initState() {
     super.initState();
-    // No longer loading existing content - each entry is new
+    _controller.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    final currentLength = _controller.text.length;
+    if (currentLength < _previousLength) {
+      _backspaceCount++;
+    }
+    _previousLength = currentLength;
   }
 
   @override
@@ -39,6 +50,24 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
       final notes = _controller.text.trim();
       if (notes.isNotEmpty) {
         ref.read(appSessionProvider.notifier).addJournalEntry(notes);
+
+        // Anonymously analyze writing patterns for stress (e.g. backspace count)
+        final profile = ref.read(appSessionProvider).profile;
+        if (profile != null) {
+          double stressFactor = 0.0;
+          if (_backspaceCount > 10) stressFactor += 0.1;
+          if (_backspaceCount > 20) stressFactor += 0.2;
+          if (notes.length < 50 && _backspaceCount > 5) stressFactor += 0.2;
+          
+          if (stressFactor > 0) {
+            final newDriftIndex = (profile.driftIndex + stressFactor).clamp(0.0, 1.0);
+            ref.read(appSessionProvider.notifier).updateProfile(
+              profile.copyWith(driftIndex: newDriftIndex),
+            );
+          }
+        }
+        _backspaceCount = 0;
+        _previousLength = 0;
       }
 
       if (mounted) {

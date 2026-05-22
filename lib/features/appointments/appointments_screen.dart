@@ -110,6 +110,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
             type: _type,
             note: _noteController.text.trim(),
             confirmed: false,
+            driftIndex: profile?.driftIndex ?? 0.0,
           ),
         );
 
@@ -167,7 +168,8 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
     final isPsychologist = profile?.role == UserRole.psychologist;
     final appointments = session.appointments
         .where((appointment) => appointment.startsAt.isAfter(DateTime.now()))
-        .toList();
+        .toList()
+        ..sort((a, b) => b.driftIndex.compareTo(a.driftIndex));
 
     return Scaffold(
       body: Container(
@@ -510,13 +512,14 @@ class _AppointmentCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final date = appointment.startsAt;
     final minutes = date.minute.toString().padLeft(2, '0');
+    final baseColor = Color.lerp(const Color(0xFFB7C97B), Colors.red, appointment.driftIndex) ?? const Color(0xFFB7C97B);
     return GestureDetector(
       onTap: () => _showAppointmentDetails(context, ref),
       child: SmoothCard(
         borderRadius: 20,
         backgroundColor:
             Theme.of(context).colorScheme.surface.withValues(alpha: 0.72),
-        borderColor: const Color(0xFFB7C97B).withValues(alpha: 0.3),
+        borderColor: baseColor.withValues(alpha: 0.5),
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
@@ -525,9 +528,9 @@ class _AppointmentCard extends ConsumerWidget {
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFB7C97B).withValues(alpha: 0.16),
+                color: baseColor.withValues(alpha: 0.16),
               ),
-              child: const Icon(Icons.video_call, color: AppColors.deepViolet),
+              child: Icon(Icons.video_call, color: baseColor),
             ),
             const SizedBox(width: 14),
             Expanded(
