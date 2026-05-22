@@ -16,7 +16,6 @@ class JournalHistoryScreen extends ConsumerWidget {
     final session = ref.watch(appSessionProvider);
     final journalEntries = session.journalEntries.reversed.toList();
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -38,7 +37,8 @@ class JournalHistoryScreen extends ConsumerWidget {
             Text(
               'View your journal entries and reflections.',
               style: AppTypography.bodySmall.copyWith(
-                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                color:
+                    theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 24),
@@ -51,13 +51,15 @@ class JournalHistoryScreen extends ConsumerWidget {
                       Icon(
                         Icons.edit_note_outlined,
                         size: 64,
-                        color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.3),
+                        color: theme.textTheme.bodySmall?.color
+                            ?.withValues(alpha: 0.3),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         'No journal entries yet',
                         style: AppTypography.bodyMedium.copyWith(
-                          color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                          color: theme.textTheme.bodyMedium?.color
+                              ?.withValues(alpha: 0.5),
                         ),
                       ),
                     ],
@@ -90,25 +92,31 @@ class _JournalEntryCardState extends ConsumerState<_JournalEntryCard> {
   Future<void> _summarize() async {
     setState(() => _isSummarizing = true);
     try {
-      final ai = OllamaService(endpoint: Uri.parse('http://10.16.209.73:8000/chat'));
+      final ai =
+          OllamaService(endpoint: Uri.parse('http://10.16.209.73:8000/chat'));
       final prompt = 'You are Calmora, a concise mental wellness assistant. '
           'Summarize the following journal entry into a short supportive reflection for the user, then add a therapist-ready summary below. '
           'Use warm, practical, non-clinical language.\n\nJournal entry:\n${widget.entry.content}';
       final response = await ai.summarize(prompt: prompt);
-      
+
       final updatedEntry = widget.entry.copyWith(summary: response.trim());
       ref.read(appSessionProvider.notifier).updateJournalEntry(updatedEntry);
-      
+
       if (mounted) {
-        AppSnackBar.showSuccess(context, title: 'AI Summary Generated', message: 'Your entry has been summarized.');
+        AppSnackBar.showSuccess(context,
+            title: 'AI Summary Generated',
+            message: 'Your entry has been summarized.');
       }
     } catch (_) {
       if (mounted) {
         // Fallback for demo if ollama fails
-        final fallback = 'Summary: The user is expressing their thoughts. Action: Recommend a breathing exercise.';
+        final fallback =
+            'Summary: The user is expressing their thoughts. Action: Recommend a breathing exercise.';
         final updatedEntry = widget.entry.copyWith(summary: fallback);
         ref.read(appSessionProvider.notifier).updateJournalEntry(updatedEntry);
-        AppSnackBar.showInfo(context, title: 'Fallback Summary Generated', message: 'Ollama unreachable. Used local fallback.');
+        AppSnackBar.showInfo(context,
+            title: 'Fallback Summary Generated',
+            message: 'Ollama unreachable. Used local fallback.');
       }
     } finally {
       if (mounted) {
@@ -222,7 +230,7 @@ class _JournalEntryCardState extends ConsumerState<_JournalEntryCard> {
 
     return SmoothCard(
       backgroundColor: scheme.surface.withValues(alpha: 0.8),
-      borderColor: entry.sharedWithPsychologist 
+      borderColor: entry.sharedWithPsychologist
           ? scheme.primary.withValues(alpha: 0.5)
           : scheme.primary.withValues(alpha: 0.12),
       borderRadius: 16,
@@ -236,12 +244,14 @@ class _JournalEntryCardState extends ConsumerState<_JournalEntryCard> {
               Text(
                 _formatDate(entry.createdAt),
                 style: AppTypography.labelSmall.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                  color:
+                      theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                 ),
               ),
               if (entry.sharedWithPsychologist)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: scheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -252,7 +262,8 @@ class _JournalEntryCardState extends ConsumerState<_JournalEntryCard> {
                       const SizedBox(width: 4),
                       Text(
                         'Shared with Therapist',
-                        style: AppTypography.caption.copyWith(color: scheme.primary),
+                        style: AppTypography.caption
+                            .copyWith(color: scheme.primary),
                       ),
                     ],
                   ),
@@ -269,7 +280,8 @@ class _JournalEntryCardState extends ConsumerState<_JournalEntryCard> {
               decoration: BoxDecoration(
                 color: scheme.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: scheme.primary.withValues(alpha: 0.1)),
+                border:
+                    Border.all(color: scheme.primary.withValues(alpha: 0.1)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,7 +292,8 @@ class _JournalEntryCardState extends ConsumerState<_JournalEntryCard> {
                       const SizedBox(width: 6),
                       Text(
                         'AI Summary',
-                        style: AppTypography.labelSmall.copyWith(color: scheme.primary),
+                        style: AppTypography.labelSmall
+                            .copyWith(color: scheme.primary),
                       ),
                     ],
                   ),
@@ -288,7 +301,8 @@ class _JournalEntryCardState extends ConsumerState<_JournalEntryCard> {
                   Text(
                     entry.summary!,
                     style: AppTypography.bodySmall.copyWith(
-                      color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+                      color: theme.textTheme.bodyMedium?.color
+                          ?.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -302,10 +316,14 @@ class _JournalEntryCardState extends ConsumerState<_JournalEntryCard> {
               if (entry.summary == null)
                 TextButton.icon(
                   onPressed: _isSummarizing ? null : _summarize,
-                  icon: _isSummarizing 
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                  icon: _isSummarizing
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.auto_awesome, size: 16),
-                  label: Text(_isSummarizing ? 'Summarizing...' : 'Summarize with AI'),
+                  label: Text(
+                      _isSummarizing ? 'Summarizing...' : 'Summarize with AI'),
                   style: TextButton.styleFrom(
                     foregroundColor: scheme.primary,
                   ),

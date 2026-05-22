@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../features/calmora/presentation/screens/calmora_ai_sheet.dart';
-import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/mood_log/presentation/screens/mood_log_screen.dart';
 import '../features/journaling/presentation/screens/journaling_screen.dart';
@@ -18,21 +16,22 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedTab = ref.watch(selectedTabProvider);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
-    final isPsychologist = ref.watch(appSessionProvider).profile?.role == UserRole.psychologist;
+    final isPsychologist =
+        ref.watch(appSessionProvider).profile?.role == UserRole.psychologist;
 
-    final pages = isPsychologist ? [
-      const PsychologistsScreen(),
-      const SettingsScreen(),
-    ] : [
-      const DashboardScreen(),
-      const MoodLogScreen(),
-      const JournalingScreen(),
-      const AppointmentsScreen(),
-      const SettingsScreen(),
-    ];
+    final pages = isPsychologist
+        ? [
+            const PsychologistsScreen(),
+            const SettingsScreen(),
+          ]
+        : [
+            const DashboardScreen(),
+            const MoodLogScreen(),
+            const JournalingScreen(),
+            const AppointmentsScreen(),
+            const SettingsScreen(),
+          ];
 
     // Ensure selectedTab is within bounds
     final currentIndex = selectedTab >= pages.length ? 0 : selectedTab;
@@ -94,58 +93,60 @@ class _PillBottomNavigation extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: isPsychologist ? [
-          _NavItem(
-            icon: Icons.space_dashboard_outlined,
-            activeIcon: Icons.space_dashboard,
-            label: 'Dashboard',
-            isSelected: selectedIndex == 0,
-            onTap: () => onTap(0),
-          ),
-          _NavItem(
-            icon: Icons.tune_outlined,
-            activeIcon: Icons.tune,
-            label: 'Settings',
-            isSelected: selectedIndex == 1,
-            onTap: () => onTap(1),
-          ),
-        ] : [
-          _NavItem(
-            icon: Icons.space_dashboard_outlined,
-            activeIcon: Icons.space_dashboard,
-            label: 'Home',
-            isSelected: selectedIndex == 0,
-            onTap: () => onTap(0),
-          ),
-          _NavItem(
-            icon: Icons.add_circle_outline,
-            activeIcon: Icons.add_circle,
-            label: 'Mood',
-            isSelected: selectedIndex == 1,
-            onTap: () => onTap(1),
-          ),
-          _NavItem(
-            icon: Icons.auto_stories_outlined,
-            activeIcon: Icons.auto_stories,
-            label: 'Journal',
-            isSelected: selectedIndex == 2,
-            onTap: () => onTap(2),
-          ),
-          _NavItem(
-            icon: Icons.event_available_outlined,
-            activeIcon: Icons.event_available,
-            label: 'Care',
-            isSelected: selectedIndex == 3,
-            onTap: () => onTap(3),
-          ),
-          _NavItem(
-            icon: Icons.tune_outlined,
-            activeIcon: Icons.tune,
-            label: 'Settings',
-            isSelected: selectedIndex == 4,
-            onTap: () => onTap(4),
-          ),
-        ],
+        children: isPsychologist
+            ? [
+                _NavItem(
+                  icon: Icons.space_dashboard_outlined,
+                  activeIcon: Icons.space_dashboard,
+                  label: 'Dashboard',
+                  isSelected: selectedIndex == 0,
+                  onTap: () => onTap(0),
+                ),
+                _NavItem(
+                  icon: Icons.tune_outlined,
+                  activeIcon: Icons.tune,
+                  label: 'Settings',
+                  isSelected: selectedIndex == 1,
+                  onTap: () => onTap(1),
+                ),
+              ]
+            : [
+                _NavItem(
+                  icon: Icons.space_dashboard_outlined,
+                  activeIcon: Icons.space_dashboard,
+                  label: 'Home',
+                  isSelected: selectedIndex == 0,
+                  onTap: () => onTap(0),
+                ),
+                _NavItem(
+                  icon: Icons.add_circle_outline,
+                  activeIcon: Icons.add_circle,
+                  label: 'Mood',
+                  isSelected: selectedIndex == 1,
+                  onTap: () => onTap(1),
+                ),
+                _NavItem(
+                  icon: Icons.auto_stories_outlined,
+                  activeIcon: Icons.auto_stories,
+                  label: 'Journal',
+                  isSelected: selectedIndex == 2,
+                  onTap: () => onTap(2),
+                ),
+                _NavItem(
+                  icon: Icons.event_available_outlined,
+                  activeIcon: Icons.event_available,
+                  label: 'Care',
+                  isSelected: selectedIndex == 3,
+                  onTap: () => onTap(3),
+                ),
+                _NavItem(
+                  icon: Icons.tune_outlined,
+                  activeIcon: Icons.tune,
+                  label: 'Settings',
+                  isSelected: selectedIndex == 4,
+                  onTap: () => onTap(4),
+                ),
+              ],
       ),
     );
   }
