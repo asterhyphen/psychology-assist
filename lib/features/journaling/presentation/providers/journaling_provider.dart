@@ -14,7 +14,8 @@ final journalRepositoryProvider = Provider<JournalRepository>((ref) {
 });
 
 /// State notifier for managing journal entries
-class JournalStateNotifier extends StateNotifier<AsyncValue<List<JournalEntry>>> {
+class JournalStateNotifier
+    extends StateNotifier<AsyncValue<List<JournalEntry>>> {
   final JournalRepository repository;
 
   JournalStateNotifier({required this.repository})
@@ -57,7 +58,8 @@ final journalStateProvider =
 );
 
 /// Provider to get entries in reverse chronological order (newest first)
-final journalEntriesReversedProvider = Provider<AsyncValue<List<JournalEntry>>>((ref) {
+final journalEntriesReversedProvider =
+    Provider<AsyncValue<List<JournalEntry>>>((ref) {
   final state = ref.watch(journalStateProvider);
   return state.whenData((entries) => entries.reversed.toList());
 });
@@ -67,5 +69,4 @@ final selectedJournalEntryProvider =
     StateProvider<JournalEntry?>((ref) => null);
 
 /// Provider for journal summary state
-final journalSummaryLoadingProvider =
-    StateProvider<bool>((ref) => false);
+final journalSummaryLoadingProvider = StateProvider<bool>((ref) => false);

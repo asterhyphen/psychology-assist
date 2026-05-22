@@ -31,7 +31,8 @@ class _JournalEntryCardState extends ConsumerState<JournalEntryCard> {
   Future<void> _summarize() async {
     setState(() => _isSummarizing = true);
     try {
-      final ai = OllamaService(endpoint: Uri.parse('http://10.16.209.73:8000/chat'));
+      final ai =
+          OllamaService(endpoint: Uri.parse('http://10.16.209.73:8000/chat'));
       final prompt = 'You are Calmora, a concise mental wellness assistant. '
           'Summarize the following journal entry into a short supportive reflection for the user, then add a therapist-ready summary below. '
           'Use warm, practical, non-clinical language.\n\nJournal entry:\n${widget.entry.content}';
@@ -181,12 +182,14 @@ class _JournalEntryCardState extends ConsumerState<JournalEntryCard> {
               Text(
                 _formatDate(entry.createdAt),
                 style: AppTypography.labelSmall.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                  color:
+                      theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                 ),
               ),
               if (entry.sharedWithPsychologist)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: scheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -197,7 +200,8 @@ class _JournalEntryCardState extends ConsumerState<JournalEntryCard> {
                       const SizedBox(width: 4),
                       Text(
                         'Shared with Therapist',
-                        style: AppTypography.caption.copyWith(color: scheme.primary),
+                        style: AppTypography.caption
+                            .copyWith(color: scheme.primary),
                       ),
                     ],
                   ),
@@ -214,7 +218,8 @@ class _JournalEntryCardState extends ConsumerState<JournalEntryCard> {
               decoration: BoxDecoration(
                 color: scheme.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: scheme.primary.withValues(alpha: 0.1)),
+                border:
+                    Border.all(color: scheme.primary.withValues(alpha: 0.1)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,7 +230,8 @@ class _JournalEntryCardState extends ConsumerState<JournalEntryCard> {
                       const SizedBox(width: 6),
                       Text(
                         'AI Summary',
-                        style: AppTypography.labelSmall.copyWith(color: scheme.primary),
+                        style: AppTypography.labelSmall
+                            .copyWith(color: scheme.primary),
                       ),
                     ],
                   ),
@@ -233,8 +239,8 @@ class _JournalEntryCardState extends ConsumerState<JournalEntryCard> {
                   Text(
                     entry.summary!,
                     style: AppTypography.bodySmall.copyWith(
-                      color:
-                          theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+                      color: theme.textTheme.bodyMedium?.color
+                          ?.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -255,7 +261,8 @@ class _JournalEntryCardState extends ConsumerState<JournalEntryCard> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.auto_awesome, size: 16),
-                  label: Text(_isSummarizing ? 'Summarizing...' : 'Summarize with AI'),
+                  label: Text(
+                      _isSummarizing ? 'Summarizing...' : 'Summarize with AI'),
                   style: TextButton.styleFrom(
                     foregroundColor: scheme.primary,
                   ),

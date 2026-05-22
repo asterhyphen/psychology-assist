@@ -111,13 +111,15 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
             Text(
               'Write down your thoughts, feelings, or anything you want to remember. These notes are private and stored locally.',
               style: AppTypography.bodySmall.copyWith(
-                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                color:
+                    theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 24),
             Expanded(
               child: SmoothCard(
-                backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.8),
+                backgroundColor:
+                    theme.colorScheme.surface.withValues(alpha: 0.8),
                 borderColor: const Color(0xFFB7C97B).withValues(alpha: 0.2),
                 borderRadius: 16,
                 padding: const EdgeInsets.all(16),
@@ -130,7 +132,8 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
                     hintText: 'Start writing your thoughts here...',
                     border: InputBorder.none,
                     hintStyle: AppTypography.bodyMedium.copyWith(
-                      color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                      color: theme.textTheme.bodyMedium?.color
+                          ?.withValues(alpha: 0.5),
                     ),
                   ),
                   style: AppTypography.bodyMedium.copyWith(

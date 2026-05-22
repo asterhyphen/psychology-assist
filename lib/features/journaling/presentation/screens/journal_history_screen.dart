@@ -35,7 +35,8 @@ class JournalHistoryScreen extends ConsumerWidget {
             Text(
               'View your journal entries and reflections.',
               style: AppTypography.bodySmall.copyWith(
-                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                color:
+                    theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 24),
@@ -51,13 +52,15 @@ class JournalHistoryScreen extends ConsumerWidget {
                             Icon(
                               Icons.edit_note_outlined,
                               size: 64,
-                              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.3),
+                              color: theme.textTheme.bodySmall?.color
+                                  ?.withValues(alpha: 0.3),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'No journal entries yet',
                               style: AppTypography.bodyMedium.copyWith(
-                                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
+                                color: theme.textTheme.bodyMedium?.color
+                                    ?.withValues(alpha: 0.5),
                               ),
                             ),
                           ],
@@ -75,8 +78,10 @@ class JournalHistoryScreen extends ConsumerWidget {
                         padding: const EdgeInsets.only(bottom: 16),
                         child: JournalEntryCard(
                           entry: entry,
-                          psychologistEmail: appSession.profile?.psychologistEmail,
-                          hasPsychologist: appSession.profile?.hasPsychologist ?? false,
+                          psychologistEmail:
+                              appSession.profile?.psychologistEmail,
+                          hasPsychologist:
+                              appSession.profile?.hasPsychologist ?? false,
                         ),
                       );
                     },
