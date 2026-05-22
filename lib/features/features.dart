@@ -2,26 +2,26 @@
 library features;
 
 // Dashboard
-export 'dashboard/dashboard_screen.dart';
+export 'dashboard/presentation/screens/dashboard_screen.dart';
 
 // Onboarding
-export 'onboarding/onboarding_screen.dart';
+export 'onboarding/presentation/screens/onboarding_screen.dart';
 
 // App Lock
-export 'app_lock/app_lock_gate.dart';
-export 'app_lock/app_lock_screen.dart';
+export 'app_lock/presentation/screens/app_lock_gate.dart';
+export 'app_lock/presentation/screens/app_lock_screen.dart';
 
 // Mood Log
-export 'mood_log/mood_log_screen.dart';
+export 'mood_log/presentation/screens/mood_log_screen.dart';
 
 // Appointments
-export 'appointments/appointments_screen.dart';
+export 'appointments/presentation/screens/appointments_screen.dart';
 
 // Psychologists
-export 'psychologists/psychologists_screen.dart';
+export 'psychologists/presentation/screens/psychologists_screen.dart';
 
 // Settings
-export 'settings/settings_screen.dart';
+export 'settings/presentation/screens/settings_screen.dart';
 
 // Notifications
-export 'notifications/notifications_screen.dart';
+export 'notifications/presentation/screens/notifications_screen.dart';

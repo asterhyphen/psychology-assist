@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../features/calmora/calmora_ai_sheet.dart';
-import '../features/dashboard/dashboard_screen.dart';
-import '../features/dashboard/dashboard_screen.dart';
-import '../features/mood_log/mood_log_screen.dart';
-import '../features/journaling/journaling_screen.dart';
-import '../features/appointments/appointments_screen.dart';
-import '../features/psychologists/psychologists_screen.dart';
-import '../features/settings/settings_screen.dart';
+import '../features/calmora/presentation/screens/calmora_ai_sheet.dart';
+import '../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../features/mood_log/presentation/screens/mood_log_screen.dart';
+import '../features/journaling/presentation/screens/journaling_screen.dart';
+import '../features/appointments/presentation/screens/appointments_screen.dart';
+import '../features/psychologists/presentation/screens/psychologists_screen.dart';
+import '../features/settings/presentation/screens/settings_screen.dart';
 import 'app_state.dart';
 
 final selectedTabProvider = StateProvider<int>((ref) => 0);

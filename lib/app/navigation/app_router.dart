@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/widgets/animations.dart';
-import '../../features/dashboard/dashboard_screen.dart';
-import '../../features/mood_log/mood_log_screen.dart';
-import '../../features/psychologists/psychologists_screen.dart';
-import '../../features/settings/settings_screen.dart';
-import '../../features/breathing_exercise/breathing_exercise_screen.dart';
+import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/mood_log/presentation/screens/mood_log_screen.dart';
+import '../../features/psychologists/presentation/screens/psychologists_screen.dart';
+import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/breathing_exercise/presentation/screens/breathing_exercise_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {

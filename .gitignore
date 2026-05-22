@@ -44,3 +44,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+ARCHITECTURE_DIAGRAMS.md
+.codex
+ARCHITECTURE_OVERVIEW.md
+ARCHITECTURE_REFACTORING.md
+refactor_all.py
+refactor.py

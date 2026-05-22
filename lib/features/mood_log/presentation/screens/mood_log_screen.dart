@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../app/app_state.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/smooth_widgets.dart';
-import '../../domain/entities/mood_entry.dart';
-import '../providers/mood_provider.dart';
-import '../widgets/mood_selector.dart';
+
+part '../widgets/mood_option.dart';
+part '../widgets/mood_selector.dart';
 
 class MoodLogScreen extends ConsumerStatefulWidget {
   const MoodLogScreen({super.key});
@@ -21,32 +22,32 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
   final _journalController = TextEditingController();
   late AnimationController _animationController;
 
-  final List<MoodOption> _moods = [
-    MoodOption(
+  final List<_MoodOption> _moods = [
+    _MoodOption(
       icon: Icons.sentiment_very_dissatisfied,
       label: 'Terrible',
       color: AppColors.error,
       value: 1,
     ),
-    MoodOption(
+    _MoodOption(
       icon: Icons.sentiment_dissatisfied,
       label: 'Poor',
       color: AppColors.warning,
       value: 2,
     ),
-    MoodOption(
+    _MoodOption(
       icon: Icons.sentiment_neutral,
       label: 'Neutral',
       color: AppColors.info,
       value: 3,
     ),
-    MoodOption(
+    _MoodOption(
       icon: Icons.sentiment_satisfied_alt,
       label: 'Good',
       color: AppColors.success,
       value: 4,
     ),
-    MoodOption(
+    _MoodOption(
       icon: Icons.sentiment_very_satisfied,
       label: 'Excellent',
       color: AppColors.neonViolet,
@@ -83,7 +84,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
     }
 
     final mood = _moods[_selectedMoodIndex!];
-    ref.read(moodStateProvider.notifier).addEntry(
+    ref.read(appSessionProvider.notifier).addMoodEntry(
           MoodEntry(
             createdAt: DateTime.now(),
             value: mood.value,
@@ -105,10 +106,102 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
     );
   }
 
+  IconData _getMoodIcon(int value) {
+    switch (value) {
+      case 1:
+        return Icons.sentiment_very_dissatisfied;
+      case 2:
+        return Icons.sentiment_dissatisfied;
+      case 3:
+        return Icons.sentiment_neutral;
+      case 4:
+        return Icons.sentiment_satisfied_alt;
+      case 5:
+        return Icons.sentiment_very_satisfied;
+      default:
+        return Icons.sentiment_neutral;
+    }
+  }
+
+  Color _getMoodColor(int value) {
+    switch (value) {
+      case 1:
+        return AppColors.error;
+      case 2:
+        return AppColors.warning;
+      case 3:
+        return AppColors.info;
+      case 4:
+        return AppColors.success;
+      case 5:
+        return AppColors.neonViolet;
+      default:
+        return AppColors.info;
+    }
+  }
+
+  Widget _buildTruncatedText(String text) {
+    const maxLength = 200;
+    if (text.length <= maxLength) {
+      return Text(
+        text,
+        style: AppTypography.bodyMedium.copyWith(
+          color: Theme.of(context).textTheme.bodyMedium?.color,
+        ),
+      );
+    }
+
+    final truncatedText = text.substring(0, maxLength);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$truncatedText...',
+          style: AppTypography.bodyMedium.copyWith(
+            color: Theme.of(context).textTheme.bodyMedium?.color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Full Entry'),
+                content: SingleChildScrollView(
+                  child: Text(
+                    text,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Close'),
+                  ),
+                ],
+              ),
+            );
+          },
+          child: Text(
+            'Read more',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.neonViolet,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final moodState = ref.watch(moodStateProvider);
+    final session = ref.watch(appSessionProvider);
+    final entries = session.moodEntries.reversed.toList();
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -156,7 +249,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                       alignment: WrapAlignment.center,
                       children: List.generate(
                         _moods.length,
-                        (index) => MoodSelector(
+                        (index) => _MoodSelector(
                           mood: _moods[index],
                           isSelected: _selectedMoodIndex == index,
                           onTap: () {
@@ -237,107 +330,166 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                 ),
               ),
               const SizedBox(height: 24),
-              moodState.when(
-                data: (entries) {
-                  if (entries.isEmpty) return const SizedBox.shrink();
-                  final recentEntries = entries.reversed.toList().take(5);
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Recent mood entries',
-                        style: AppTypography.headingSmall.copyWith(
-                          color: theme.textTheme.titleMedium?.color,
-                        ),
+              if (entries.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Recent journal entries',
+                      style: AppTypography.headingSmall.copyWith(
+                        color: theme.textTheme.titleMedium?.color,
                       ),
-                      const SizedBox(height: 16),
-                      ...recentEntries.map(
-                        (entry) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: SmoothCard(
-                            borderRadius: 18,
-                            padding: const EdgeInsets.all(16),
-                            backgroundColor: theme.colorScheme.surface
-                                .withValues(alpha: 0.8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Icon(
-                                      _getMoodIcon(entry.value),
-                                      color: _getMoodColor(entry.value),
-                                      size: 24,
-                                    ),
-                                    Text(
-                                      entry.label,
-                                      style: AppTypography.labelSmall.copyWith(
-                                        color: _getMoodColor(entry.value),
+                    ),
+                    const SizedBox(height: 16),
+                    ...entries.take(5).map(
+                          (entry) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: SmoothCard(
+                              borderRadius: 18,
+                              padding: const EdgeInsets.all(16),
+                              backgroundColor:
+                                  theme.colorScheme.surface.withValues(alpha: 0.8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            _getMoodIcon(entry.value),
+                                            color: _getMoodColor(entry.value),
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            entry.label,
+                                            style: AppTypography.labelLarge,
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                if (entry.note.isNotEmpty)
-                                  Text(
-                                    entry.note,
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: theme.textTheme.bodyMedium?.color,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                      Text(
+                                        '${entry.createdAt.day}/${entry.createdAt.month} ${entry.createdAt.hour.toString().padLeft(2, '0')}:${entry.createdAt.minute.toString().padLeft(2, '0')}',
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color:
+                                              theme.textTheme.bodySmall?.color,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                              ],
+                                  const SizedBox(height: 10),
+                                  _buildTruncatedText(entry.note.isEmpty
+                                      ? 'No additional note provided.'
+                                      : entry.note),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Text('Error loading moods: $error'),
-              ),
+                  ],
+                )
+              else
+                SmoothCard(
+                  borderRadius: 18,
+                  padding: const EdgeInsets.all(18),
+                  backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.72),
+                  child: Text(
+                    'No journal entries yet. Save a mood entry to start building your notes.',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: theme.textTheme.bodySmall?.color,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 32),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  IconData _getMoodIcon(int value) {
-    switch (value) {
-      case 1:
-        return Icons.sentiment_very_dissatisfied;
-      case 2:
-        return Icons.sentiment_dissatisfied;
-      case 3:
-        return Icons.sentiment_neutral;
-      case 4:
-        return Icons.sentiment_satisfied_alt;
-      case 5:
-        return Icons.sentiment_very_satisfied;
-      default:
-        return Icons.sentiment_neutral;
+/// Mood option data class
+class _MoodSelectorState extends State<_MoodSelector>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _MoodSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected && !oldWidget.isSelected) {
+      _controller.forward();
+    } else if (!widget.isSelected && oldWidget.isSelected) {
+      _controller.reverse();
     }
   }
 
-  Color _getMoodColor(int value) {
-    switch (value) {
-      case 1:
-        return AppColors.error;
-      case 2:
-        return AppColors.warning;
-      case 3:
-        return AppColors.info;
-      case 4:
-        return AppColors.success;
-      case 5:
-        return AppColors.neonViolet;
-      default:
-        return AppColors.info;
-    }
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 1.0, end: 1.15).animate(
+          CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+        ),
+        child: Container(
+          width: 70,
+          height: 90,
+          decoration: BoxDecoration(
+            color: widget.isSelected
+                ? widget.mood.color.withValues(alpha: 0.15)
+                : Colors.transparent,
+            border: Border.all(
+              color: widget.isSelected
+                  ? widget.mood.color
+                  : Theme.of(context).dividerColor,
+              width: widget.isSelected ? 2.5 : 1,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                widget.mood.icon,
+                color: widget.isSelected
+                    ? widget.mood.color
+                    : Theme.of(context).colorScheme.primary,
+                size: 32,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.mood.label,
+                style: AppTypography.labelSmall.copyWith(
+                  color: widget.isSelected
+                      ? widget.mood.color
+                      : Theme.of(context).textTheme.bodySmall?.color,
+                  fontWeight:
+                      widget.isSelected ? FontWeight.w700 : FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

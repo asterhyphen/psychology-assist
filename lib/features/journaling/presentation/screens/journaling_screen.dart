@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../app/app_state.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/smooth_widgets.dart';
-import '../providers/journaling_provider.dart';
+import '../../../../app/home_screen.dart';
 import 'journal_history_screen.dart';
+
+
 
 class JournalingScreen extends ConsumerStatefulWidget {
   const JournalingScreen({super.key});
@@ -16,6 +19,23 @@ class JournalingScreen extends ConsumerStatefulWidget {
 class _JournalingScreenState extends ConsumerState<JournalingScreen> {
   final _controller = TextEditingController();
   bool _isSaving = false;
+
+  int _backspaceCount = 0;
+  int _previousLength = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    final currentLength = _controller.text.length;
+    if (currentLength < _previousLength) {
+      _backspaceCount++;
+    }
+    _previousLength = currentLength;
+  }
 
   @override
   void dispose() {
@@ -31,7 +51,25 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
     try {
       final notes = _controller.text.trim();
       if (notes.isNotEmpty) {
-        await ref.read(journalStateProvider.notifier).addEntry(notes);
+        ref.read(appSessionProvider.notifier).addJournalEntry(notes);
+
+        // Anonymously analyze writing patterns for stress (e.g. backspace count)
+        final profile = ref.read(appSessionProvider).profile;
+        if (profile != null) {
+          double stressFactor = 0.0;
+          if (_backspaceCount > 10) stressFactor += 0.1;
+          if (_backspaceCount > 20) stressFactor += 0.2;
+          if (notes.length < 50 && _backspaceCount > 5) stressFactor += 0.2;
+          
+          if (stressFactor > 0) {
+            final newDriftIndex = (profile.driftIndex + stressFactor).clamp(0.0, 1.0);
+            ref.read(appSessionProvider.notifier).updateProfile(
+              profile.copyWith(driftIndex: newDriftIndex),
+            );
+          }
+        }
+        _backspaceCount = 0;
+        _previousLength = 0;
       }
 
       if (mounted) {
@@ -40,9 +78,9 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
           title: 'Notes saved',
           message: 'Your journal entry has been saved.',
         );
+        // Clear content and navigate back
         _controller.clear();
-        // Navigate back to dashboard - you'll need to adjust this based on your navigation
-        Navigator.of(context).pop();
+        ref.read(selectedTabProvider.notifier).state = 0;
       }
     } catch (e) {
       if (mounted) {
@@ -111,15 +149,13 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
             Text(
               'Write down your thoughts, feelings, or anything you want to remember. These notes are private and stored locally.',
               style: AppTypography.bodySmall.copyWith(
-                color:
-                    theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 24),
             Expanded(
               child: SmoothCard(
-                backgroundColor:
-                    theme.colorScheme.surface.withValues(alpha: 0.8),
+                backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.8),
                 borderColor: const Color(0xFFB7C97B).withValues(alpha: 0.2),
                 borderRadius: 16,
                 padding: const EdgeInsets.all(16),
@@ -132,8 +168,8 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
                     hintText: 'Start writing your thoughts here...',
                     border: InputBorder.none,
                     hintStyle: AppTypography.bodyMedium.copyWith(
-                      color: theme.textTheme.bodyMedium?.color
-                          ?.withValues(alpha: 0.5),
+                      color:
+                          theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                     ),
                   ),
                   style: AppTypography.bodyMedium.copyWith(

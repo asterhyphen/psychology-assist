@@ -7,8 +7,8 @@ import 'core/services/app_session_store.dart';
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'app/navigation/app_router.dart';
-import 'features/app_lock/app_lock_gate.dart';
-import 'features/onboarding/onboarding_screen.dart';
+import 'features/app_lock/presentation/screens/app_lock_gate.dart';
+import 'features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'app/home_screen.dart'; // To access selectedTabProvider
 
 Future<void> main() async {
