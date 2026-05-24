@@ -87,7 +87,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         : '${relatedPrescriptions.first.medicines.join(', ')} at ${relatedPrescriptions.first.reminderTimes.isNotEmpty ? relatedPrescriptions.first.reminderTimes.first.toDisplayString() : 'No time'}';
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -97,75 +96,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         label: const Text('Log mood'),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 14),
-          child: GestureDetector(
-            onTap: () {
-              ref.read(selectedTabProvider.notifier).state =
-                  4; // Go to settings
-            },
-            child: CircleAvatar(
-              backgroundColor: Color(
-                profile?.avatarColorValue ?? AppColors.neonViolet.toARGB32(),
-              ),
-              backgroundImage: profile?.profileImagePath == null
-                  ? null
-                  : FileImage(File(profile!.profileImagePath!)),
-              child: profile?.profileImagePath == null
-                  ? Icon(
-                      _avatarIconFor(
-                        profile?.avatarIconCodePoint ?? Icons.person.codePoint,
-                      ),
-                      color: Colors.white,
-                      size: 20,
-                    )
-                  : null,
-            ),
-          ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _greeting(),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurface.withValues(alpha: 0.55),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              profile?.name ?? 'Welcome',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const StatsScreen(),
-                ),
-              );
-            },
-            icon: Icon(
-              Icons.insights_outlined,
-              color: scheme.onSurface.withValues(alpha: 0.7),
-            ),
-            tooltip: 'View stats',
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
       body: Container(
         color: theme.scaffoldBackgroundColor,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.only(top: 100, bottom: 112),
+          padding: const EdgeInsets.only(top: 18, bottom: 112),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18),
             child: StaggeredAnimationBuilder(
@@ -173,6 +107,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               delay: const Duration(milliseconds: 80),
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                _buildScrollableHeader(context, profile, scheme),
+                const SizedBox(height: 22),
                 if (profile?.role == UserRole.patient) ...[
                   _buildAiBanner(context, scheme),
                 ],
@@ -389,6 +325,82 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return icons.firstWhere(
       (icon) => icon.codePoint == codePoint,
       orElse: () => Icons.person,
+    );
+  }
+
+  Widget _buildScrollableHeader(
+    BuildContext context,
+    AppProfile? profile,
+    ColorScheme scheme,
+  ) {
+    final theme = Theme.of(context);
+
+    return SafeArea(
+      bottom: false,
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () {
+              ref.read(selectedTabProvider.notifier).state = 4;
+            },
+            child: CircleAvatar(
+              radius: 22,
+              backgroundColor: Color(
+                profile?.avatarColorValue ?? AppColors.neonViolet.toARGB32(),
+              ),
+              backgroundImage: profile?.profileImagePath == null
+                  ? null
+                  : FileImage(File(profile!.profileImagePath!)),
+              child: profile?.profileImagePath == null
+                  ? Icon(
+                      _avatarIconFor(
+                        profile?.avatarIconCodePoint ?? Icons.person.codePoint,
+                      ),
+                      color: Colors.white,
+                      size: 22,
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _greeting(),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.55),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  profile?.name ?? 'Welcome',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const StatsScreen(),
+                ),
+              );
+            },
+            icon: Icon(
+              Icons.insights_outlined,
+              color: scheme.onSurface.withValues(alpha: 0.7),
+            ),
+            tooltip: 'View stats',
+          ),
+        ],
+      ),
     );
   }
 
