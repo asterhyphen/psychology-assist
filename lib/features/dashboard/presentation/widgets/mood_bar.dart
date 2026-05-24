@@ -18,7 +18,7 @@ class _MoodBar extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         AnimatedContainer(
-          duration: const Duration(milliseconds: 800),
+          duration: const Duration(milliseconds: 480),
           height: height,
           width: 28,
           decoration: BoxDecoration(

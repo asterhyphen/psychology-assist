@@ -4,8 +4,6 @@ import '../../../../app/app_state.dart';
 import '../../../../app/home_screen.dart';
 import 'app_lock_screen.dart';
 
-
-
 class AppLockGate extends ConsumerStatefulWidget {
   const AppLockGate({super.key});
 
@@ -40,7 +38,9 @@ class _AppLockGateState extends ConsumerState<AppLockGate>
   Widget build(BuildContext context) {
     final session = ref.watch(appSessionProvider);
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 260),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeOutCubic,
       child: session.isLocked
           ? const AppLockScreen(key: ValueKey('lock'))
           : const HomeScreen(key: ValueKey('home')),

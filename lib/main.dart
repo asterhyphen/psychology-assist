@@ -155,7 +155,9 @@ class _MyAppState extends ConsumerState<MyApp> {
       themeMode:
           themeMode == AppThemeMode.dark ? ThemeMode.dark : ThemeMode.light,
       home: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 320),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeOutCubic,
         child: !session.onboardingComplete
             ? const OnboardingScreen()
             : const AppLockGate(),

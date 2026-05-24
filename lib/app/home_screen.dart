@@ -186,7 +186,7 @@ class _NavItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
+        curve: Curves.easeInOutCubic,
         padding: EdgeInsets.symmetric(
           horizontal: isSelected ? 14 : 10,
           vertical: 6,
@@ -201,7 +201,9 @@ class _NavItem extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 180),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeOutCubic,
               child: Icon(
                 isSelected ? activeIcon : icon,
                 key: ValueKey(isSelected),
@@ -213,7 +215,8 @@ class _NavItem extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
               style: TextStyle(
                 fontSize: isSelected ? 10 : 9.5,
                 color: isSelected

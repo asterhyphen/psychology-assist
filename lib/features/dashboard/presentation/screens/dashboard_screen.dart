@@ -31,7 +31,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 420),
       vsync: this,
     );
     _animationController.forward();
@@ -103,8 +103,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18),
             child: StaggeredAnimationBuilder(
-              duration: const Duration(milliseconds: 600),
-              delay: const Duration(milliseconds: 80),
+              duration: const Duration(milliseconds: 420),
+              delay: const Duration(milliseconds: 45),
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildScrollableHeader(context, profile, scheme),
@@ -474,7 +474,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       barrierDismissible: true,
       barrierLabel: 'Close',
       barrierColor: Colors.black.withValues(alpha: 0.4),
-      transitionDuration: const Duration(milliseconds: 500),
+      transitionDuration: const Duration(milliseconds: 360),
       pageBuilder: (context, animation, secondaryAnimation) {
         return const Align(
           alignment: Alignment.bottomCenter,
@@ -487,17 +487,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         final curve = CurvedAnimation(
           parent: animation,
-          curve: Curves.easeOutBack,
+          curve: Curves.easeOutCubic,
         );
         return SlideTransition(
           position: Tween<Offset>(
-            begin: const Offset(0, 1),
+            begin: const Offset(0, 0.08),
             end: Offset.zero,
           ).animate(curve),
           child: FadeTransition(
             opacity: animation,
             child: ScaleTransition(
-              scale: Tween<double>(begin: 0.8, end: 1.0).animate(curve),
+              scale: Tween<double>(begin: 0.98, end: 1.0).animate(curve),
               alignment: Alignment.bottomCenter,
               child: child,
             ),

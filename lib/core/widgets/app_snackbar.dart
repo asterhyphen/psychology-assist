@@ -99,34 +99,34 @@ class _SnackBarCardState extends State<_SnackBarCard>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 520),
+      duration: const Duration(milliseconds: 360),
     )..forward();
     _fade = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.0, 0.72, curve: Curves.easeOutCubic),
+      curve: const Interval(0.0, 0.82, curve: Curves.easeOutCubic),
     );
     _lift = Tween<double>(
-      begin: 18,
+      begin: 10,
       end: 0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _scale = Tween<double>(
-      begin: 0.96,
+      begin: 0.98,
       end: 1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _iconScale = TweenSequence<double>([
       TweenSequenceItem(
         tween: Tween<double>(
-          begin: 0.82,
-          end: 1.08,
+          begin: 0.92,
+          end: 1.02,
         ).chain(CurveTween(curve: Curves.easeOutCubic)),
-        weight: 55,
+        weight: 60,
       ),
       TweenSequenceItem(
         tween: Tween<double>(
-          begin: 1.08,
+          begin: 1.02,
           end: 1,
-        ).chain(CurveTween(curve: Curves.easeOutBack)),
-        weight: 45,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 40,
       ),
     ]).animate(_controller);
   }

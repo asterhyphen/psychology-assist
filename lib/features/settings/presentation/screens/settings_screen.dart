@@ -16,8 +16,6 @@ import '../../../../core/widgets/smooth_widgets.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 
-
-
 part '../widgets/settings_section.dart';
 part '../widgets/theme_button.dart';
 part '../widgets/settings_toggle.dart';
@@ -38,7 +36,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 420),
       vsync: this,
     );
     _animationController.forward();
@@ -65,8 +63,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: StaggeredAnimationBuilder(
-            duration: const Duration(milliseconds: 600),
-            delay: const Duration(milliseconds: 80),
+            duration: const Duration(milliseconds: 420),
+            delay: const Duration(milliseconds: 45),
             children: [
               if (profile != null) ...[
                 _SettingsSection(
@@ -529,14 +527,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           ),
                           onPressed: () {
                             if (profile?.role == UserRole.psychologist) {
-                              ref.read(appSessionProvider.notifier).updateProfile(
+                              ref
+                                  .read(appSessionProvider.notifier)
+                                  .updateProfile(
                                     AppProfile(
                                       role: UserRole.patient,
                                       name: 'Demo Patient',
                                       email: 'patient@example.com',
                                       psychologistEmail: demoPsychologistEmail,
                                       avatarColorValue: 0xFF8B5CF6,
-                                      avatarIconCodePoint: Icons.person.codePoint,
+                                      avatarIconCodePoint:
+                                          Icons.person.codePoint,
                                     ),
                                   );
                               ref.read(selectedTabProvider.notifier).state = 0;
@@ -546,7 +547,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                 message: 'You are now viewing as Demo Patient.',
                               );
                             } else {
-                              ref.read(appSessionProvider.notifier).updateProfile(
+                              ref
+                                  .read(appSessionProvider.notifier)
+                                  .updateProfile(
                                     AppProfile(
                                       role: UserRole.psychologist,
                                       name: 'Dr. Panipuri',
@@ -585,8 +588,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         .colorScheme
                         .errorContainer
                         .withValues(alpha: 0.12),
-                    borderColor:
-                        Theme.of(context).colorScheme.error.withValues(alpha: 0.2),
+                    borderColor: Theme.of(context)
+                        .colorScheme
+                        .error
+                        .withValues(alpha: 0.2),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -916,7 +921,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     final available = await NfcService().isAvailable();
     if (!available) {
       if (mounted) {
-        AppSnackBar.showError(context, title: 'NFC not available', message: 'Your device does not support NFC or it is turned off.');
+        AppSnackBar.showError(context,
+            title: 'NFC not available',
+            message: 'Your device does not support NFC or it is turned off.');
       }
       return;
     }
@@ -946,9 +953,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     if (mounted) {
       Navigator.of(context).pop(); // dismiss writing dialog
       if (success) {
-        AppSnackBar.showSuccess(context, title: 'Success', message: 'NFC tag programmed successfully!');
+        AppSnackBar.showSuccess(context,
+            title: 'Success', message: 'NFC tag programmed successfully!');
       } else {
-        AppSnackBar.showError(context, title: 'Error', message: 'Failed to program NFC tag.');
+        AppSnackBar.showError(context,
+            title: 'Error', message: 'Failed to program NFC tag.');
       }
     }
   }

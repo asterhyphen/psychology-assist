@@ -26,7 +26,7 @@ class SmoothCard extends StatelessWidget {
     this.margin = const EdgeInsets.all(0),
     this.elevation = 0,
     this.onTap,
-    this.animationDuration = const Duration(milliseconds: 200),
+    this.animationDuration = const Duration(milliseconds: 180),
   });
 
   @override
@@ -127,64 +127,57 @@ class _SmoothButtonState extends State<SmoothButton> {
     final textColor =
         widget.textColor ?? (widget.isOutlined ? bgColor : Colors.white);
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isPressed = true),
-      onExit: (_) => setState(() => _isPressed = false),
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) => setState(() => _isPressed = false),
-        onTapCancel: () => setState(() => _isPressed = false),
-        child: AnimatedScale(
-          scale: _isPressed ? 0.98 : 1.0,
-          duration: const Duration(milliseconds: 100),
-          child: AnimatedOpacity(
-            opacity: widget.isEnabled ? 1.0 : 0.6,
-            duration: const Duration(milliseconds: 200),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: widget.isEnabled && !widget.isLoading
-                    ? widget.onPressed
+    return AnimatedScale(
+      scale: _isPressed ? 0.985 : 1.0,
+      duration: const Duration(milliseconds: 170),
+      curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(
+        opacity: widget.isEnabled ? 1.0 : 0.6,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onHighlightChanged: (value) => setState(() => _isPressed = value),
+            onTap:
+                widget.isEnabled && !widget.isLoading ? widget.onPressed : null,
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            child: Container(
+              decoration: BoxDecoration(
+                color: widget.isOutlined ? Colors.transparent : bgColor,
+                border: widget.isOutlined
+                    ? Border.all(color: bgColor, width: 1.5)
                     : null,
                 borderRadius: BorderRadius.circular(widget.borderRadius),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: widget.isOutlined ? Colors.transparent : bgColor,
-                    border: widget.isOutlined
-                        ? Border.all(color: bgColor, width: 1.5)
-                        : null,
-                    borderRadius: BorderRadius.circular(widget.borderRadius),
-                  ),
-                  padding: widget.padding,
-                  child: widget.isLoading
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation(textColor),
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            if (widget.icon != null) ...[
-                              widget.icon!,
-                              const SizedBox(width: 8),
-                            ],
-                            Text(
-                              widget.label,
-                              style: TextStyle(
-                                color: textColor,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
               ),
+              padding: widget.padding,
+              child: widget.isLoading
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation(textColor),
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (widget.icon != null) ...[
+                          widget.icon!,
+                          const SizedBox(width: 8),
+                        ],
+                        Text(
+                          widget.label,
+                          style: TextStyle(
+                            color: textColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
         ),
@@ -236,7 +229,7 @@ class _SmoothTextFieldState extends State<SmoothTextField>
     super.initState();
     _focusNode = FocusNode();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 240),
       vsync: this,
     );
     _focusNode.addListener(_handleFocusChange);
@@ -271,10 +264,10 @@ class _SmoothTextFieldState extends State<SmoothTextField>
             ),
           ),
         ScaleTransition(
-          scale: Tween<double>(begin: 1.0, end: 1.02).animate(
+          scale: Tween<double>(begin: 1.0, end: 1.01).animate(
             CurvedAnimation(
               parent: _animationController,
-              curve: Curves.easeOut,
+              curve: Curves.easeOutCubic,
             ),
           ),
           child: TextFormField(

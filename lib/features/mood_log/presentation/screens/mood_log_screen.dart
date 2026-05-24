@@ -59,7 +59,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 420),
       vsync: this,
     );
     _animationController.forward();
@@ -421,7 +421,7 @@ class _MoodSelectorState extends State<_MoodSelector>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 220),
       vsync: this,
     );
   }
@@ -447,8 +447,8 @@ class _MoodSelectorState extends State<_MoodSelector>
     return GestureDetector(
       onTap: widget.onTap,
       child: ScaleTransition(
-        scale: Tween<double>(begin: 1.0, end: 1.15).animate(
-          CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+        scale: Tween<double>(begin: 1.0, end: 1.04).animate(
+          CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
         ),
         child: Container(
           width: 70,
