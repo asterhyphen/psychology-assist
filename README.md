@@ -1,6 +1,9 @@
 # Calmora
 Built with clean architechure, vibecoded and improved in 24h as part of Xypheria Hackathon at Alvas. A special theme similar to the Xypheria Hackathon is also made under the name "Journal". </br>
 
+## Features
+
+
 
 ## Tech Stack
 

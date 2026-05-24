@@ -54,6 +54,35 @@ class AppProfile {
       driftIndex: driftIndex ?? this.driftIndex,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'role': role.name,
+        'name': name,
+        'dateOfBirth': dateOfBirth?.toIso8601String(),
+        'email': email,
+        'psychologistEmail': psychologistEmail,
+        'avatarIconCodePoint': avatarIconCodePoint,
+        'avatarColorValue': avatarColorValue,
+        'profileImagePath': profileImagePath,
+        'driftIndex': driftIndex,
+      };
+
+  factory AppProfile.fromJson(Map<String, dynamic> json) => AppProfile(
+        role: UserRole.values.firstWhere(
+          (role) => role.name == json['role'],
+          orElse: () => UserRole.patient,
+        ),
+        name: json['name'] as String? ?? '',
+        dateOfBirth: json['dateOfBirth'] == null
+            ? null
+            : DateTime.parse(json['dateOfBirth'] as String),
+        email: json['email'] as String?,
+        psychologistEmail: json['psychologistEmail'] as String?,
+        avatarIconCodePoint: json['avatarIconCodePoint'] as int? ?? 0xe7fd,
+        avatarColorValue: json['avatarColorValue'] as int? ?? 0xFF8B5CF6,
+        profileImagePath: json['profileImagePath'] as String?,
+        driftIndex: (json['driftIndex'] as num?)?.toDouble() ?? 0.0,
+      );
 }
 
 class Appointment {
@@ -102,6 +131,30 @@ class Appointment {
       driftIndex: driftIndex ?? this.driftIndex,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'psychologistEmail': psychologistEmail,
+        'psychologistName': psychologistName,
+        'patientName': patientName,
+        'patientEmail': patientEmail,
+        'startsAt': startsAt.toIso8601String(),
+        'type': type,
+        'note': note,
+        'confirmed': confirmed,
+        'driftIndex': driftIndex,
+      };
+
+  factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
+        psychologistEmail: json['psychologistEmail'] as String? ?? '',
+        psychologistName: json['psychologistName'] as String? ?? '',
+        patientName: json['patientName'] as String? ?? '',
+        patientEmail: json['patientEmail'] as String?,
+        startsAt: DateTime.parse(json['startsAt'] as String),
+        type: json['type'] as String? ?? '',
+        note: json['note'] as String? ?? '',
+        confirmed: json['confirmed'] as bool? ?? false,
+        driftIndex: (json['driftIndex'] as num?)?.toDouble() ?? 0.0,
+      );
 }
 
 /// Represents a medication time for prescription reminders
@@ -126,6 +179,16 @@ class MedicationTime {
       minute: minute ?? this.minute,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'hour': hour,
+        'minute': minute,
+      };
+
+  factory MedicationTime.fromJson(Map<String, dynamic> json) => MedicationTime(
+        hour: json['hour'] as int? ?? 0,
+        minute: json['minute'] as int? ?? 0,
+      );
 
   @override
   bool operator ==(Object other) =>
@@ -186,6 +249,34 @@ class Prescription {
       createdAt: createdAt ?? this.createdAt,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'patientName': patientName,
+        'patientEmail': patientEmail,
+        'prescribedByName': prescribedByName,
+        'prescribedByEmail': prescribedByEmail,
+        'medicines': medicines,
+        'reminderTimes': reminderTimes.map((time) => time.toJson()).toList(),
+        'note': note,
+        'createdAt': createdAt.toIso8601String(),
+      };
+
+  factory Prescription.fromJson(Map<String, dynamic> json) => Prescription(
+        id: json['id'] as String? ?? '',
+        patientName: json['patientName'] as String? ?? '',
+        patientEmail: json['patientEmail'] as String?,
+        prescribedByName: json['prescribedByName'] as String? ?? '',
+        prescribedByEmail: json['prescribedByEmail'] as String? ?? '',
+        medicines: (json['medicines'] as List<dynamic>? ?? []).cast<String>(),
+        reminderTimes: (json['reminderTimes'] as List<dynamic>? ?? [])
+            .map((item) => MedicationTime.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ))
+            .toList(),
+        note: json['note'] as String? ?? '',
+        createdAt: DateTime.parse(json['createdAt'] as String),
+      );
 }
 
 class MoodEntry {
@@ -200,6 +291,20 @@ class MoodEntry {
     required this.label,
     required this.note,
   });
+
+  Map<String, dynamic> toJson() => {
+        'createdAt': createdAt.toIso8601String(),
+        'value': value,
+        'label': label,
+        'note': note,
+      };
+
+  factory MoodEntry.fromJson(Map<String, dynamic> json) => MoodEntry(
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        value: json['value'] as int? ?? 0,
+        label: json['label'] as String? ?? '',
+        note: json['note'] as String? ?? '',
+      );
 }
 
 class JournalEntry {
@@ -241,7 +346,8 @@ class JournalEntry {
         createdAt: DateTime.parse(json['createdAt'] as String),
         content: json['content'] as String,
         summary: json['summary'] as String?,
-        sharedWithPsychologist: json['sharedWithPsychologist'] as bool? ?? false,
+        sharedWithPsychologist:
+            json['sharedWithPsychologist'] as bool? ?? false,
       );
 }
 
@@ -419,6 +525,69 @@ class AppSession {
       longestStreak: longestStreak ?? this.longestStreak,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'onboardingComplete': onboardingComplete,
+        'appLockSet': appLockSet,
+        'lockPin': lockPin,
+        'profile': profile?.toJson(),
+        'appointments':
+            appointments.map((appointment) => appointment.toJson()).toList(),
+        'prescriptions':
+            prescriptions.map((prescription) => prescription.toJson()).toList(),
+        'moodEntries': moodEntries.map((entry) => entry.toJson()).toList(),
+        'journalEntries':
+            journalEntries.map((entry) => entry.toJson()).toList(),
+        'messages': messages.map((message) => message.toJson()).toList(),
+        'isLocked': isLocked,
+        'lastUnlockedAt': lastUnlockedAt?.toIso8601String(),
+        'lockTimeoutMinutes': lockTimeoutMinutes,
+        'currentStreak': currentStreak,
+        'longestStreak': longestStreak,
+      };
+
+  factory AppSession.fromJson(Map<String, dynamic> json) => AppSession(
+        onboardingComplete: json['onboardingComplete'] as bool? ?? false,
+        appLockSet: json['appLockSet'] as bool? ?? false,
+        lockPin: json['lockPin'] as String?,
+        profile: json['profile'] == null
+            ? null
+            : AppProfile.fromJson(
+                Map<String, dynamic>.from(json['profile'] as Map),
+              ),
+        appointments: (json['appointments'] as List<dynamic>? ?? [])
+            .map((item) => Appointment.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ))
+            .toList(),
+        prescriptions: (json['prescriptions'] as List<dynamic>? ?? [])
+            .map((item) => Prescription.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ))
+            .toList(),
+        moodEntries: (json['moodEntries'] as List<dynamic>? ?? [])
+            .map((item) => MoodEntry.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ))
+            .toList(),
+        journalEntries: (json['journalEntries'] as List<dynamic>? ?? [])
+            .map((item) => JournalEntry.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ))
+            .toList(),
+        messages: (json['messages'] as List<dynamic>? ?? [])
+            .map((item) => ChatMessage.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ))
+            .toList(),
+        isLocked: json['isLocked'] as bool? ?? false,
+        lastUnlockedAt: json['lastUnlockedAt'] == null
+            ? null
+            : DateTime.parse(json['lastUnlockedAt'] as String),
+        lockTimeoutMinutes: json['lockTimeoutMinutes'] as int? ?? 10,
+        currentStreak: json['currentStreak'] as int? ?? 0,
+        longestStreak: json['longestStreak'] as int? ?? 0,
+      );
 }
 
 final initialAppSessionProvider = Provider<AppSession>(
@@ -426,7 +595,7 @@ final initialAppSessionProvider = Provider<AppSession>(
 );
 
 final appSessionStoreProvider = Provider<AppSessionStore>(
-  (ref) => AppSessionStore(),
+  (ref) => const AppSessionStore(),
 );
 
 final appSessionProvider =

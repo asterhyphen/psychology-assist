@@ -13,8 +13,11 @@ import 'app/home_screen.dart'; // To access selectedTabProvider
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final store = AppSessionStore();
-  final initialSession = const AppSession();
+  const store = AppSessionStore();
+  final savedSession = await store.load();
+  final initialSession = savedSession == null
+      ? const AppSession()
+      : AppSession.fromJson(savedSession);
   final notificationService = NotificationService();
   await notificationService.initialize();
   await notificationService.requestPermissions();
