@@ -8,12 +8,16 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: AppTypography.labelLarge.copyWith(
-        color: scheme.onSurface.withValues(alpha: 0.5),
-        letterSpacing: 0.8,
-        fontSize: 12,
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title,
+        textAlign: TextAlign.left,
+        style: AppTypography.labelLarge.copyWith(
+          color: scheme.onSurface.withValues(alpha: 0.5),
+          letterSpacing: 0.8,
+          fontSize: 12,
+        ),
       ),
     );
   }

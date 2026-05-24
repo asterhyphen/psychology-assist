@@ -89,6 +89,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.transparent,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          ref.read(selectedTabProvider.notifier).state = 1;
+        },
+        icon: const Icon(Icons.mood_outlined),
+        label: const Text('Log mood'),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -157,7 +165,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       body: Container(
         color: theme.scaffoldBackgroundColor,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.only(top: 100, bottom: 24),
+          padding: const EdgeInsets.only(top: 100, bottom: 112),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 18),
             child: StaggeredAnimationBuilder(
@@ -165,47 +173,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               delay: const Duration(milliseconds: 80),
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ── Streak Banner ──
-                if (session.currentStreak > 0 || session.moodEntries.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          scheme.primary.withValues(alpha: 0.12),
-                          scheme.tertiary.withValues(alpha: 0.08),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: scheme.primary.withValues(alpha: 0.15),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.local_fire_department,
-                          color: scheme.secondary,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            session.currentStreak > 0
-                                ? '${session.currentStreak} day streak — keep it going!'
-                                : 'Log a mood today to start your streak',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: scheme.onSurface,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 if (profile?.role == UserRole.patient) ...[
-                  const SizedBox(height: 20),
                   _buildAiBanner(context, scheme),
                 ],
                 const SizedBox(height: 20),
@@ -345,24 +313,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 ),
                 const SizedBox(height: 24),
 
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      ref.read(selectedTabProvider.notifier).state = 1;
-                    },
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 12,
-                      ),
-                      shape: const StadiumBorder(),
-                    ),
-                    icon: const Icon(Icons.mood_outlined, size: 18),
-                    label: const Text('Log mood'),
-                  ),
-                ),
-                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
