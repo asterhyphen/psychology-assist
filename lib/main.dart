@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app_links/app_links.dart';
@@ -6,21 +9,29 @@ import 'app/app_state.dart';
 import 'core/services/app_session_store.dart';
 import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/app_error_view.dart';
 import 'app/navigation/app_router.dart';
 import 'features/app_lock/presentation/screens/app_lock_gate.dart';
 import 'features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'app/home_screen.dart'; // To access selectedTabProvider
 
 Future<void> main() async {
+  await runZonedGuarded<Future<void>>(_startApp, _reportUncaughtError);
+}
+
+Future<void> _startApp() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _installErrorHandlers();
+
   const store = AppSessionStore();
-  final savedSession = await store.load();
-  final initialSession = savedSession == null
-      ? const AppSession()
-      : AppSession.fromJson(savedSession);
+  final initialSession = await _loadInitialSession(store);
   final notificationService = NotificationService();
-  await notificationService.initialize();
-  await notificationService.requestPermissions();
+  try {
+    await notificationService.initialize();
+    await notificationService.requestPermissions();
+  } catch (error, stackTrace) {
+    _reportUncaughtError(error, stackTrace);
+  }
 
   runApp(
     ProviderScope(
@@ -31,6 +42,41 @@ Future<void> main() async {
       child: const MyApp(),
     ),
   );
+}
+
+void _installErrorHandlers() {
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    _reportUncaughtError(details.exception, details.stack);
+  };
+
+  PlatformDispatcher.instance.onError = (error, stackTrace) {
+    _reportUncaughtError(error, stackTrace);
+    return true;
+  };
+
+  ErrorWidget.builder = (details) => AppErrorView(details: details);
+}
+
+Future<AppSession> _loadInitialSession(AppSessionStore store) async {
+  try {
+    final savedSession = await store.load();
+    if (savedSession == null) {
+      return const AppSession();
+    }
+    return AppSession.fromJson(savedSession);
+  } catch (error, stackTrace) {
+    _reportUncaughtError(error, stackTrace);
+    await store.clear();
+    return const AppSession();
+  }
+}
+
+void _reportUncaughtError(Object error, StackTrace? stackTrace) {
+  debugPrint('Uncaught app error: $error');
+  if (stackTrace != null) {
+    debugPrintStack(stackTrace: stackTrace);
+  }
 }
 
 class MyApp extends ConsumerStatefulWidget {
@@ -50,18 +96,25 @@ class _MyAppState extends ConsumerState<MyApp> {
   }
 
   Future<void> _initDeepLinks() async {
-    _appLinks = AppLinks();
+    try {
+      _appLinks = AppLinks();
 
-    // Handle initial link if app was closed
-    final initialUri = await _appLinks.getInitialLink();
-    if (initialUri != null) {
-      _handleDeepLink(initialUri);
+      // Handle initial link if app was closed
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) {
+        _handleDeepLink(initialUri);
+      }
+
+      // Handle link when app is in background/foreground
+      _appLinks.uriLinkStream.listen(
+        _handleDeepLink,
+        onError: (Object error, StackTrace stackTrace) {
+          _reportUncaughtError(error, stackTrace);
+        },
+      );
+    } catch (error, stackTrace) {
+      _reportUncaughtError(error, stackTrace);
     }
-
-    // Handle link when app is in background/foreground
-    _appLinks.uriLinkStream.listen((uri) {
-      _handleDeepLink(uri);
-    });
   }
 
   void _handleDeepLink(Uri uri) {

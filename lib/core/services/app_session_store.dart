@@ -40,19 +40,36 @@ class AppSessionStore {
   }
 
   Future<Map<String, dynamic>?> load() async {
-    final database = await _database;
-    final rows = await database.query(
-      _tableName,
-      columns: ['value'],
-      where: 'key = ?',
-      whereArgs: [_sessionKey],
-      limit: 1,
-    );
+    try {
+      final database = await _database;
+      final rows = await database.query(
+        _tableName,
+        columns: ['value'],
+        where: 'key = ?',
+        whereArgs: [_sessionKey],
+        limit: 1,
+      );
 
-    if (rows.isEmpty) {
+      if (rows.isEmpty) {
+        return null;
+      }
+
+      final decoded = jsonDecode(rows.first['value']! as String);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return null;
+    } catch (_) {
       return null;
     }
+  }
 
-    return jsonDecode(rows.first['value']! as String) as Map<String, dynamic>;
+  Future<void> clear() async {
+    final database = await _database;
+    await database.delete(
+      _tableName,
+      where: 'key = ?',
+      whereArgs: [_sessionKey],
+    );
   }
 }
