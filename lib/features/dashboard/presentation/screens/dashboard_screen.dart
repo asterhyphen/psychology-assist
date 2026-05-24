@@ -163,6 +163,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             child: StaggeredAnimationBuilder(
               duration: const Duration(milliseconds: 600),
               delay: const Duration(milliseconds: 80),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // ── Streak Banner ──
                 if (session.currentStreak > 0 || session.moodEntries.isNotEmpty)

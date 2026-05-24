@@ -95,6 +95,7 @@ class StaggeredAnimationBuilder extends StatefulWidget {
   final Duration delay;
   final Curve curve;
   final Axis direction;
+  final CrossAxisAlignment crossAxisAlignment;
 
   const StaggeredAnimationBuilder({
     super.key,
@@ -103,6 +104,7 @@ class StaggeredAnimationBuilder extends StatefulWidget {
     this.delay = const Duration(milliseconds: 100),
     this.curve = Curves.easeOutCubic,
     this.direction = Axis.vertical,
+    this.crossAxisAlignment = CrossAxisAlignment.center,
   });
 
   @override
@@ -157,6 +159,7 @@ class _StaggeredAnimationBuilderState extends State<StaggeredAnimationBuilder>
   Widget build(BuildContext context) {
     return widget.direction == Axis.vertical
         ? Column(
+            crossAxisAlignment: widget.crossAxisAlignment,
             children: List.generate(
               widget.children.length,
               (i) => FadeTransition(

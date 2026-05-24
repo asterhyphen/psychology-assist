@@ -69,13 +69,13 @@ class _PillBottomNavigation extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
       decoration: BoxDecoration(
         color: isDark
             ? scheme.surface.withValues(alpha: 0.92)
             : scheme.surface.withValues(alpha: 0.97),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: scheme.primary.withValues(alpha: isDark ? 0.12 : 0.08),
@@ -189,13 +189,13 @@ class _NavItem extends StatelessWidget {
         curve: Curves.easeOutCubic,
         padding: EdgeInsets.symmetric(
           horizontal: isSelected ? 14 : 10,
-          vertical: 8,
+          vertical: 6,
         ),
         decoration: BoxDecoration(
           color: isSelected
               ? scheme.primary.withValues(alpha: 0.12)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -208,14 +208,14 @@ class _NavItem extends StatelessWidget {
                 color: isSelected
                     ? scheme.primary
                     : scheme.onSurface.withValues(alpha: 0.50),
-                size: isSelected ? 24 : 22,
+                size: isSelected ? 22 : 20,
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 200),
               style: TextStyle(
-                fontSize: isSelected ? 10.5 : 10,
+                fontSize: isSelected ? 10 : 9.5,
                 color: isSelected
                     ? scheme.primary
                     : scheme.onSurface.withValues(alpha: 0.50),
