@@ -9,11 +9,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/smooth_widgets.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../calmora/presentation/screens/calmora_ai_sheet.dart';
-import '../../../breathing_exercise/presentation/screens/breathing_exercise_screen.dart';
-import '../../../journaling/presentation/screens/typing_test_screen.dart';
 import 'stats_screen.dart';
-
-
 
 part '../widgets/section_label.dart';
 part '../widgets/mood_bar.dart';
@@ -100,11 +96,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           padding: const EdgeInsets.only(left: 14),
           child: GestureDetector(
             onTap: () {
-              ref.read(selectedTabProvider.notifier).state = 4; // Go to settings
+              ref.read(selectedTabProvider.notifier).state =
+                  4; // Go to settings
             },
             child: CircleAvatar(
               backgroundColor: Color(
-                profile?.avatarColorValue ?? AppColors.neonViolet.value,
+                profile?.avatarColorValue ?? AppColors.neonViolet.toARGB32(),
               ),
               backgroundImage: profile?.profileImagePath == null
                   ? null
@@ -170,7 +167,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 // ── Streak Banner ──
                 if (session.currentStreak > 0 || session.moodEntries.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -319,7 +317,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Divider(height: 1, color: scheme.onSurface.withValues(alpha: 0.08)),
+                        child: Divider(
+                            height: 1,
+                            color: scheme.onSurface.withValues(alpha: 0.08)),
                       ),
                       _InsightRow(
                         icon: Icons.calendar_today,
@@ -329,7 +329,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Divider(height: 1, color: scheme.onSurface.withValues(alpha: 0.08)),
+                        child: Divider(
+                            height: 1,
+                            color: scheme.onSurface.withValues(alpha: 0.08)),
                       ),
                       _InsightRow(
                         icon: Icons.local_fire_department,
@@ -342,54 +344,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 ),
                 const SizedBox(height: 24),
 
-                // ── Tools ──
-                _SectionLabel(title: 'Wellness Tools', scheme: scheme),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: SmoothButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const BreathingExerciseScreen()),
-                          );
-                        },
-                        label: 'Breathe',
-                        icon: const Icon(Icons.air, color: Colors.white, size: 18),
-                        backgroundColor: scheme.tertiary,
-                        textColor: scheme.onTertiary,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: SmoothButton(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const TypingTestScreen()),
-                          );
-                        },
-                        label: 'Typing Test',
-                        icon: const Icon(Icons.keyboard, color: Colors.white, size: 18),
-                        backgroundColor: scheme.secondary,
-                        textColor: scheme.onSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // ── Main CTA Button ──
-                SizedBox(
-                  width: double.infinity,
-                  child: SmoothButton(
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilledButton.icon(
                     onPressed: () {
                       ref.read(selectedTabProvider.notifier).state = 1;
                     },
-                    label: '+ Log Mood',
-                    backgroundColor: scheme.primary,
-                    textColor: scheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    borderRadius: 16,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 12,
+                      ),
+                      shape: const StadiumBorder(),
+                    ),
+                    icon: const Icon(Icons.mood_outlined, size: 18),
+                    label: const Text('Log mood'),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -503,7 +472,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 color: Colors.white.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+              child:
+                  const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(

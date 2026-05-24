@@ -14,6 +14,9 @@ export 'app_lock/presentation/screens/app_lock_screen.dart';
 // Mood Log
 export 'mood_log/presentation/screens/mood_log_screen.dart';
 
+// Wellness Tools
+export 'wellness_tools/presentation/screens/wellness_tools_screen.dart';
+
 // Appointments
 export 'appointments/presentation/screens/appointments_screen.dart';
 

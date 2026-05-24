@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/app_state.dart';
-import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../widgets/journal_editor_pane.dart';
 import '../widgets/notes_sidebar.dart';

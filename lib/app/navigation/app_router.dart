@@ -5,6 +5,7 @@ import '../../features/mood_log/presentation/screens/mood_log_screen.dart';
 import '../../features/psychologists/presentation/screens/psychologists_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/breathing_exercise/presentation/screens/breathing_exercise_screen.dart';
+import '../../features/wellness_tools/presentation/screens/wellness_tools_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -14,6 +15,11 @@ class AppRouter {
       case '/mood-log':
         return SmoothPageTransition(
           page: const MoodLogScreen(),
+          axisDirection: AxisDirection.up,
+        );
+      case '/wellness':
+        return SmoothPageTransition(
+          page: const WellnessToolsScreen(),
           axisDirection: AxisDirection.up,
         );
       case '/settings':

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
-import '../features/mood_log/presentation/screens/mood_log_screen.dart';
 import '../features/journaling/presentation/screens/journaling_screen.dart';
 import '../features/appointments/presentation/screens/appointments_screen.dart';
 import '../features/psychologists/presentation/screens/psychologists_screen.dart';
 import '../features/psychologists/presentation/screens/psychologist_subscriptions_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
+import '../features/wellness_tools/presentation/screens/wellness_tools_screen.dart';
 import 'app_state.dart';
 
 final selectedTabProvider = StateProvider<int>((ref) => 0);
@@ -29,7 +29,7 @@ class HomeScreen extends ConsumerWidget {
           ]
         : [
             const DashboardScreen(),
-            const MoodLogScreen(),
+            const WellnessToolsScreen(),
             const JournalingScreen(),
             const AppointmentsScreen(),
             const SettingsScreen(),
@@ -128,9 +128,9 @@ class _PillBottomNavigation extends StatelessWidget {
                   onTap: () => onTap(0),
                 ),
                 _NavItem(
-                  icon: Icons.add_circle_outline,
-                  activeIcon: Icons.add_circle,
-                  label: 'Mood',
+                  icon: Icons.spa_outlined,
+                  activeIcon: Icons.spa,
+                  label: 'Wellness',
                   isSelected: selectedIndex == 1,
                   onTap: () => onTap(1),
                 ),

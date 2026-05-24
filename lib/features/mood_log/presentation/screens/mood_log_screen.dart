@@ -207,7 +207,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Log Your Mood'),
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: Navigator.of(context).canPop(),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -347,8 +347,8 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                             child: SmoothCard(
                               borderRadius: 18,
                               padding: const EdgeInsets.all(16),
-                              backgroundColor:
-                                  theme.colorScheme.surface.withValues(alpha: 0.8),
+                              backgroundColor: theme.colorScheme.surface
+                                  .withValues(alpha: 0.8),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -394,7 +394,8 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                 SmoothCard(
                   borderRadius: 18,
                   padding: const EdgeInsets.all(18),
-                  backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.72),
+                  backgroundColor:
+                      theme.colorScheme.surface.withValues(alpha: 0.72),
                   child: Text(
                     'No journal entries yet. Save a mood entry to start building your notes.',
                     style: AppTypography.bodySmall.copyWith(
