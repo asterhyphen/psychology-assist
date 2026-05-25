@@ -9,6 +9,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/smooth_widgets.dart';
 import '../../../../core/widgets/animations.dart';
 import '../../../calmora/presentation/screens/calmora_ai_sheet.dart';
+import '../../../mood_log/presentation/screens/mood_log_screen.dart';
 import 'stats_screen.dart';
 
 part '../widgets/section_label.dart';
@@ -90,7 +91,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          ref.read(selectedTabProvider.notifier).state = 1;
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const MoodLogScreen(),
+            ),
+          );
         },
         icon: const Icon(Icons.mood_outlined),
         label: const Text('Log mood'),
