@@ -20,6 +20,7 @@ class _SettingsToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -34,7 +35,7 @@ class _SettingsToggle extends StatelessWidget {
                     icon,
                     size: 20,
                     color: enabled
-                        ? Colors.black87
+                        ? scheme.primary
                         : theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
                   ),
                   const SizedBox(width: 12),
@@ -70,7 +71,7 @@ class _SettingsToggle extends StatelessWidget {
         Switch(
           value: enabled ? value : false,
           onChanged: enabled ? onChanged : null,
-          activeThumbColor: Colors.black87,
+          activeThumbColor: scheme.primary,
         ),
       ],
     );

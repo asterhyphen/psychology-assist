@@ -138,7 +138,9 @@ class _PsychologistDashboard extends ConsumerWidget {
                                 style: AppTypography.bodySmall,
                               ),
                               const SizedBox(height: 12),
-                              Row(
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
                                 children: [
                                   OutlinedButton.icon(
                                     onPressed: () {
@@ -162,7 +164,6 @@ class _PsychologistDashboard extends ConsumerWidget {
                                       visualDensity: VisualDensity.compact,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
                                   FilledButton.icon(
                                     onPressed: () {
                                       Navigator.of(context).push(
@@ -268,8 +269,10 @@ class _PsychologistDashboard extends ConsumerWidget {
                       child: SmoothCard(
                         borderRadius: 16,
                         padding: const EdgeInsets.all(16),
-                        backgroundColor: AppColors.neonViolet.withOpacity(0.05),
-                        borderColor: AppColors.neonViolet.withOpacity(0.2),
+                        backgroundColor:
+                            AppColors.neonViolet.withValues(alpha: 0.05),
+                        borderColor:
+                            AppColors.neonViolet.withValues(alpha: 0.20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -296,7 +299,9 @@ class _PsychologistDashboard extends ConsumerWidget {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: AppColors.neonViolet.withOpacity(0.1),
+                                  color: AppColors.neonViolet.withValues(
+                                    alpha: 0.10,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Column(

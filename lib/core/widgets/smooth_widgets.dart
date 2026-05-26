@@ -33,13 +33,14 @@ class SmoothCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cardBgColor = backgroundColor ?? theme.colorScheme.surface;
+    final isDark = theme.brightness == Brightness.dark;
     final border = borderColor != null
         ? Border.all(color: borderColor!, width: borderWidth)
         : null;
 
     final effectiveBorder = border ??
         Border.all(
-          color: theme.dividerColor.withOpacity(0.55),
+          color: theme.dividerColor.withValues(alpha: 0.55),
           width: borderWidth,
         );
     final cardWidget = ClipRRect(
@@ -48,20 +49,18 @@ class SmoothCard extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           decoration: BoxDecoration(
-            color: cardBgColor.withOpacity(
-              theme.brightness == Brightness.dark ? 0.64 : 0.72,
+            color: cardBgColor.withValues(
+              alpha: isDark ? 0.70 : 0.86,
             ),
             border: effectiveBorder,
             borderRadius: BorderRadius.circular(borderRadius),
-            boxShadow: elevation > 0
-                ? [
-                    BoxShadow(
-                      color: Colors.black87.withOpacity(0.12),
-                      blurRadius: elevation,
-                      offset: Offset(0, elevation / 2),
-                    ),
-                  ]
-                : [],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.14 : 0.045),
+                blurRadius: elevation > 0 ? elevation : 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Padding(padding: padding, child: child),
         ),
@@ -123,7 +122,7 @@ class _SmoothButtonState extends State<SmoothButton> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.backgroundColor ?? Colors.black87;
+    final bgColor = widget.backgroundColor ?? Theme.of(context).colorScheme.primary;
     final textColor =
         widget.textColor ?? (widget.isOutlined ? bgColor : Colors.white);
 

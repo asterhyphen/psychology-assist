@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/smooth_widgets.dart';
 
@@ -8,13 +9,16 @@ class PsychologistSubscriptionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Subscriptions'),
         centerTitle: true,
       ),
       body: Container(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: theme.scaffoldBackgroundColor,
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -23,19 +27,21 @@ class PsychologistSubscriptionsScreen extends StatelessWidget {
               children: [
                 Text(
                   'Your psychiatric practice subscription',
-                  style: AppTypography.headingLarge,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Choose a plan for more patient tools, advanced scheduling, and priority support.',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.lightSubtext,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.mutedText,
                   ),
                 ),
                 const SizedBox(height: 24),
-                _SubscriptionCard(
+                const _SubscriptionCard(
                   title: 'Starter',
-                  price: '4B0 29',
+                  price: 'INR 29',
                   interval: 'per month',
                   features: [
                     'Up to 20 patient sessions',
@@ -45,9 +51,9 @@ class PsychologistSubscriptionsScreen extends StatelessWidget {
                   accentColor: AppColors.neonCyan,
                 ),
                 const SizedBox(height: 16),
-                _SubscriptionCard(
+                const _SubscriptionCard(
                   title: 'Professional',
-                  price: '4B0 59',
+                  price: 'INR 59',
                   interval: 'per month',
                   features: [
                     'Unlimited patient sessions',
@@ -59,9 +65,9 @@ class PsychologistSubscriptionsScreen extends StatelessWidget {
                   recommended: true,
                 ),
                 const SizedBox(height: 16),
-                _SubscriptionCard(
+                const _SubscriptionCard(
                   title: 'Premium',
-                  price: '4B0 99',
+                  price: 'INR 99',
                   interval: 'per month',
                   features: [
                     'All Professional features',
@@ -74,18 +80,20 @@ class PsychologistSubscriptionsScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 Text(
                   'Why upgrade?',
-                  style: AppTypography.headingMedium,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                _BenefitTile(
+                const _BenefitTile(
                   icon: Icons.lock_outline,
                   label: 'Secure patient notes',
                 ),
-                _BenefitTile(
+                const _BenefitTile(
                   icon: Icons.speed,
                   label: 'Faster workflow across your practice',
                 ),
-                _BenefitTile(
+                const _BenefitTile(
                   icon: Icons.star_border,
                   label: 'Higher visibility for new patients',
                 ),
@@ -120,8 +128,8 @@ class _SubscriptionCard extends StatelessWidget {
     return SmoothCard(
       borderRadius: 20,
       padding: const EdgeInsets.all(18),
-      backgroundColor: accentColor.withOpacity(0.07),
-      borderColor: accentColor.withOpacity(0.18),
+      backgroundColor: accentColor.withValues(alpha: 0.07),
+      borderColor: accentColor.withValues(alpha: 0.18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -139,7 +147,7 @@ class _SubscriptionCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.18),
+                    color: accentColor.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
@@ -167,7 +175,8 @@ class _SubscriptionCard extends StatelessWidget {
               Text(
                 interval,
                 style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.lightSubtext,
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.68),
                 ),
               ),
             ],

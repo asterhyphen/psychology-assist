@@ -16,13 +16,14 @@ class _ConfirmedAppointmentCard extends StatelessWidget {
     return SmoothCard(
       borderRadius: 16,
       padding: const EdgeInsets.all(16),
-      backgroundColor: AppColors.success.withOpacity(0.1),
-      borderColor: AppColors.success.withOpacity(0.3),
+      backgroundColor: AppColors.success.withValues(alpha: 0.10),
+      borderColor: AppColors.success.withValues(alpha: 0.30),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             backgroundColor: AppColors.success,
-            child: const Icon(Icons.check_circle, color: Colors.white),
+            child: Icon(Icons.check_circle, color: Colors.white),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -45,7 +46,9 @@ class _ConfirmedAppointmentCard extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(height: 12),
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     OutlinedButton.icon(
                       onPressed: onPrescribe,
@@ -55,7 +58,6 @@ class _ConfirmedAppointmentCard extends StatelessWidget {
                         visualDensity: VisualDensity.compact,
                       ),
                     ),
-                    const SizedBox(width: 8),
                     FilledButton.icon(
                       onPressed: onMessage,
                       icon: const Icon(Icons.chat_bubble, size: 16),

@@ -24,11 +24,11 @@ class NotificationsScreen extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.black87.withValues(alpha: 0.95),
+                  theme.colorScheme.primary.withValues(alpha: 0.88),
                   theme.colorScheme.tertiary.withValues(alpha: 0.86),
                 ],
               ),
-              borderColor: Colors.black87.withValues(alpha: 0.28),
+              borderColor: theme.colorScheme.primary.withValues(alpha: 0.28),
               waveColorA: Colors.white.withValues(alpha: 0.16),
               waveColorB: theme.colorScheme.secondary.withValues(alpha: 0.18),
               child: Padding(
@@ -80,12 +80,12 @@ class NotificationsScreen extends StatelessWidget {
               borderRadius: 22,
               backgroundColor:
                   theme.colorScheme.surface.withValues(alpha: 0.72),
-              borderColor: Colors.black87.withValues(alpha: 0.24),
+              borderColor: theme.colorScheme.primary.withValues(alpha: 0.18),
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(
                   Icons.notifications_active_outlined,
-                  color: Colors.black87,
+                  color: theme.colorScheme.primary,
                 ),
                 title: const Text('Test alert'),
                 subtitle: const Text('Send a Calmora notification now.'),

@@ -69,17 +69,17 @@ class _PillBottomNavigation extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+      margin: const EdgeInsets.fromLTRB(18, 0, 18, 20),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
       decoration: BoxDecoration(
         color: isDark
             ? scheme.surface.withValues(alpha: 0.92)
             : scheme.surface.withValues(alpha: 0.97),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
             color: scheme.primary.withValues(alpha: isDark ? 0.12 : 0.08),
-            blurRadius: 24,
+            blurRadius: 22,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
@@ -188,8 +188,8 @@ class _NavItem extends StatelessWidget {
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 14 : 10,
-          vertical: 6,
+          horizontal: isSelected ? 13 : 9,
+          vertical: 7,
         ),
         decoration: BoxDecoration(
           color: isSelected
@@ -210,15 +210,15 @@ class _NavItem extends StatelessWidget {
                 color: isSelected
                     ? scheme.primary
                     : scheme.onSurface.withValues(alpha: 0.50),
-                size: isSelected ? 22 : 20,
+                size: 21,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOutCubic,
               style: TextStyle(
-                fontSize: isSelected ? 10 : 9.5,
+                fontSize: 10,
                 color: isSelected
                     ? scheme.primary
                     : scheme.onSurface.withValues(alpha: 0.50),

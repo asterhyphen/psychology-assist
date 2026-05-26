@@ -61,7 +61,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       appBar: AppBar(title: const Text('Settings'), centerTitle: true),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           child: StaggeredAnimationBuilder(
             duration: const Duration(milliseconds: 420),
             delay: const Duration(milliseconds: 45),
@@ -296,39 +296,87 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   const SizedBox(height: 12),
                   if (preferences.moodCheckInsEnabled)
                     SmoothCard(
-                      padding: const EdgeInsets.all(16),
-                      backgroundColor: Colors.black87.withValues(
-                        alpha: 0.05,
-                      ),
-                      borderColor: Colors.black87.withValues(alpha: 0.2),
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+                      backgroundColor:
+                          theme.colorScheme.primary.withValues(alpha: 0.08),
+                      borderColor:
+                          theme.colorScheme.primary.withValues(alpha: 0.18),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Check-in Frequency',
-                            style: AppTypography.labelLarge.copyWith(
-                              color: theme.textTheme.labelLarge?.color,
-                            ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.schedule_rounded,
+                                color: theme.colorScheme.primary,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Check-in Frequency',
+                                  style: AppTypography.labelLarge.copyWith(
+                                    color: theme.textTheme.labelLarge?.color,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: const [
+                              _FrequencyOption(
+                                hours: 2,
+                                label: 'Often',
+                                icon: Icons.flash_on_rounded,
+                                color: AppColors.info,
+                              ),
+                              _FrequencyOption(
+                                hours: 4,
+                                label: 'Balanced',
+                                icon: Icons.spa_rounded,
+                                color: AppColors.success,
+                              ),
+                              _FrequencyOption(
+                                hours: 6,
+                                label: 'Easy',
+                                icon: Icons.wb_sunny_outlined,
+                                color: AppColors.warning,
+                              ),
+                              _FrequencyOption(
+                                hours: 12,
+                                label: 'Light',
+                                icon: Icons.nightlight_round,
+                                color: AppColors.neonViolet,
+                              ),
+                            ]
+                                .map(
+                                  (option) => _FrequencyChoice(
+                                    option: option,
+                                    selected: preferences.moodCheckInInterval ==
+                                        option.hours,
+                                    onTap: () {
+                                      ref
+                                          .read(
+                                            userPreferencesProvider.notifier,
+                                          )
+                                          .updateMoodCheckInInterval(
+                                            option.hours,
+                                          );
+                                      _scheduleMoodCheckIns(option.hours);
+                                    },
+                                  ),
+                                )
+                                .toList(),
                           ),
                           const SizedBox(height: 12),
-                          Slider(
-                            value: preferences.moodCheckInInterval.toDouble(),
-                            min: 2,
-                            max: 12,
-                            divisions: 5,
-                            label: '${preferences.moodCheckInInterval}h',
-                            onChanged: (value) {
-                              final hours = value.toInt();
-                              ref
-                                  .read(userPreferencesProvider.notifier)
-                                  .updateMoodCheckInInterval(hours);
-                              _scheduleMoodCheckIns(hours);
-                            },
-                          ),
                           Text(
-                            'Every ${preferences.moodCheckInInterval} hours',
+                            'Randomized during the day, about every ${preferences.moodCheckInInterval} hours.',
                             style: AppTypography.bodySmall.copyWith(
-                              color: theme.textTheme.bodySmall?.color,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.68,
+                              ),
                             ),
                           ),
                         ],
@@ -990,6 +1038,95 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     return icons.firstWhere(
       (icon) => icon.codePoint == codePoint,
       orElse: () => Icons.person,
+    );
+  }
+}
+
+class _FrequencyOption {
+  final int hours;
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  const _FrequencyOption({
+    required this.hours,
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+}
+
+class _FrequencyChoice extends StatelessWidget {
+  final _FrequencyOption option;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _FrequencyChoice({
+    required this.option,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onColor = theme.colorScheme.onSurface;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 128, maxWidth: 180),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: option.color.withValues(alpha: selected ? 0.20 : 0.09),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: option.color.withValues(alpha: selected ? 0.80 : 0.24),
+              width: selected ? 1.6 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(option.icon, color: option.color, size: 20),
+                  const Spacer(),
+                  AnimatedOpacity(
+                    opacity: selected ? 1 : 0,
+                    duration: const Duration(milliseconds: 160),
+                    child: Icon(
+                      Icons.check_circle_rounded,
+                      color: option.color,
+                      size: 18,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                option.label,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: onColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Every ${option.hours}h',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: onColor.withValues(alpha: 0.68),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

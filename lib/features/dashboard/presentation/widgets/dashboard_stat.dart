@@ -18,7 +18,7 @@ class _DashboardStat extends StatelessWidget {
     return SmoothCard(
       backgroundColor: scheme.surface.withValues(alpha: 0.85),
       borderColor: scheme.primary.withValues(alpha: 0.1),
-      borderRadius: 18,
+      borderRadius: 16,
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,7 +37,7 @@ class _DashboardStat extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: AppTypography.labelSmall.copyWith(
+                  style: theme.textTheme.labelSmall?.copyWith(
                     color: scheme.onSurface.withValues(alpha: 0.55),
                   ),
                 ),
@@ -47,7 +47,7 @@ class _DashboardStat extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             value,
-            style: AppTypography.bodySmall.copyWith(
+            style: theme.textTheme.bodySmall?.copyWith(
               color: scheme.onSurface,
               fontWeight: FontWeight.w700,
             ),

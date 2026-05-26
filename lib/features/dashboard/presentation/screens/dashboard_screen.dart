@@ -104,20 +104,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       body: Container(
         color: theme.scaffoldBackgroundColor,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.only(top: 18, bottom: 112),
+          padding: const EdgeInsets.only(top: 10, bottom: 108),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: StaggeredAnimationBuilder(
               duration: const Duration(milliseconds: 420),
               delay: const Duration(milliseconds: 45),
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildScrollableHeader(context, profile, scheme),
-                const SizedBox(height: 22),
+                const SizedBox(height: 16),
                 if (profile?.role == UserRole.patient) ...[
                   _buildAiBanner(context, scheme),
                 ],
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
 
                 // ── Quick Stats Row ──
                 _SectionLabel(title: 'Quick Overview', scheme: scheme),
@@ -141,7 +141,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
 
                 // ── Weekly Mood Trend Card ──
                 _SectionLabel(title: 'Mood Trend', scheme: scheme),
@@ -151,7 +151,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   borderColor: scheme.primary.withValues(alpha: 0.12),
                   elevation: 0,
                   borderRadius: 20,
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -183,7 +183,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 18),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -207,7 +207,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
 
                 // ── Quick Insights Card ──
                 _SectionLabel(title: 'Insights', scheme: scheme),
@@ -216,7 +216,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   backgroundColor: scheme.surface.withValues(alpha: 0.72),
                   borderColor: scheme.secondary.withValues(alpha: 0.12),
                   borderRadius: 20,
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(18),
                   child: Column(
                     children: [
                       _InsightRow(
@@ -252,7 +252,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
                 SizedBox(
                   width: double.infinity,
@@ -342,69 +342,77 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
     return SafeArea(
       bottom: false,
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () {
-              ref.read(selectedTabProvider.notifier).state = 4;
-            },
-            child: CircleAvatar(
-              radius: 22,
-              backgroundColor: Color(
-                profile?.avatarColorValue ?? AppColors.neonViolet.toARGB32(),
+      child: SmoothCard(
+        borderRadius: 20,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        backgroundColor: scheme.surface.withValues(alpha: 0.78),
+        borderColor: scheme.primary.withValues(alpha: 0.10),
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: () {
+                ref.read(selectedTabProvider.notifier).state = 4;
+              },
+              child: CircleAvatar(
+                radius: 22,
+                backgroundColor: Color(
+                  profile?.avatarColorValue ?? AppColors.neonViolet.toARGB32(),
+                ),
+                backgroundImage: profile?.profileImagePath == null
+                    ? null
+                    : FileImage(File(profile!.profileImagePath!)),
+                child: profile?.profileImagePath == null
+                    ? Icon(
+                        _avatarIconFor(
+                          profile?.avatarIconCodePoint ??
+                              Icons.person.codePoint,
+                        ),
+                        color: Colors.white,
+                        size: 22,
+                      )
+                    : null,
               ),
-              backgroundImage: profile?.profileImagePath == null
-                  ? null
-                  : FileImage(File(profile!.profileImagePath!)),
-              child: profile?.profileImagePath == null
-                  ? Icon(
-                      _avatarIconFor(
-                        profile?.avatarIconCodePoint ?? Icons.person.codePoint,
-                      ),
-                      color: Colors.white,
-                      size: 22,
-                    )
-                  : null,
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _greeting(),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurface.withValues(alpha: 0.55),
-                    fontWeight: FontWeight.w500,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _greeting(),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: scheme.onSurface.withValues(alpha: 0.58),
+                    ),
                   ),
-                ),
-                Text(
-                  profile?.name ?? 'Welcome',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(height: 2),
+                  Text(
+                    profile?.name ?? 'Welcome',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          IconButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const StatsScreen(),
-                ),
-              );
-            },
-            icon: Icon(
-              Icons.insights_outlined,
-              color: scheme.onSurface.withValues(alpha: 0.7),
+            IconButton.filledTonal(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const StatsScreen(),
+                  ),
+                );
+              },
+              icon: Icon(
+                Icons.insights_outlined,
+                color: scheme.primary,
+              ),
+              tooltip: 'View stats',
             ),
-            tooltip: 'View stats',
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -413,22 +421,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return GestureDetector(
       onTap: () => _showAiChat(context),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            colors: [
-              scheme.primary,
-              scheme.tertiary,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          borderRadius: BorderRadius.circular(20),
+          color: scheme.primary.withValues(alpha: 0.12),
+          border: Border.all(color: scheme.primary.withValues(alpha: 0.16)),
           boxShadow: [
             BoxShadow(
-              color: scheme.primary.withValues(alpha: 0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
+              color: scheme.primary.withValues(alpha: 0.10),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -437,11 +439,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
+                color: scheme.primary.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(14),
               ),
               child:
-                  const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+                  Icon(Icons.auto_awesome, color: scheme.primary, size: 22),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -451,22 +453,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   Text(
                     'Hey, Try CalmoraAI',
                     style: AppTypography.labelLarge.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      color: scheme.onSurface,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Your private, intelligent wellness companion.',
                     style: AppTypography.bodySmall.copyWith(
-                      color: Colors.white.withValues(alpha: 0.8),
+                      color: scheme.onSurface.withValues(alpha: 0.66),
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+            Icon(Icons.arrow_forward_ios, color: scheme.primary, size: 16),
           ],
         ),
       ),

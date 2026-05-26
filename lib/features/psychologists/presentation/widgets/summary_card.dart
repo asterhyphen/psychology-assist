@@ -18,8 +18,8 @@ class _SummaryCard extends StatelessWidget {
     return SmoothCard(
       borderRadius: 16,
       padding: const EdgeInsets.all(16),
-      backgroundColor: color.withOpacity(0.1),
-      borderColor: color.withOpacity(0.2),
+      backgroundColor: color.withValues(alpha: 0.10),
+      borderColor: color.withValues(alpha: 0.20),
       child: Column(
         children: [
           Icon(icon, color: color, size: 32),

@@ -16,17 +16,20 @@ class _ThemeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
           color:
-              isSelected ? Colors.black87.withValues(alpha: 0.1) : Colors.transparent,
+              isSelected ? scheme.primary.withValues(alpha: 0.12) : Colors.transparent,
           border: Border.all(
-            color: isSelected ? Colors.black87 : theme.dividerColor,
+            color: isSelected ? scheme.primary : theme.dividerColor,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -36,18 +39,14 @@ class _ThemeButton extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected
-                  ? Colors.black87
-                  : theme.textTheme.bodySmall?.color,
+              color: isSelected ? scheme.primary : theme.textTheme.bodySmall?.color,
               size: 24,
             ),
             const SizedBox(height: 4),
             Text(
               title,
               style: AppTypography.labelSmall.copyWith(
-                color: isSelected
-                    ? Colors.black87
-                    : theme.textTheme.bodySmall?.color,
+                color: isSelected ? scheme.primary : theme.textTheme.bodySmall?.color,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),

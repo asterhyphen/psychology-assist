@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_typography.dart';
 import '../../../breathing_exercise/presentation/screens/breathing_exercise_screen.dart';
 import '../../../journaling/presentation/screens/typing_test_screen.dart';
 import '../../../mood_log/presentation/screens/mood_log_screen.dart';
@@ -19,22 +18,22 @@ class WellnessToolsScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
           children: [
             Text(
               'Tools',
-              style: AppTypography.headingMedium.copyWith(
-                color: theme.textTheme.titleLarge?.color,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               'Check in, reset your breathing, or run a quick typing stress test.',
-              style: AppTypography.bodySmall.copyWith(
-                color: theme.textTheme.bodySmall?.color,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurface.withValues(alpha: 0.66),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             _WellnessToolTile(
               icon: Icons.mood_outlined,
               title: 'Log mood',
@@ -49,7 +48,7 @@ class WellnessToolsScreen extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             _WellnessToolTile(
               icon: Icons.air,
               title: 'Breathing exercise',
@@ -63,7 +62,7 @@ class WellnessToolsScreen extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             _WellnessToolTile(
               icon: Icons.keyboard_outlined,
               title: 'Typing stress test',
@@ -105,27 +104,36 @@ class _WellnessToolTile extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return Material(
-      color: scheme.surface.withValues(alpha: 0.86),
-      borderRadius: BorderRadius.circular(8),
+      color: scheme.surface.withValues(alpha: 0.88),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: color.withValues(alpha: 0.22),
+              color: color.withValues(alpha: 0.18),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(
+                  alpha: theme.brightness == Brightness.dark ? 0.10 : 0.035,
+                ),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: Row(
             children: [
               Container(
-                width: 46,
-                height: 46,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, color: color),
               ),
@@ -136,16 +144,17 @@ class _WellnessToolTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: AppTypography.labelLarge.copyWith(
-                        color: theme.textTheme.titleMedium?.color,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: theme.textTheme.bodySmall?.color,
-                        height: 1.35,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurface.withValues(alpha: 0.66),
+                        height: 1.4,
                       ),
                     ),
                   ],

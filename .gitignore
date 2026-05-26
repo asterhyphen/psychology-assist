@@ -49,6 +49,7 @@ refactor_all.py
 refactor.py
 ARCHITECTURE_DIAGRAMS.md
 .codex
+.env
 ARCHITECTURE_OVERVIEW.md
 ARCHITECTURE_REFACTORING.md
 scaffold_feature.sh

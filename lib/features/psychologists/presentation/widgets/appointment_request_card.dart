@@ -16,16 +16,16 @@ class _AppointmentRequestCard extends StatelessWidget {
     return SmoothCard(
       borderRadius: 16,
       padding: const EdgeInsets.all(16),
-      backgroundColor: AppColors.warning.withOpacity(0.1),
-      borderColor: AppColors.warning.withOpacity(0.3),
+      backgroundColor: AppColors.warning.withValues(alpha: 0.10),
+      borderColor: AppColors.warning.withValues(alpha: 0.30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              CircleAvatar(
+              const CircleAvatar(
                 backgroundColor: AppColors.warning,
-                child: const Icon(Icons.person, color: Colors.white),
+                child: Icon(Icons.person, color: Colors.white),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -55,25 +55,22 @@ class _AppointmentRequestCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: onApprove,
-                  icon: const Icon(Icons.check, size: 16),
-                  label: const Text('Approve'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                  ),
+              FilledButton.icon(
+                onPressed: onApprove,
+                icon: const Icon(Icons.check, size: 16),
+                label: const Text('Approve'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.success,
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onPrescribe,
-                  icon: const Icon(Icons.assignment, size: 16),
-                  label: const Text('Prescribe'),
-                ),
+              OutlinedButton.icon(
+                onPressed: onPrescribe,
+                icon: const Icon(Icons.assignment, size: 16),
+                label: const Text('Prescribe'),
               ),
             ],
           ),

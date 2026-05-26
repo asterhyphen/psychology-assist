@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app_links/app_links.dart';
 import 'app/theme_provider.dart';
@@ -22,6 +23,7 @@ Future<void> main() async {
 Future<void> _startApp() async {
   WidgetsFlutterBinding.ensureInitialized();
   _installErrorHandlers();
+  await dotenv.load(fileName: '.env', isOptional: true);
 
   const store = AppSessionStore();
   final initialSession = await _loadInitialSession(store);

@@ -14,5 +14,6 @@ export 'widgets/wavy_surface.dart';
 
 // Services
 export 'services/notification_service.dart';
+export 'services/gemini_config.dart';
 export 'services/app_session_store.dart';
 export 'services/ollama_service.dart';

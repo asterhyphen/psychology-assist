@@ -7,17 +7,20 @@ class _PsychologistCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return SmoothCard(
       borderRadius: 18,
-      backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.72),
-      borderColor: AppColors.neonViolet.withOpacity(0.18),
+      backgroundColor: scheme.surface.withValues(alpha: 0.72),
+      borderColor: scheme.primary.withValues(alpha: 0.18),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 24,
-            backgroundColor: AppColors.neonViolet,
-            child: Icon(Icons.psychology_alt_outlined, color: Colors.white),
+            backgroundColor: scheme.primary,
+            child: Icon(Icons.psychology_alt_outlined, color: scheme.onPrimary),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -25,44 +28,66 @@ class _PsychologistCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: Text(psychologist.name, style: AppTypography.labelLarge)),
+                    Expanded(
+                      child: Text(
+                        psychologist.name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.star, color: Colors.amber, size: 16),
                         const SizedBox(width: 4),
-                        Text(psychologist.rating.toStringAsFixed(1), style: AppTypography.labelMedium),
+                        Text(
+                          psychologist.rating.toStringAsFixed(1),
+                          style: theme.textTheme.labelMedium,
+                        ),
                       ],
                     ),
                   ],
                 ),
                 if (psychologist.rating >= 4.8) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.2),
+                      color: AppColors.success.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text('🌟 Highly Recommended', style: AppTypography.caption.copyWith(color: AppColors.success, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      'Highly recommended',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ],
-                const SizedBox(height: 4),
-                Text(psychologist.specialty, style: AppTypography.bodySmall),
+                const SizedBox(height: 8),
+                Text(
+                  psychologist.specialty,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.mutedText,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.schedule,
-                      size: 16,
-                      color: AppColors.neonViolet,
-                    ),
+                    Icon(Icons.schedule, size: 16, color: scheme.primary),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         psychologist.availability,
-                        style: AppTypography.caption,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.mutedText,
+                        ),
                       ),
                     ),
                   ],
@@ -74,15 +99,14 @@ class _PsychologistCard extends ConsumerWidget {
                     icon: const Icon(Icons.calendar_today, size: 16),
                     label: const Text('Book appointment'),
                     onPressed: () {
+                      final currentProfile =
+                          ref.read(appSessionProvider).profile;
                       ref.read(appSessionProvider.notifier).updateProfile(
                             AppProfile(
                               role: UserRole.patient,
-                              name:
-                                  ref.read(appSessionProvider).profile?.name ??
-                                      'Patient',
+                              name: currentProfile?.name ?? 'Patient',
                               email:
-                                  ref.read(appSessionProvider).profile?.email ??
-                                      'patient@example.com',
+                                  currentProfile?.email ?? 'patient@example.com',
                               psychologistEmail: psychologist.email,
                             ),
                           );
