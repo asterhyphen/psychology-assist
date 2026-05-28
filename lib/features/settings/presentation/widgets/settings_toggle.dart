@@ -35,8 +35,8 @@ class _SettingsToggle extends StatelessWidget {
                     icon,
                     size: 20,
                     color: enabled
-                        ? scheme.primary
-                        : theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+                        ? (value ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant)
+                        : theme.textTheme.bodySmall?.color?.withOpacity(0.4),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -45,9 +45,7 @@ class _SettingsToggle extends StatelessWidget {
                       style: AppTypography.labelLarge.copyWith(
                         color: enabled
                             ? theme.textTheme.labelLarge?.color
-                            : theme.textTheme.labelLarge?.color?.withValues(
-                                alpha: 0.5,
-                              ),
+                            : theme.textTheme.labelLarge?.color?.withOpacity(0.5),
                       ),
                     ),
                   ),
@@ -60,8 +58,8 @@ class _SettingsToggle extends StatelessWidget {
                   subtitle,
                   style: AppTypography.bodySmall.copyWith(
                     color: enabled
-                        ? theme.textTheme.bodySmall?.color
-                        : theme.textTheme.bodySmall?.color?.withValues(alpha: 0.5),
+                        ? theme.textTheme.bodySmall?.color?.withOpacity(0.7)
+                        : theme.textTheme.bodySmall?.color?.withOpacity(0.4),
                   ),
                 ),
               ),
@@ -71,11 +69,13 @@ class _SettingsToggle extends StatelessWidget {
         Switch(
           value: enabled ? value : false,
           onChanged: enabled ? onChanged : null,
-          activeThumbColor: scheme.primary,
+          activeColor: theme.colorScheme.primary,
+          activeTrackColor: theme.colorScheme.primary.withOpacity(0.3),
         ),
       ],
     );
   }
 }
+
 
 /// Settings info row

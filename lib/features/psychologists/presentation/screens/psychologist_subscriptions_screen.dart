@@ -41,7 +41,7 @@ class PsychologistSubscriptionsScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 const _SubscriptionCard(
                   title: 'Starter',
-                  price: 'INR 29',
+                  price: '\$29',
                   interval: 'per month',
                   features: [
                     'Up to 20 patient sessions',
@@ -53,7 +53,7 @@ class PsychologistSubscriptionsScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 const _SubscriptionCard(
                   title: 'Professional',
-                  price: 'INR 59',
+                  price: '\$59',
                   interval: 'per month',
                   features: [
                     'Unlimited patient sessions',
@@ -67,7 +67,7 @@ class PsychologistSubscriptionsScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 const _SubscriptionCard(
                   title: 'Premium',
-                  price: 'INR 99',
+                  price: '\$99',
                   interval: 'per month',
                   features: [
                     'All Professional features',
@@ -125,11 +125,17 @@ class _SubscriptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return SmoothCard(
       borderRadius: 20,
       padding: const EdgeInsets.all(18),
-      backgroundColor: accentColor.withValues(alpha: 0.07),
-      borderColor: accentColor.withValues(alpha: 0.18),
+      backgroundColor: recommended
+          ? accentColor.withValues(alpha: isDark ? 0.16 : 0.10)
+          : accentColor.withValues(alpha: isDark ? 0.08 : 0.05),
+      borderColor: recommended ? accentColor : accentColor.withValues(alpha: 0.24),
+      borderWidth: recommended ? 2.0 : 1.0,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -137,54 +143,64 @@ class _SubscriptionCard extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: AppTypography.labelLarge.copyWith(
-                  color: accentColor,
+                style: AppTypography.headingSmall.copyWith(
+                  color: recommended ? accentColor : theme.textTheme.titleMedium?.color,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const Spacer(),
               if (recommended)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: accentColor.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Text(
                     'Recommended',
                     style: AppTypography.labelSmall.copyWith(
-                      color: accentColor,
+                      color: Colors.white,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
                 price,
-                style: AppTypography.headingMedium.copyWith(
-                  color: accentColor,
-                  fontSize: 32,
+                style: AppTypography.headingLarge.copyWith(
+                  color: isDark ? Colors.white : theme.textTheme.titleLarge?.color,
+                  fontSize: 36,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 interval,
                 style: AppTypography.bodySmall.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.68),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.68),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
+          Divider(height: 1, color: theme.dividerColor.withValues(alpha: 0.6)),
+
+          const SizedBox(height: 18),
           ...features.map(
             (feature) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -193,24 +209,25 @@ class _SubscriptionCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       feature,
-                      style: AppTypography.bodySmall,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: theme.textTheme.bodyMedium?.color?.withOpacity(0.9),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          FilledButton(
-            onPressed: () {},
-            style: FilledButton.styleFrom(
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: SmoothButton(
+              onPressed: () {},
+              label: 'Select plan',
               backgroundColor: accentColor,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
+              textColor: Colors.white,
+              borderRadius: 14,
             ),
-            child: const Text('Select plan'),
           ),
         ],
       ),

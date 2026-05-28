@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
@@ -69,93 +70,108 @@ class _PillBottomNavigation extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(18, 0, 18, 20),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+      margin: const EdgeInsets.fromLTRB(18, 0, 18, 24),
       decoration: BoxDecoration(
-        color: isDark
-            ? scheme.surface.withValues(alpha: 0.92)
-            : scheme.surface.withValues(alpha: 0.97),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: scheme.primary.withValues(alpha: isDark ? 0.12 : 0.08),
-            blurRadius: 22,
+            color: const Color(0xFF0FA58A).withValues(alpha: isDark ? 0.14 : 0.06),
+            blurRadius: 24,
+            spreadRadius: 0,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.04),
+            blurRadius: 16,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(
-          color: scheme.primary.withValues(alpha: isDark ? 0.12 : 0.08),
-          width: 0.5,
-        ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: isPsychologist
-            ? [
-                _NavItem(
-                  icon: Icons.space_dashboard_outlined,
-                  activeIcon: Icons.space_dashboard,
-                  label: 'Dashboard',
-                  isSelected: selectedIndex == 0,
-                  onTap: () => onTap(0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF0E131E).withValues(alpha: 0.72)
+                  : Colors.white.withValues(alpha: 0.78),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: const Color(0xFF0FA58A).withValues(
+                  alpha: isDark ? 0.16 : 0.08,
                 ),
-                _NavItem(
-                  icon: Icons.subscriptions_outlined,
-                  activeIcon: Icons.subscriptions,
-                  label: 'Subscriptions',
-                  isSelected: selectedIndex == 1,
-                  onTap: () => onTap(1),
-                ),
-                _NavItem(
-                  icon: Icons.tune_outlined,
-                  activeIcon: Icons.tune,
-                  label: 'Settings',
-                  isSelected: selectedIndex == 2,
-                  onTap: () => onTap(2),
-                ),
-              ]
-            : [
-                _NavItem(
-                  icon: Icons.space_dashboard_outlined,
-                  activeIcon: Icons.space_dashboard,
-                  label: 'Home',
-                  isSelected: selectedIndex == 0,
-                  onTap: () => onTap(0),
-                ),
-                _NavItem(
-                  icon: Icons.spa_outlined,
-                  activeIcon: Icons.spa,
-                  label: 'Wellness',
-                  isSelected: selectedIndex == 1,
-                  onTap: () => onTap(1),
-                ),
-                _NavItem(
-                  icon: Icons.auto_stories_outlined,
-                  activeIcon: Icons.auto_stories,
-                  label: 'Journal',
-                  isSelected: selectedIndex == 2,
-                  onTap: () => onTap(2),
-                ),
-                _NavItem(
-                  icon: Icons.event_available_outlined,
-                  activeIcon: Icons.event_available,
-                  label: 'Care',
-                  isSelected: selectedIndex == 3,
-                  onTap: () => onTap(3),
-                ),
-                _NavItem(
-                  icon: Icons.tune_outlined,
-                  activeIcon: Icons.tune,
-                  label: 'Settings',
-                  isSelected: selectedIndex == 4,
-                  onTap: () => onTap(4),
-                ),
-              ],
+                width: 0.8,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: isPsychologist
+                  ? [
+                      _NavItem(
+                        icon: Icons.space_dashboard_outlined,
+                        activeIcon: Icons.space_dashboard,
+                        label: 'Dashboard',
+                        isSelected: selectedIndex == 0,
+                        onTap: () => onTap(0),
+                      ),
+                      _NavItem(
+                        icon: Icons.subscriptions_outlined,
+                        activeIcon: Icons.subscriptions,
+                        label: 'Subscriptions',
+                        isSelected: selectedIndex == 1,
+                        onTap: () => onTap(1),
+                      ),
+                      _NavItem(
+                        icon: Icons.tune_outlined,
+                        activeIcon: Icons.tune,
+                        label: 'Settings',
+                        isSelected: selectedIndex == 2,
+                        onTap: () => onTap(2),
+                      ),
+                    ]
+                  : [
+                      _NavItem(
+                        icon: Icons.space_dashboard_outlined,
+                        activeIcon: Icons.space_dashboard,
+                        label: 'Home',
+                        isSelected: selectedIndex == 0,
+                        onTap: () => onTap(0),
+                      ),
+                      _NavItem(
+                        icon: Icons.spa_outlined,
+                        activeIcon: Icons.spa,
+                        label: 'Wellness',
+                        isSelected: selectedIndex == 1,
+                        onTap: () => onTap(1),
+                      ),
+                      _NavItem(
+                        icon: Icons.auto_stories_outlined,
+                        activeIcon: Icons.auto_stories,
+                        label: 'Journal',
+                        isSelected: selectedIndex == 2,
+                        onTap: () => onTap(2),
+                      ),
+                      _NavItem(
+                        icon: Icons.event_available_outlined,
+                        activeIcon: Icons.event_available,
+                        label: 'Care',
+                        isSelected: selectedIndex == 3,
+                        onTap: () => onTap(3),
+                      ),
+                      _NavItem(
+                        icon: Icons.tune_outlined,
+                        activeIcon: Icons.tune,
+                        label: 'Settings',
+                        isSelected: selectedIndex == 4,
+                        onTap: () => onTap(4),
+                      ),
+                    ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -188,14 +204,32 @@ class _NavItem extends StatelessWidget {
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 13 : 9,
-          vertical: 7,
+          horizontal: isSelected ? 14 : 10,
+          vertical: 8,
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? scheme.primary.withValues(alpha: 0.12)
+              ? const Color(0xFF0FA58A).withValues(
+                  alpha: theme.brightness == Brightness.dark ? 0.16 : 0.08,
+                )
               : Colors.transparent,
           borderRadius: BorderRadius.circular(18),
+          border: isSelected
+              ? Border.all(
+                  color: const Color(0xFF0FA58A).withValues(alpha: 0.22),
+                  width: 0.8,
+                )
+              : null,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF0FA58A).withValues(alpha: 0.12),
+                    blurRadius: 10,
+                    spreadRadius: 0,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -208,7 +242,7 @@ class _NavItem extends StatelessWidget {
                 isSelected ? activeIcon : icon,
                 key: ValueKey(isSelected),
                 color: isSelected
-                    ? scheme.primary
+                    ? const Color(0xFF0FA58A)
                     : scheme.onSurface.withValues(alpha: 0.50),
                 size: 21,
               ),
@@ -220,7 +254,7 @@ class _NavItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 color: isSelected
-                    ? scheme.primary
+                    ? const Color(0xFF0FA58A)
                     : scheme.onSurface.withValues(alpha: 0.50),
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),

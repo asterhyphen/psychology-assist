@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,15 +58,86 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     final profile = session.profile;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(title: const Text('Settings'), centerTitle: true),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          child: StaggeredAnimationBuilder(
-            duration: const Duration(milliseconds: 420),
-            delay: const Duration(milliseconds: 45),
-            children: [
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text('Settings'),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Stack(
+        children: [
+          // Atmospheric Background
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: theme.brightness == Brightness.dark
+                      ? [
+                          const Color(0xFF080C11),
+                          const Color(0xFF0E121E),
+                        ]
+                      : [
+                          const Color(0xFFF7F8FC),
+                          const Color(0xFFF0EFF5),
+                        ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ),
+          // Top-left soft ambient teal glow
+          Positioned(
+            top: -120,
+            left: -120,
+            child: IgnorePointer(
+              child: Container(
+                width: 350,
+                height: 350,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF0FA58A).withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.08 : 0.05,
+                  ),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 85, sigmaY: 85),
+                  child: const SizedBox(),
+                ),
+              ),
+            ),
+          ),
+          // Mid-right soft ambient indigo glow
+          Positioned(
+            top: 350,
+            right: -150,
+            child: IgnorePointer(
+              child: Container(
+                width: 420,
+                height: 420,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF8B5CF6).withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.06 : 0.04,
+                  ),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 95, sigmaY: 95),
+                  child: const SizedBox(),
+                ),
+              ),
+            ),
+          ),
+          // Scrollable body content
+          Positioned.fill(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                child: StaggeredAnimationBuilder(
+                  duration: const Duration(milliseconds: 420),
+                  delay: const Duration(milliseconds: 45),
+                  children: [
               if (profile != null) ...[
                 _SettingsSection(
                   title: 'Profile',
@@ -296,81 +368,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   const SizedBox(height: 12),
                   if (preferences.moodCheckInsEnabled)
                     SmoothCard(
-                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
-                      backgroundColor:
-                          theme.colorScheme.primary.withValues(alpha: 0.08),
-                      borderColor:
-                          theme.colorScheme.primary.withValues(alpha: 0.18),
+                      padding: const EdgeInsets.all(16),
+                      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.04),
+                      borderColor: theme.colorScheme.primary.withValues(alpha: 0.18),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.schedule_rounded,
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Check-in Frequency',
-                                  style: AppTypography.labelLarge.copyWith(
-                                    color: theme.textTheme.labelLarge?.color,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          Text(
+                            'Check-in Frequency',
+                            style: AppTypography.labelLarge.copyWith(
+                              color: theme.textTheme.labelLarge?.color,
+                            ),
                           ),
-                          const SizedBox(height: 14),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: const [
-                              _FrequencyOption(
-                                hours: 2,
-                                label: 'Often',
-                                icon: Icons.flash_on_rounded,
-                                color: AppColors.info,
-                              ),
-                              _FrequencyOption(
-                                hours: 4,
-                                label: 'Balanced',
-                                icon: Icons.spa_rounded,
-                                color: AppColors.success,
-                              ),
-                              _FrequencyOption(
-                                hours: 6,
-                                label: 'Easy',
-                                icon: Icons.wb_sunny_outlined,
-                                color: AppColors.warning,
-                              ),
-                              _FrequencyOption(
-                                hours: 12,
-                                label: 'Light',
-                                icon: Icons.nightlight_round,
-                                color: AppColors.neonViolet,
-                              ),
-                            ]
-                                .map(
-                                  (option) => _FrequencyChoice(
-                                    option: option,
-                                    selected: preferences.moodCheckInInterval ==
-                                        option.hours,
-                                    onTap: () {
-                                      ref
-                                          .read(
-                                            userPreferencesProvider.notifier,
-                                          )
-                                          .updateMoodCheckInInterval(
-                                            option.hours,
-                                          );
-                                      _scheduleMoodCheckIns(option.hours);
-                                    },
-                                  ),
-                                )
-                                .toList(),
+                          const SizedBox(height: 10),
+                          Slider(
+                            value: preferences.moodCheckInInterval.toDouble(),
+                            min: 2,
+                            max: 12,
+                            divisions: 5,
+                            label: '${preferences.moodCheckInInterval}h',
+                            onChanged: (value) {
+                              final hours = value.toInt();
+                              ref
+                                  .read(userPreferencesProvider.notifier)
+                                  .updateMoodCheckInInterval(hours);
+                              _scheduleMoodCheckIns(hours);
+                            },
                           ),
-                          const SizedBox(height: 12),
                           Text(
                             'Randomized during the day, about every ${preferences.moodCheckInInterval} hours.',
                             style: AppTypography.bodySmall.copyWith(
@@ -384,7 +408,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               _SettingsSection(
                 title: 'NFC Integration',
@@ -400,25 +424,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                             color: theme.textTheme.labelLarge?.color,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
                         Text(
                           'Program an NFC tag to quickly launch a feature by tapping it against your phone.',
                           style: AppTypography.bodySmall.copyWith(
-                            color: theme.textTheme.bodySmall?.color,
+                            color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.8),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        FilledButton.icon(
-                          onPressed: _showNfcProgrammingDialog,
-                          icon: const Icon(Icons.nfc),
-                          label: const Text('Program NFC Tag'),
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          child: SmoothButton(
+                            onPressed: _showNfcProgrammingDialog,
+                            icon: const Icon(Icons.nfc, size: 16, color: Colors.white),
+                            label: 'Program NFC Tag',
+                            backgroundColor: theme.colorScheme.primary,
+                            textColor: Colors.white,
+                            borderRadius: 12,
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               _SettingsSection(
                 title: 'App Lock',
@@ -434,7 +464,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                             color: theme.textTheme.labelLarge?.color,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         Slider(
                           value: session.lockTimeoutMinutes.toDouble(),
                           min: 1,
@@ -458,7 +488,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               // Privacy Section
               _SettingsSection(
@@ -466,24 +496,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 children: [
                   SmoothCard(
                     padding: const EdgeInsets.all(16),
-                    backgroundColor: AppColors.success.withValues(alpha: 0.05),
-                    borderColor: AppColors.success.withValues(alpha: 0.2),
+                    backgroundColor: AppColors.success.withValues(alpha: 0.04),
+                    borderColor: AppColors.success.withValues(alpha: 0.18),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppColors.success.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
+                            color: AppColors.success.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
-                            Icons.verified_user,
+                            Icons.verified_user_outlined,
                             color: AppColors.success,
                             size: 20,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,14 +524,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                   color: theme.textTheme.labelLarge?.color,
                                 ),
                               ),
+                              const SizedBox(height: 10),
+                              _buildPrivacyItem(context, 'All data stored locally on your device'),
                               const SizedBox(height: 6),
-                              Text(
-                                '✓ All data stored locally on your device\n✓ End-to-end encrypted\n✓ Never shared or sold\n✓ You have full control',
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: theme.textTheme.bodySmall?.color,
-                                  height: 1.6,
-                                ),
-                              ),
+                              _buildPrivacyItem(context, 'End-to-end encrypted securely'),
+                              const SizedBox(height: 6),
+                              _buildPrivacyItem(context, 'Never shared or sold to third parties'),
+                              const SizedBox(height: 6),
+                              _buildPrivacyItem(context, 'You have full, absolute control'),
                             ],
                           ),
                         ),
@@ -711,13 +741,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 32),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 32),
+          ],
         ),
       ),
+    ),
+  ),
+],
+),
     );
   }
 
@@ -1040,95 +1073,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       orElse: () => Icons.person,
     );
   }
-}
 
-class _FrequencyOption {
-  final int hours;
-  final String label;
-  final IconData icon;
-  final Color color;
-
-  const _FrequencyOption({
-    required this.hours,
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
-}
-
-class _FrequencyChoice extends StatelessWidget {
-  final _FrequencyOption option;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _FrequencyChoice({
-    required this.option,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final onColor = theme.colorScheme.onSurface;
-
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 128, maxWidth: 180),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: option.color.withValues(alpha: selected ? 0.20 : 0.09),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: option.color.withValues(alpha: selected ? 0.80 : 0.24),
-              width: selected ? 1.6 : 1,
+  Widget _buildPrivacyItem(BuildContext context, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.check_circle_outline, size: 14, color: AppColors.success),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTypography.bodySmall.copyWith(
+                color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.8),
+              ),
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Icon(option.icon, color: option.color, size: 20),
-                  const Spacer(),
-                  AnimatedOpacity(
-                    opacity: selected ? 1 : 0,
-                    duration: const Duration(milliseconds: 160),
-                    child: Icon(
-                      Icons.check_circle_rounded,
-                      color: option.color,
-                      size: 18,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                option.label,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: onColor,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Every ${option.hours}h',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: onColor.withValues(alpha: 0.68),
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
 }
+
 
 /// Settings section header

@@ -14,6 +14,8 @@ class SmoothCard extends StatelessWidget {
   final double elevation;
   final VoidCallback? onTap;
   final Duration animationDuration;
+  final Gradient? gradient;
+  final List<BoxShadow>? boxShadow;
 
   const SmoothCard({
     super.key,
@@ -21,12 +23,14 @@ class SmoothCard extends StatelessWidget {
     this.backgroundColor,
     this.borderColor,
     this.borderWidth = 0.5,
-    this.borderRadius = 16,
+    this.borderRadius = 22,
     this.padding = const EdgeInsets.all(16),
     this.margin = const EdgeInsets.all(0),
     this.elevation = 0,
     this.onTap,
     this.animationDuration = const Duration(milliseconds: 180),
+    this.gradient,
+    this.boxShadow,
   });
 
   @override
@@ -40,27 +44,42 @@ class SmoothCard extends StatelessWidget {
 
     final effectiveBorder = border ??
         Border.all(
-          color: theme.dividerColor.withValues(alpha: 0.55),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.07)
+              : Colors.black.withValues(alpha: 0.05),
           width: borderWidth,
         );
+
+    final defaultShadows = [
+      BoxShadow(
+        color: const Color(0xFF0FA58A).withValues(alpha: isDark ? 0.06 : 0.03),
+        blurRadius: elevation > 0 ? elevation + 6 : 22,
+        spreadRadius: 0,
+        offset: const Offset(0, 8),
+      ),
+      BoxShadow(
+        color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.04),
+        blurRadius: elevation > 0 ? elevation : 16,
+        spreadRadius: 0,
+        offset: const Offset(0, 4),
+      ),
+    ];
+
     final cardWidget = ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           decoration: BoxDecoration(
-            color: cardBgColor.withValues(
-              alpha: isDark ? 0.70 : 0.86,
-            ),
+            color: gradient != null
+                ? null
+                : cardBgColor.withValues(
+                    alpha: isDark ? 0.70 : 0.86,
+                  ),
+            gradient: gradient,
             border: effectiveBorder,
             borderRadius: BorderRadius.circular(borderRadius),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.14 : 0.045),
-                blurRadius: elevation > 0 ? elevation : 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            boxShadow: boxShadow ?? defaultShadows,
           ),
           child: Padding(padding: padding, child: child),
         ),

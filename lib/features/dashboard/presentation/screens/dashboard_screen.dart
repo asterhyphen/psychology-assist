@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -89,30 +90,119 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const MoodLogScreen(),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0FA58A), Color(0xFF8B5CF6)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0FA58A).withValues(alpha: 0.16),
+              blurRadius: 18,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
             ),
-          );
-        },
-        icon: const Icon(Icons.mood_outlined),
-        label: const Text('Log mood'),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const MoodLogScreen(),
+              ),
+            );
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          highlightElevation: 0,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.self_improvement_rounded, color: Colors.white, size: 20),
+          label: const Text(
+            'Log Mood',
+            style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.2),
+          ),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: Container(
-        color: theme.scaffoldBackgroundColor,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(top: 10, bottom: 108),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: StaggeredAnimationBuilder(
-              duration: const Duration(milliseconds: 420),
-              delay: const Duration(milliseconds: 45),
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildScrollableHeader(context, profile, scheme),
+      body: Stack(
+        children: [
+          // Atmospheric Background
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: theme.brightness == Brightness.dark
+                      ? [
+                          const Color(0xFF080C11),
+                          const Color(0xFF0E121E),
+                        ]
+                      : [
+                          const Color(0xFFF7F8FC),
+                          const Color(0xFFF0EFF5),
+                        ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ),
+          // Top-left soft ambient teal glow
+          Positioned(
+            top: -120,
+            left: -120,
+            child: IgnorePointer(
+              child: Container(
+                width: 350,
+                height: 350,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF0FA58A).withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.08 : 0.05,
+                  ),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 85, sigmaY: 85),
+                  child: const SizedBox(),
+                ),
+              ),
+            ),
+          ),
+          // Mid-right soft ambient indigo glow
+          Positioned(
+            top: 280,
+            right: -150,
+            child: IgnorePointer(
+              child: Container(
+                width: 420,
+                height: 420,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF8B5CF6).withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.06 : 0.04,
+                  ),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 95, sigmaY: 95),
+                  child: const SizedBox(),
+                ),
+              ),
+            ),
+          ),
+          // Scrollable main body
+          Positioned.fill(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 10, bottom: 108),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: StaggeredAnimationBuilder(
+                  duration: const Duration(milliseconds: 420),
+                  delay: const Duration(milliseconds: 45),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildScrollableHeader(context, profile, scheme),
                 const SizedBox(height: 16),
                 if (profile?.role == UserRole.patient) ...[
                   _buildAiBanner(context, scheme),
@@ -280,7 +370,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
         ),
       ),
-    );
+    ],
+  ),
+);
   }
 
   String _greeting() {
@@ -423,14 +515,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: scheme.primary.withValues(alpha: 0.12),
-          border: Border.all(color: scheme.primary.withValues(alpha: 0.16)),
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0FA58A), Color(0xFF1D4ED8)], // Richer teal-to-blue transition
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.26),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
-              color: scheme.primary.withValues(alpha: 0.10),
-              blurRadius: 18,
+              color: const Color(0xFF0FA58A).withValues(alpha: 0.22),
+              blurRadius: 24,
+              spreadRadius: 0,
               offset: const Offset(0, 8),
+            ),
+            BoxShadow(
+              color: const Color(0xFF1D4ED8).withValues(alpha: 0.14),
+              blurRadius: 18,
+              spreadRadius: -2,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -439,11 +545,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: scheme.primary.withValues(alpha: 0.16),
+                color: Colors.white.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(14),
               ),
               child:
-                  Icon(Icons.auto_awesome, color: scheme.primary, size: 22),
+                  const Icon(Icons.auto_awesome, color: Colors.white, size: 22),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -453,7 +559,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   Text(
                     'Hey, Try CalmoraAI',
                     style: AppTypography.labelLarge.copyWith(
-                      color: scheme.onSurface,
+                      color: Colors.white,
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
                     ),
@@ -462,13 +568,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   Text(
                     'Your private, intelligent wellness companion.',
                     style: AppTypography.bodySmall.copyWith(
-                      color: scheme.onSurface.withValues(alpha: 0.66),
+                      color: Colors.white.withValues(alpha: 0.82),
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, color: scheme.primary, size: 16),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
           ],
         ),
       ),

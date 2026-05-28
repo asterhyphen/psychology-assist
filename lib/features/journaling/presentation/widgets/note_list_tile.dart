@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/app_theme.dart';
 
 class NoteListTile extends StatelessWidget {
   final String title;
@@ -23,66 +24,112 @@ class NoteListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final unselectedBgColor = isDark 
+        ? const Color(0xFF1B222E) 
+        : scheme.surface.withValues(alpha: 0.72);
+
+    final selectedBgColor = isDark 
+        ? scheme.primary.withValues(alpha: 0.16) 
+        : scheme.primary.withValues(alpha: 0.08);
+
+    final unselectedBorderColor = isDark 
+        ? scheme.subtleBorder 
+        : scheme.outlineVariant.withValues(alpha: 0.4);
+
+    final selectedBorderColor = scheme.primary;
 
     return Material(
-      color: selected
-          ? scheme.primaryContainer.withValues(alpha: 0.6)
-          : scheme.surface.withValues(alpha: 0.78),
-      borderRadius: BorderRadius.circular(8),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
-          constraints: const BoxConstraints(minHeight: 96),
-          padding: const EdgeInsets.all(12),
+          constraints: const BoxConstraints(minHeight: 88),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
+            color: selected ? selectedBgColor : unselectedBgColor,
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected
-                  ? scheme.primary.withValues(alpha: 0.35)
-                  : scheme.outlineVariant.withValues(alpha: 0.45),
+              color: selected ? selectedBorderColor : unselectedBorderColor,
+              width: selected ? 1.6 : 1.1,
             ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: scheme.primary.withValues(alpha: 0.06),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : [],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.labelMedium.copyWith(
-                        color: theme.textTheme.titleMedium?.color,
+              if (selected)
+                Positioned(
+                  left: 0,
+                  top: 14,
+                  bottom: 14,
+                  child: Container(
+                    width: 3.5,
+                    decoration: BoxDecoration(
+                      color: scheme.primary,
+                      borderRadius: const BorderRadius.only(
+                        topRight: Radius.circular(4),
+                        bottomRight: Radius.circular(4),
                       ),
                     ),
                   ),
-                  if (shared)
-                    Icon(
-                      Icons.verified_outlined,
-                      size: 16,
-                      color: scheme.primary,
-                    ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                preview,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.bodySmall.copyWith(
-                  color:
-                      theme.textTheme.bodySmall?.color?.withValues(alpha: 0.78),
-                  height: 1.35,
                 ),
-              ),
-              const Spacer(),
-              Text(
-                date,
-                style: AppTypography.caption.copyWith(
-                  color:
-                      theme.textTheme.bodySmall?.color?.withValues(alpha: 0.58),
+              Padding(
+                padding: EdgeInsets.fromLTRB(selected ? 14 : 12, 12, 12, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.labelLarge.copyWith(
+                              color: selected ? scheme.primary : scheme.onSurface,
+                              fontWeight: selected ? FontWeight.bold : FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        if (shared)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: Icon(
+                              Icons.verified_user_outlined,
+                              size: 14,
+                              color: scheme.primary,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      preview,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: scheme.mutedText,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      date,
+                      style: AppTypography.captionSmall.copyWith(
+                        color: scheme.mutedText.withValues(alpha: 0.68),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

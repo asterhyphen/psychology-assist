@@ -16,9 +16,9 @@ class _DashboardStat extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return SmoothCard(
-      backgroundColor: scheme.surface.withValues(alpha: 0.85),
-      borderColor: scheme.primary.withValues(alpha: 0.1),
-      borderRadius: 16,
+      backgroundColor: scheme.surface.withValues(alpha: 0.76),
+      borderColor: const Color(0xFF0FA58A).withValues(alpha: 0.12),
+      borderRadius: 22,
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,12 +26,12 @@ class _DashboardStat extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(5),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: scheme.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(7),
+                  color: const Color(0xFF0FA58A).withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: scheme.primary, size: 16),
+                child: Icon(icon, color: const Color(0xFF0FA58A), size: 16),
               ),
               const SizedBox(width: 8),
               Expanded(
