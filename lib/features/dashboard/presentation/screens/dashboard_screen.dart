@@ -13,6 +13,7 @@ import '../../../../core/widgets/app_snackbar.dart';
 import '../../../calmora/presentation/screens/calmora_ai_sheet.dart';
 import '../../../mood_log/presentation/screens/mood_log_screen.dart';
 import 'stats_screen.dart';
+import 'weekly_report_screen.dart';
 
 part '../widgets/section_label.dart';
 part '../widgets/mood_bar.dart';
@@ -240,9 +241,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 if (profile?.role == UserRole.patient) ...[
                   _buildWeeklyDriftTrend(context, profile, session, scheme),
                   const SizedBox(height: 18),
-                  _buildPassiveBehavioralSignals(context, scheme),
+                  _buildPassiveBehavioralSignals(context, profile, scheme),
                   const SizedBox(height: 18),
                   _buildAiDailyInsight(context, scheme),
+                  const SizedBox(height: 18),
+                  _buildWeeklyReportCard(context, scheme),
                   const SizedBox(height: 18),
                 ],
 
@@ -251,7 +254,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 const SizedBox(height: 10),
                 SmoothCard(
                   backgroundColor: scheme.surface.withValues(alpha: 0.72),
-                  borderColor: scheme.secondary.withValues(alpha: 0.12),
+                  borderColor: scheme.secondary.withValues(alpha: theme.brightness == Brightness.dark ? 0.22 : 0.15),
                   borderRadius: 20,
                   padding: const EdgeInsets.all(18),
                   child: Column(
@@ -385,7 +388,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         borderRadius: 20,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         backgroundColor: scheme.surface.withValues(alpha: 0.78),
-        borderColor: scheme.primary.withValues(alpha: 0.10),
+        borderColor: scheme.primary.withValues(alpha: theme.brightness == Brightness.dark ? 0.20 : 0.14),
         child: Row(
           children: [
             GestureDetector(
@@ -436,7 +439,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 ],
               ),
             ),
-            IconButton.filledTonal(
+            IconButton.filled(
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
@@ -444,9 +447,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   ),
                 );
               },
-              icon: Icon(
+              style: IconButton.styleFrom(
+                backgroundColor: scheme.primary,
+                foregroundColor: Colors.white,
+              ),
+              icon: const Icon(
                 Icons.insights_outlined,
-                color: scheme.primary,
+                size: 20,
               ),
               tooltip: 'View stats',
             ),
@@ -497,7 +504,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   }
 
   // ── Helper: Calculate Drift For A Specific Day of the current week ──
-  double _driftForDay(List<MoodEntry> entries, int dayIndex) {
+  double _driftForDay(List<MoodEntry> entries, double currentDrift, int dayIndex) {
     final now = DateTime.now();
     final weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
     final day = weekStart.add(Duration(days: dayIndex));
@@ -509,8 +516,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     ).toList();
 
     if (dayEntries.isEmpty) {
-      final session = ref.read(appSessionProvider);
-      final baseDrift = (session.profile?.driftIndex ?? 0.18) * 100.0;
+      final baseDrift = currentDrift * 100.0;
       
       // Deterministic beautiful variation to keep chart full and organic
       final variations = [2.0, -1.5, 4.0, 1.5, 5.0, -3.0, 0.0];
@@ -576,7 +582,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
     return SmoothCard(
       backgroundColor: scheme.surface.withValues(alpha: 0.72),
-      borderColor: scheme.primary.withValues(alpha: 0.12),
+      borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
       borderRadius: 22,
       padding: const EdgeInsets.all(22),
       child: Column(
@@ -727,6 +733,64 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               ),
             ),
           ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => _showAiChat(context),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: isDark ? Colors.white : scheme.onSurface,
+                    foregroundColor: isDark ? Colors.black : scheme.surface,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Talk to AI Support',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    // Navigate directly to the priority appointments screen (tab index 3)
+                    ref.read(selectedTabProvider.notifier).state = 3;
+                  },
+                  icon: const Icon(
+                    Icons.bolt_rounded,
+                    color: Color(0xFFEF4444),
+                    size: 16,
+                  ),
+                  label: const Text(
+                    'Priority Appointment',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                      color: Color(0xFFEF4444),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    side: BorderSide(
+                      color: const Color(0xFFEF4444).withOpacity(0.3),
+                      width: 1.2,
+                    ),
+                    backgroundColor: const Color(0xFFEF4444).withOpacity(0.08),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -736,8 +800,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   Widget _buildWeeklyDriftTrend(BuildContext context, AppProfile? profile, AppSession session, ColorScheme scheme) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final List<double> driftValues = List.generate(7, (i) => _driftForDay(session.moodEntries, i));
     final currentDrift = profile?.driftIndex ?? 0.18;
+    final List<double> driftValues = List.generate(7, (i) => _driftForDay(session.moodEntries, currentDrift, i));
 
     Color activeColor;
     if (currentDrift < 0.35) {
@@ -750,7 +814,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
     return SmoothCard(
       backgroundColor: scheme.surface.withValues(alpha: 0.72),
-      borderColor: scheme.primary.withValues(alpha: 0.12),
+      borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
       borderRadius: 22,
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -861,12 +925,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   bool _isRefreshingInsight = false;
 
   // ── Widget: Passive Behavioral Signals Card ──
-  Widget _buildPassiveBehavioralSignals(BuildContext context, ColorScheme scheme) {
+  Widget _buildPassiveBehavioralSignals(BuildContext context, AppProfile? profile, ColorScheme scheme) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final drift = profile?.driftIndex ?? 0.18;
+    
+    // Scale typing metrics based on drift index (stress levels)
+    // Stable (< 0.35), Declining (< 0.65), Critical (>= 0.65)
+    String speedText;
+    String backspaceText;
+    String pauseText;
+    String sentimentText;
+    
+    if (drift < 0.35) {
+      speedText = '${(4.8 - drift * 2.0).toStringAsFixed(1)} c/s';
+      backspaceText = '${(4 + drift * 20).toInt()}%';
+      pauseText = '${(0.2 + drift * 0.5).toStringAsFixed(1)}s';
+      sentimentText = 'Positive';
+    } else if (drift < 0.65) {
+      speedText = '${(4.8 - drift * 2.5).toStringAsFixed(1)} c/s';
+      backspaceText = '${(4 + drift * 30).toInt()}%';
+      pauseText = '${(0.2 + drift * 0.8).toStringAsFixed(1)}s';
+      sentimentText = 'Neutral';
+    } else {
+      speedText = '${(4.8 - drift * 3.0).toStringAsFixed(1)} c/s';
+      backspaceText = '${(4 + drift * 40).toInt()}%';
+      pauseText = '${(0.2 + drift * 1.2).toStringAsFixed(1)}s';
+      sentimentText = 'Stressed';
+    }
+
     return SmoothCard(
       backgroundColor: scheme.surface.withValues(alpha: 0.72),
-      borderColor: scheme.primary.withValues(alpha: 0.12),
+      borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
       borderRadius: 22,
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -900,7 +990,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 child: _buildSignalTile(
                   icon: Icons.bolt_outlined,
                   label: 'Typing Speed',
-                  value: '4.2 c/s',
+                  value: speedText,
                 ),
               ),
               const SizedBox(width: 12),
@@ -908,7 +998,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 child: _buildSignalTile(
                   icon: Icons.show_chart_rounded,
                   label: 'Backspace Rate',
-                  value: '8%',
+                  value: backspaceText,
                 ),
               ),
             ],
@@ -920,7 +1010,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 child: _buildSignalTile(
                   icon: Icons.access_time_outlined,
                   label: 'Avg Pause',
-                  value: '0.3s',
+                  value: pauseText,
                 ),
               ),
               const SizedBox(width: 12),
@@ -928,7 +1018,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 child: _buildSignalTile(
                   icon: Icons.psychology_outlined,
                   label: 'Sentiment',
-                  value: 'Positive',
+                  value: sentimentText,
                 ),
               ),
             ],
@@ -1011,7 +1101,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final isDark = theme.brightness == Brightness.dark;
     return SmoothCard(
       backgroundColor: scheme.surface.withValues(alpha: 0.72),
-      borderColor: scheme.primary.withValues(alpha: 0.12),
+      borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
       borderRadius: 22,
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -1179,6 +1269,77 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeeklyReportCard(BuildContext context, ColorScheme scheme) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return SmoothCard(
+      backgroundColor: scheme.surface.withValues(alpha: 0.72),
+      borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
+      borderRadius: 22,
+      padding: const EdgeInsets.all(18),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const WeeklyReportScreen(),
+          ),
+        );
+      },
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0FA58A), Color(0xFF8B5CF6)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.assignment_outlined,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Weekly Mental Health Report',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Generate psychiatric summaries and stress logs based on your typing signals.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: isDark ? Colors.white54 : scheme.onSurface.withOpacity(0.54),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            color: isDark ? Colors.white38 : scheme.onSurface.withOpacity(0.38),
+            size: 16,
           ),
         ],
       ),
@@ -1617,7 +1778,12 @@ class _TrendLinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TrendLinePainter oldDelegate) {
-    return oldDelegate.values != values || oldDelegate.activeColor != activeColor;
+    if (oldDelegate.activeColor != activeColor || oldDelegate.isDark != isDark) return true;
+    if (oldDelegate.values.length != values.length) return true;
+    for (int i = 0; i < values.length; i++) {
+      if (oldDelegate.values[i] != values[i]) return true;
+    }
+    return false;
   }
 }
 

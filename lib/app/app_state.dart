@@ -704,6 +704,14 @@ class AppSessionNotifier extends StateNotifier<AppSession> {
     _persist();
   }
 
+  void removeJournalEntry(JournalEntry entry) {
+    final updated = state.journalEntries
+        .where((e) => e.createdAt != entry.createdAt)
+        .toList();
+    state = state.copyWith(journalEntries: updated);
+    _persist();
+  }
+
   void addMessage(ChatMessage message) {
     final updated = [...state.messages, message]
       ..sort((a, b) => a.timestamp.compareTo(b.timestamp));

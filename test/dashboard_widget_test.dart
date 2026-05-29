@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:psychol/app/app_state.dart';
 import 'package:psychol/app/home_screen.dart';
 import 'package:psychol/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:psychol/features/dashboard/presentation/screens/weekly_report_screen.dart';
 import 'package:psychol/features/breathing_exercise/presentation/screens/breathing_exercise_screen.dart';
 
 void main() {
@@ -106,5 +107,30 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(BreathingExerciseScreen), findsOneWidget);
+  });
+
+  testWidgets('WeeklyReportScreen renders and generates report without crashing', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: WeeklyReportScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(WeeklyReportScreen), findsOneWidget);
+
+    final generateBtn = find.text('Generate Report');
+    expect(generateBtn, findsOneWidget);
+
+    await tester.tap(generateBtn);
+    await tester.pump();
+
+    // Fast-forward generation timer
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    // Verify clinical actions list appears
+    expect(find.text('Recommended Clinical Actions'), findsOneWidget);
   });
 }

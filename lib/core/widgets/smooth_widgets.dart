@@ -22,7 +22,7 @@ class SmoothCard extends StatelessWidget {
     required this.child,
     this.backgroundColor,
     this.borderColor,
-    this.borderWidth = 0.5,
+    this.borderWidth = 1.0,
     this.borderRadius = 22,
     this.padding = const EdgeInsets.all(16),
     this.margin = const EdgeInsets.all(0),
@@ -45,8 +45,8 @@ class SmoothCard extends StatelessWidget {
     final effectiveBorder = border ??
         Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.07)
-              : Colors.black.withValues(alpha: 0.05),
+              ? theme.colorScheme.primary.withValues(alpha: 0.16)
+              : theme.colorScheme.primary.withValues(alpha: 0.12),
           width: borderWidth,
         );
 
@@ -73,9 +73,11 @@ class SmoothCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: gradient != null
                 ? null
-                : cardBgColor.withValues(
-                    alpha: isDark ? 0.70 : 0.86,
-                  ),
+                : backgroundColor != null
+                    ? backgroundColor
+                    : cardBgColor.withValues(
+                        alpha: isDark ? 0.70 : 0.86,
+                      ),
             gradient: gradient,
             border: effectiveBorder,
             borderRadius: BorderRadius.circular(borderRadius),

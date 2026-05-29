@@ -388,7 +388,7 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
                 // Prompt Glassmorphic Card
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 24),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF14B8A6), Color(0xFF0B7A66)],
@@ -412,9 +412,9 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
                     text: TextSpan(
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 15,
+                        fontSize: 19.0,
                         fontWeight: FontWeight.w600,
-                        height: 1.6,
+                        height: 1.65,
                       ),
                       children: _buildPromptSpans(context),
                     ),

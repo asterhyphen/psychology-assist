@@ -599,9 +599,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         const SizedBox(height: 16),
                         FilledButton.icon(
                           style: FilledButton.styleFrom(
-                            backgroundColor: theme
-                                .colorScheme.secondaryContainer
-                                .withValues(alpha: 0.9),
+                            backgroundColor: theme.brightness == Brightness.dark
+                                ? theme.colorScheme.secondary.withValues(alpha: 0.3)
+                                : theme.colorScheme.secondary.withValues(alpha: 0.85),
+                            foregroundColor: Colors.white,
                           ),
                           onPressed: () {
                             if (profile?.role == UserRole.psychologist) {
@@ -682,8 +683,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         const SizedBox(height: 16),
                         FilledButton.icon(
                           style: FilledButton.styleFrom(
-                            backgroundColor: theme.colorScheme.errorContainer
-                                .withValues(alpha: 0.9),
+                            backgroundColor: theme.brightness == Brightness.dark
+                                ? theme.colorScheme.error.withValues(alpha: 0.3)
+                                : theme.colorScheme.error.withValues(alpha: 0.85),
+                            foregroundColor: Colors.white,
                           ),
                           onPressed: () {
                             ref.read(appSessionProvider.notifier).logout();
