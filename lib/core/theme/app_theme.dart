@@ -22,30 +22,30 @@ class AppTheme {
   static const lightBackground = Color(0xFFF6F7FB);
 
   static const darkScheme = ColorScheme.dark(
-    primary: Color(0xFF6ED7C2),
-    secondary: Color(0xFFEFB86E),
-    tertiary: Color(0xFF93AAFF),
-    surface: Color(0xFF151D27),
-    surfaceContainerHighest: Color(0xFF223041),
-    outline: Color(0xFF3B4A5F),
-    error: Color(0xFFFF6D7A),
-    onPrimary: Color(0xFF04110D),
-    onSecondary: Color(0xFF1C1200),
-    onSurface: Color(0xFFE8ECF5),
+    primary: Color(0xFF14B8A6), // Vibrant Teal
+    secondary: Color(0xFF22D3EE), // Vibrant Cyan
+    tertiary: Color(0xFF8B5CF6), // Vibrant Violet
+    surface: Color(0xFF0F141F), // Rich Midnight Navy
+    surfaceContainerHighest: Color(0xFF161D2B), // Premium Slate Container
+    outline: Color(0xFF2D3748), // Darker slate border
+    error: Color(0xFFF87171), // Calm error pink
+    onPrimary: Color(0xFF021E1A),
+    onSecondary: Color(0xFF011C20),
+    onSurface: Color(0xFFE2E8F0), // Slate Light Text
     onError: Color(0xFF2D0208),
   );
 
   static const lightScheme = ColorScheme.light(
-    primary: Color(0xFF168E7A),
-    secondary: Color(0xFF6D77D8),
-    tertiary: Color(0xFF7897D8),
+    primary: Color(0xFF0FA58A), // Vibrant Teal
+    secondary: Color(0xFF8B5CF6), // Vibrant Violet
+    tertiary: Color(0xFF06B6D4), // Vibrant Cyan
     surface: Color(0xFFFBFCFE),
-    surfaceContainerHighest: Color(0xFFECEFF5),
-    outline: Color(0xFFD8DDE8),
-    error: Color(0xFFB3261E),
+    surfaceContainerHighest: Color(0xFFF1F5F9), // Light Slate
+    outline: Color(0xFFE2E8F0),
+    error: Color(0xFFEF4444),
     onPrimary: Color(0xFFFFFFFF),
     onSecondary: Color(0xFFFFFFFF),
-    onSurface: Color(0xFF1A2433),
+    onSurface: Color(0xFF0F172A), // Charcoal Slate
     onError: Color(0xFFFFFFFF),
   );
 

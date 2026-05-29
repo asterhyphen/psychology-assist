@@ -70,20 +70,19 @@ class _PillBottomNavigation extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(18, 0, 18, 24),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 26),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0FA58A).withValues(alpha: isDark ? 0.14 : 0.06),
-            blurRadius: 24,
-            spreadRadius: 0,
+            color: const Color(0xFF0FA58A).withValues(alpha: isDark ? 0.22 : 0.08),
+            blurRadius: 32,
+            spreadRadius: 1,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.04),
-            blurRadius: 16,
-            spreadRadius: 0,
+            color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.05),
+            blurRadius: 20,
             offset: const Offset(0, 4),
           ),
         ],

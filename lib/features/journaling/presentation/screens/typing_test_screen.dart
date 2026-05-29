@@ -298,37 +298,116 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisSize: MainAxisSize.min, // Make column tight and centered vertically
               children: [
-                // Prompt Gradient Card with loopable breathing scale guide
-                AnimatedBuilder(
-                  animation: _breathingAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _breathingAnimation.value,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF0FA58A), Color(0xFF0C8A73)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF0FA58A).withValues(
-                                alpha: 0.12 + (_breathingAnimation.value * 0.08),
+                // Elegant central circular breathing guide
+                Center(
+                  child: AnimatedBuilder(
+                    animation: _breathingController,
+                    builder: (context, child) {
+                      final value = _breathingController.value;
+                      final scale = 1.0 + (value * 0.15); // Scale from 1.0 to 1.15
+                      final text = value < 0.5 ? 'Hold & Inhale...' : 'Pause & Exhale...';
+
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Concentric glowing halo 2
+                              Transform.scale(
+                                scale: scale * 1.28,
+                                child: Container(
+                                  width: 96,
+                                  height: 96,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: const Color(0xFF0FA58A).withValues(alpha: 0.05),
+                                    border: Border.all(
+                                      color: const Color(0xFF0FA58A).withValues(alpha: 0.1),
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                ),
                               ),
-                              blurRadius: 10 + (_breathingAnimation.value * 12),
-                              spreadRadius: _breathingAnimation.value * 1.0,
-                              offset: const Offset(0, 4),
+                              // Concentric glowing halo 1
+                              Transform.scale(
+                                scale: scale,
+                                child: Container(
+                                  width: 82,
+                                  height: 82,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: const Color(0xFF0FA58A).withValues(alpha: 0.12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF0FA58A).withValues(alpha: 0.22),
+                                        blurRadius: 18,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              // Central Circle
+                              Container(
+                                width: 68,
+                                height: 68,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [Color(0xFF0FA58A), Color(0xFF14B8A6)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.spa_rounded,
+                                  color: Colors.white,
+                                  size: 26,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            text,
+                            style: TextStyle(
+                              color: scheme.primary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.2,
                             ),
-                          ],
-                        ),
-                        child: child,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // Prompt Glassmorphic Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF14B8A6), Color(0xFF0B7A66)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0FA58A).withValues(alpha: 0.16),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
                       ),
-                    );
-                  },
+                    ],
+                  ),
                   child: RichText(
                     text: TextSpan(
                       style: const TextStyle(
@@ -341,7 +420,7 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 
                 // Live metrics arranged horizontally in a sleek premium stats bar
                 Container(

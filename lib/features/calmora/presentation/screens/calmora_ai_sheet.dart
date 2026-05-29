@@ -206,69 +206,199 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                         ],
                       ),
                       const SizedBox(height: 18),
+                      // Beautiful Scrollable Message Panel
                       Container(
                         width: double.infinity,
                         constraints: const BoxConstraints(
-                          minHeight: 132,
-                          maxHeight: 280,
+                          minHeight: 180,
+                          maxHeight: 320,
                         ),
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                         decoration: BoxDecoration(
                           color: isDark
-                              ? scheme.surfaceContainerHighest.withValues(
-                                  alpha: 0.24,
-                                )
-                              : scheme.surfaceContainerHighest.withValues(
-                                  alpha: 0.52,
-                                ),
-                          borderRadius: BorderRadius.circular(18),
+                              ? const Color(0xFF131A26).withValues(alpha: 0.6)
+                              : scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(22),
                           border: Border.all(
-                            color: scheme.onSurface.withValues(alpha: 0.07),
+                            color: scheme.primary.withValues(alpha: 0.12),
                           ),
                         ),
-                        child: _loading
-                            ? Column(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircularProgressIndicator(
-                                    color: scheme.primary,
-                                    strokeWidth: 3,
+                        child: SingleChildScrollView(
+                          reverse: true, // Auto scroll to bottom
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              ..._chatHistory
+                                  .split('\n\n')
+                                  .map((b) => b.trim())
+                                  .where((b) => b.isNotEmpty)
+                                  .map((bubble) {
+                                final isUser = bubble.startsWith('You:');
+                                final cleanContent = isUser
+                                    ? bubble.replaceFirst('You:', '').trim()
+                                    : bubble.replaceFirst('CalmoraAI:', '').trim();
+
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 6),
+                                  child: Row(
+                                    mainAxisAlignment: isUser
+                                        ? MainAxisAlignment.end
+                                        : MainAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (!isUser) ...[
+                                        Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: scheme.primary.withValues(alpha: 0.16),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.auto_awesome,
+                                            size: 14,
+                                            color: scheme.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
+                                      Flexible(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isUser
+                                                ? scheme.secondary.withValues(alpha: 0.14)
+                                                : scheme.primary.withValues(
+                                                    alpha: isDark ? 0.18 : 0.08,
+                                                  ),
+                                            borderRadius: BorderRadius.only(
+                                              topLeft: const Radius.circular(16),
+                                              topRight: const Radius.circular(16),
+                                              bottomLeft: isUser
+                                                  ? const Radius.circular(16)
+                                                  : const Radius.circular(4),
+                                              bottomRight: isUser
+                                                  ? const Radius.circular(4)
+                                                  : const Radius.circular(16),
+                                            ),
+                                            border: Border.all(
+                                              color: isUser
+                                                  ? scheme.secondary.withValues(alpha: 0.22)
+                                                  : scheme.primary.withValues(alpha: 0.16),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            cleanContent,
+                                            style: theme.textTheme.bodyMedium?.copyWith(
+                                              color: scheme.onSurface,
+                                              height: 1.45,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      if (isUser) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: scheme.secondary.withValues(alpha: 0.16),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.person,
+                                            size: 14,
+                                            color: scheme.secondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Thinking through a helpful response...',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: scheme.onSurface.withValues(
-                                        alpha: 0.58,
+                                );
+                              }),
+                              if (_loading) ...[
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: scheme.primary.withValues(alpha: 0.16),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.auto_awesome,
+                                        size: 14,
+                                        color: scheme.primary,
                                       ),
                                     ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              )
-                            : SingleChildScrollView(
-                                child: Text(
-                                  _chatHistory.trim(),
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    height: 1.55,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: scheme.primary.withValues(
+                                          alpha: isDark ? 0.18 : 0.08,
+                                        ),
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(16),
+                                          topRight: Radius.circular(16),
+                                          bottomLeft: Radius.circular(4),
+                                          bottomRight: Radius.circular(16),
+                                        ),
+                                        border: Border.all(
+                                          color: scheme.primary.withValues(alpha: 0.16),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const SizedBox(
+                                            width: 12,
+                                            height: 12,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.0,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation(Color(0xFF0FA58A)),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            'Calmora is reflecting...',
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: scheme.primary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 14),
+                      // Premium Glowing Input field
                       Container(
                         decoration: BoxDecoration(
                           color: scheme.surface.withValues(alpha: 0.96),
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(22),
                           border: Border.all(
-                            color: scheme.onSurface.withValues(alpha: 0.08),
+                            color: scheme.primary.withValues(alpha: 0.24),
+                            width: 1.2,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(
-                                alpha: isDark ? 0.14 : 0.04,
+                              color: scheme.primary.withValues(
+                                alpha: isDark ? 0.16 : 0.04,
                               ),
                               blurRadius: 14,
                               offset: const Offset(0, 6),
@@ -286,11 +416,11 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                               color: scheme.onSurface.withValues(alpha: 0.42),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
+                              horizontal: 18,
                               vertical: 14,
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius: BorderRadius.circular(22),
                               borderSide: BorderSide.none,
                             ),
                             suffixIcon: Padding(
@@ -302,7 +432,13 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: scheme.primary,
-                                    borderRadius: BorderRadius.circular(12),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: scheme.primary.withValues(alpha: 0.35),
+                                        blurRadius: 6,
+                                      ),
+                                    ],
                                   ),
                                   child: Icon(
                                     Icons.send_rounded,

@@ -200,6 +200,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final session = ref.watch(appSessionProvider);
     final entries = session.moodEntries.reversed.toList();
 
@@ -344,46 +345,77 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                     ...entries.take(5).map(
                           (entry) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: SmoothCard(
-                              borderRadius: 18,
-                              padding: const EdgeInsets.all(16),
-                              backgroundColor: theme.colorScheme.surface
-                                  .withValues(alpha: 0.8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            _getMoodIcon(entry.value),
-                                            color: _getMoodColor(entry.value),
-                                            size: 20,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            entry.label,
-                                            style: AppTypography.labelLarge,
-                                          ),
-                                        ],
-                                      ),
-                                      Text(
-                                        '${entry.createdAt.day}/${entry.createdAt.month} ${entry.createdAt.hour.toString().padLeft(2, '0')}:${entry.createdAt.minute.toString().padLeft(2, '0')}',
-                                        style: AppTypography.bodySmall.copyWith(
-                                          color:
-                                              theme.textTheme.bodySmall?.color,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF161D26).withValues(alpha: 0.72)
+                                    : theme.colorScheme.surface.withValues(alpha: 0.84),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: _getMoodColor(entry.value).withValues(alpha: 0.22),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(18),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 5,
+                                      height: 96,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            _getMoodColor(entry.value),
+                                            _getMoodColor(entry.value).withValues(alpha: 0.4),
+                                          ],
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  _buildTruncatedText(entry.note.isEmpty
-                                      ? 'No additional note provided.'
-                                      : entry.note),
-                                ],
+                                    ),
+                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      _getMoodIcon(entry.value),
+                                                      color: _getMoodColor(entry.value),
+                                                      size: 20,
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Text(
+                                                      entry.label,
+                                                      style: AppTypography.labelLarge,
+                                                    ),
+                                                  ],
+                                                ),
+                                                Text(
+                                                  '${entry.createdAt.day}/${entry.createdAt.month} ${entry.createdAt.hour.toString().padLeft(2, '0')}:${entry.createdAt.minute.toString().padLeft(2, '0')}',
+                                                  style: AppTypography.bodySmall.copyWith(
+                                                    color: theme.textTheme.bodySmall?.color,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 10),
+                                            _buildTruncatedText(entry.note.isEmpty
+                                                ? 'No additional note provided.'
+                                                : entry.note),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -451,39 +483,59 @@ class _MoodSelectorState extends State<_MoodSelector>
           CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
         ),
         child: Container(
-          width: 70,
-          height: 90,
+          width: 76,
+          height: 102,
           decoration: BoxDecoration(
             color: widget.isSelected
-                ? widget.mood.color.withValues(alpha: 0.15)
+                ? widget.mood.color.withValues(alpha: 0.16)
                 : Colors.transparent,
             border: Border.all(
               color: widget.isSelected
                   ? widget.mood.color
-                  : Theme.of(context).dividerColor,
+                  : Theme.of(context).dividerColor.withValues(alpha: 0.4),
               width: widget.isSelected ? 2.5 : 1,
             ),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: widget.isSelected
+                ? [
+                    BoxShadow(
+                      color: widget.mood.color.withValues(alpha: 0.32),
+                      blurRadius: 14,
+                      spreadRadius: 0.5,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                widget.mood.icon,
-                color: widget.isSelected
-                    ? widget.mood.color
-                    : Theme.of(context).colorScheme.primary,
-                size: 32,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.isSelected
+                      ? widget.mood.color.withValues(alpha: 0.12)
+                      : Colors.transparent,
+                ),
+                child: Icon(
+                  widget.mood.icon,
+                  color: widget.isSelected
+                      ? widget.mood.color
+                      : Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                  size: 34,
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 widget.mood.label,
                 style: AppTypography.labelSmall.copyWith(
                   color: widget.isSelected
                       ? widget.mood.color
-                      : Theme.of(context).textTheme.bodySmall?.color,
+                      : Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.76),
                   fontWeight:
-                      widget.isSelected ? FontWeight.w700 : FontWeight.w500,
+                      widget.isSelected ? FontWeight.w800 : FontWeight.w600,
+                  fontSize: 10.5,
                 ),
                 textAlign: TextAlign.center,
               ),

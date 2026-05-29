@@ -27,12 +27,22 @@ class _ThemeButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
           color:
-              isSelected ? scheme.primary.withValues(alpha: 0.12) : Colors.transparent,
+              isSelected ? scheme.primary.withValues(alpha: 0.16) : Colors.transparent,
           border: Border.all(
-            color: isSelected ? scheme.primary : theme.dividerColor,
+            color: isSelected ? scheme.primary : theme.dividerColor.withValues(alpha: 0.4),
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: scheme.primary.withValues(alpha: 0.24),
+                    blurRadius: 10,
+                    spreadRadius: 0.2,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : [],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

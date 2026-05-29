@@ -24,34 +24,34 @@ class _MoodBar extends StatelessWidget {
           children: [
             Container(
               height: 110,
-              width: 20,
+              width: 24,
               decoration: BoxDecoration(
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.04)
-                    : Colors.black.withValues(alpha: 0.03),
-                borderRadius: BorderRadius.circular(10),
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             AnimatedContainer(
               duration: const Duration(milliseconds: 480),
               height: height.clamp(14.0, 110.0),
-              width: 20,
+              width: 24,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
                     color,
-                    color.withValues(alpha: 0.45),
+                    color.withValues(alpha: 0.35),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: color.withValues(alpha: 0.28),
-                    blurRadius: 10,
-                    spreadRadius: 0.5,
-                    offset: const Offset(0, 2),
+                    color: color.withValues(alpha: 0.36),
+                    blurRadius: 12,
+                    spreadRadius: 0.8,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
