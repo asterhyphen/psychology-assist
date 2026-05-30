@@ -298,11 +298,33 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                       maxLines: null,
                       decoration: InputDecoration(
                         hintText: 'Write freely — this is your private space.',
+                        hintStyle: TextStyle(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.38),
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                            width: 1.2,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.primary,
+                            width: 1.8,
+                          ),
                         ),
                         filled: true,
-                        fillColor: theme.colorScheme.surface,
+                        fillColor: isDark
+                            ? const Color(0xFF1C2430)
+                            : theme.colorScheme.surface,
                       ),
                       style: AppTypography.bodyMedium.copyWith(
                         color: theme.textTheme.bodyMedium?.color,

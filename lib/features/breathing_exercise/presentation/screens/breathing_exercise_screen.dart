@@ -409,62 +409,109 @@ class _BreathingExerciseScreenState extends ConsumerState<BreathingExerciseScree
                       // Large guided breathing pulse circle
                       Center(
                         child: SizedBox(
-                          width: 230,
-                          height: 230,
+                          width: 240,
+                          height: 240,
                           child: AnimatedBuilder(
                             animation: _scaleController,
                             builder: (context, child) {
                               final double currentScale = _scaleController.value;
-                              return Container(
-                                width: 130 * currentScale,
-                                height: 130 * currentScale,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: const Color(0xFF10B981).withValues(alpha: 0.04),
-                                  border: Border.all(
-                                    color: const Color(0xFF10B981).withValues(alpha: 0.36),
-                                    width: 2.5,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF10B981).withValues(alpha: 0.18 * currentScale),
-                                      blurRadius: 28 * currentScale,
-                                      spreadRadius: 2 * currentScale,
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.air_rounded,
-                                        size: 28,
-                                        color: const Color(0xFF10B981).withOpacity(0.85),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        _isRunning ? _getLabelForPhase(_currentPhaseIndex) : 'Ready',
-                                        style: TextStyle(
-                                          color: scheme.onSurface,
-                                          fontSize: 13.5,
-                                          fontWeight: FontWeight.w800,
+                              
+                              return Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  // Outer atmospheric halo
+                                  Transform.scale(
+                                    scale: currentScale * 1.35,
+                                    child: Container(
+                                      width: 120,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.03),
+                                        border: Border.all(
+                                          color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                                          width: 1.0,
                                         ),
                                       ),
-                                      if (_isRunning) ...[
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          '${_secondsRemaining}s',
-                                          style: TextStyle(
-                                            color: const Color(0xFF10B981).withOpacity(0.85),
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  // Mid glowing halo
+                                  Transform.scale(
+                                    scale: currentScale * 1.18,
+                                    child: Container(
+                                      width: 120,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xFF10B981).withValues(alpha: 0.16 * currentScale),
+                                            blurRadius: 24 * currentScale,
+                                            spreadRadius: 1.5 * currentScale,
                                           ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // Central primary breathing circle
+                                  Container(
+                                    width: 120 * currentScale,
+                                    height: 120 * currentScale,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF10B981).withValues(alpha: 0.28 * currentScale),
+                                          blurRadius: 18 * currentScale,
+                                          spreadRadius: 1 * currentScale,
+                                          offset: const Offset(0, 4),
                                         ),
                                       ],
-                                    ],
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(0.3),
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(
+                                            Icons.spa_rounded,
+                                            size: 26,
+                                            color: Colors.white,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _isRunning ? _getLabelForPhase(_currentPhaseIndex) : 'Ready',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                          ),
+                                          if (_isRunning) ...[
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '${_secondsRemaining}s',
+                                              style: TextStyle(
+                                                color: Colors.white.withOpacity(0.9),
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                ],
                               );
                             },
                           ),

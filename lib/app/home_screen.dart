@@ -199,67 +199,73 @@ class _NavItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOutCubic,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 14 : 10,
-          vertical: 8,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF0FA58A).withValues(
-                  alpha: theme.brightness == Brightness.dark ? 0.16 : 0.08,
-                )
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
-          border: isSelected
-              ? Border.all(
-                  color: const Color(0xFF0FA58A).withValues(alpha: 0.22),
-                  width: 0.8,
-                )
-              : null,
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF0FA58A).withValues(alpha: 0.12),
-                    blurRadius: 10,
-                    spreadRadius: 0,
-                    offset: const Offset(0, 1),
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeOutCubic,
-              child: Icon(
-                isSelected ? activeIcon : icon,
-                key: ValueKey(isSelected),
-                color: isSelected
-                    ? const Color(0xFF0FA58A)
-                    : scheme.onSurface.withValues(alpha: 0.50),
-                size: 21,
-              ),
+      child: AnimatedScale(
+        scale: isSelected ? 1.05 : 1.0,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutBack,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOutCubic,
+          padding: EdgeInsets.symmetric(
+            horizontal: isSelected ? 16 : 10,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? const Color(0xFF0FA58A).withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.15 : 0.08,
+                  )
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isSelected
+                  ? const Color(0xFF0FA58A).withValues(alpha: 0.3)
+                  : Colors.transparent,
+              width: 1.0,
             ),
-            const SizedBox(height: 3),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              style: TextStyle(
-                fontSize: 10,
-                color: isSelected
-                    ? const Color(0xFF0FA58A)
-                    : scheme.onSurface.withValues(alpha: 0.50),
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF0FA58A).withValues(alpha: 0.1),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeOutCubic,
+                child: Icon(
+                  isSelected ? activeIcon : icon,
+                  key: ValueKey(isSelected),
+                  color: isSelected
+                      ? const Color(0xFF0FA58A)
+                      : scheme.onSurface.withValues(alpha: 0.45),
+                  size: 21,
+                ),
               ),
-              child: Text(label),
-            ),
-          ],
+              const SizedBox(height: 3),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isSelected
+                      ? const Color(0xFF0FA58A)
+                      : scheme.onSurface.withValues(alpha: 0.45),
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  letterSpacing: 0.1,
+                ),
+                child: Text(label),
+              ),
+            ],
+          ),
         ),
       ),
     );

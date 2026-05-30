@@ -129,7 +129,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     Text(
                       'I am a',
                       style: AppTypography.headingSmall.copyWith(
-                        color: AppColors.lightText,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -159,10 +159,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                     const SizedBox(height: 18),
                     SmoothCard(
-                      elevation: 18,
+                      elevation: 12,
                       borderRadius: 22,
-                      backgroundColor: Colors.white.withOpacity(0.88),
-                      borderColor: AppColors.neonViolet.withOpacity(0.28),
+                      backgroundColor: theme.brightness == Brightness.dark
+                          ? theme.colorScheme.surface.withValues(alpha: 0.72)
+                          : Colors.white.withOpacity(0.88),
+                      borderColor: theme.colorScheme.primary.withValues(alpha: 0.2),
                       padding: const EdgeInsets.all(18),
                       child: Column(
                         children: [
@@ -269,7 +271,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       label: 'Enter Calmora',
                       icon:
                           const Icon(Icons.arrow_forward, color: Colors.white),
-                      backgroundColor: AppColors.neonViolet,
+                      backgroundColor: theme.colorScheme.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       onPressed: _continue,
                     ),

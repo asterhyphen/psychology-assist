@@ -146,20 +146,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       padding: const EdgeInsets.all(16),
                       child: Row(
                         children: [
-                          CircleAvatar(
-                            radius: 28,
-                            backgroundColor: Color(profile.avatarColorValue),
-                            backgroundImage: profile.profileImagePath == null
-                                ? null
-                                : FileImage(File(profile.profileImagePath!)),
-                            child: profile.profileImagePath == null
-                                ? Icon(
-                                    _avatarIconFor(
-                                      profile.avatarIconCodePoint,
-                                    ),
-                                    color: Colors.white,
-                                  )
-                                : null,
+                          Container(
+                            padding: const EdgeInsets.all(2.5),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF0FA58A), Color(0xFF8B5CF6)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.18),
+                                  blurRadius: 10,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                            child: CircleAvatar(
+                              radius: 28,
+                              backgroundColor: Color(profile.avatarColorValue),
+                              backgroundImage: profile.profileImagePath == null
+                                  ? null
+                                  : FileImage(File(profile.profileImagePath!)),
+                              child: profile.profileImagePath == null
+                                  ? Icon(
+                                      _avatarIconFor(
+                                        profile.avatarIconCodePoint,
+                                      ),
+                                      color: Colors.white,
+                                      size: 26,
+                                    )
+                                  : null,
+                            ),
                           ),
                           const SizedBox(width: 14),
                           Expanded(

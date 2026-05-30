@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 /// A smooth, rounded card widget with optional border and shadow
-class SmoothCard extends StatelessWidget {
+class SmoothCard extends StatefulWidget {
   final Widget child;
   final Color? backgroundColor;
   final Color? borderColor;
@@ -28,18 +28,25 @@ class SmoothCard extends StatelessWidget {
     this.margin = const EdgeInsets.all(0),
     this.elevation = 0,
     this.onTap,
-    this.animationDuration = const Duration(milliseconds: 180),
+    this.animationDuration = const Duration(milliseconds: 150),
     this.gradient,
     this.boxShadow,
   });
 
   @override
+  State<SmoothCard> createState() => _SmoothCardState();
+}
+
+class _SmoothCardState extends State<SmoothCard> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cardBgColor = backgroundColor ?? theme.colorScheme.surface;
+    final cardBgColor = widget.backgroundColor ?? theme.colorScheme.surface;
     final isDark = theme.brightness == Brightness.dark;
-    final border = borderColor != null
-        ? Border.all(color: borderColor!, width: borderWidth)
+    final border = widget.borderColor != null
+        ? Border.all(color: widget.borderColor!, width: widget.borderWidth)
         : null;
 
     final effectiveBorder = border ??
@@ -47,59 +54,63 @@ class SmoothCard extends StatelessWidget {
           color: isDark
               ? theme.colorScheme.primary.withValues(alpha: 0.16)
               : theme.colorScheme.primary.withValues(alpha: 0.12),
-          width: borderWidth,
+          width: widget.borderWidth,
         );
 
     final defaultShadows = [
       BoxShadow(
         color: const Color(0xFF0FA58A).withValues(alpha: isDark ? 0.06 : 0.03),
-        blurRadius: elevation > 0 ? elevation + 6 : 22,
+        blurRadius: widget.elevation > 0 ? widget.elevation + 6 : 22,
         spreadRadius: 0,
         offset: const Offset(0, 8),
       ),
       BoxShadow(
         color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.04),
-        blurRadius: elevation > 0 ? elevation : 16,
+        blurRadius: widget.elevation > 0 ? widget.elevation : 16,
         spreadRadius: 0,
         offset: const Offset(0, 4),
       ),
     ];
 
     final cardWidget = ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
+      borderRadius: BorderRadius.circular(widget.borderRadius),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           decoration: BoxDecoration(
-            color: gradient != null
+            color: widget.gradient != null
                 ? null
-                : backgroundColor != null
-                    ? backgroundColor
+                : widget.backgroundColor != null
+                    ? widget.backgroundColor
                     : cardBgColor.withValues(
                         alpha: isDark ? 0.70 : 0.86,
                       ),
-            gradient: gradient,
+            gradient: widget.gradient,
             border: effectiveBorder,
-            borderRadius: BorderRadius.circular(borderRadius),
-            boxShadow: boxShadow ?? defaultShadows,
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            boxShadow: widget.boxShadow ?? defaultShadows,
           ),
-          child: Padding(padding: padding, child: child),
+          child: Padding(padding: widget.padding, child: widget.child),
         ),
       ),
     );
 
-    if (onTap == null) {
-      return Padding(padding: margin, child: cardWidget);
+    if (widget.onTap == null) {
+      return Padding(padding: widget.margin, child: cardWidget);
     }
 
     return Padding(
-      padding: margin,
-      child: AnimatedScale(
-        scale: 1.0,
-        duration: animationDuration,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(borderRadius),
+      padding: widget.margin,
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.975 : 1.0,
+          duration: widget.animationDuration,
+          curve: Curves.easeOutCubic,
           child: cardWidget,
         ),
       ),

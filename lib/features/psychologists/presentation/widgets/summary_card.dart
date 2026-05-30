@@ -1,6 +1,6 @@
 part of '../screens/psychologists_screen.dart';
 
-class _SummaryCard extends StatelessWidget {
+class _SummaryCard extends StatefulWidget {
   final String title;
   final String value;
   final IconData icon;
@@ -14,6 +14,37 @@ class _SummaryCard extends StatelessWidget {
   });
 
   @override
+  State<_SummaryCard> createState() => _SummaryCardState();
+}
+
+class _SummaryCardState extends State<_SummaryCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _pulseController,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -24,7 +55,7 @@ class _SummaryCard extends StatelessWidget {
       backgroundColor: isDark
           ? const Color(0xFF131A26).withValues(alpha: 0.72)
           : theme.colorScheme.surface.withValues(alpha: 0.94),
-      borderColor: color.withValues(alpha: 0.22),
+      borderColor: widget.color.withValues(alpha: 0.22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -32,7 +63,7 @@ class _SummaryCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                title,
+                widget.title,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.62),
                   fontWeight: FontWeight.w700,
@@ -43,45 +74,63 @@ class _SummaryCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
+                  color: widget.color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: color.withValues(alpha: 0.22),
+                    color: widget.color.withValues(alpha: 0.22),
                     width: 0.8,
                   ),
                 ),
-                child: Icon(icon, color: color, size: 16),
+                child: Icon(widget.icon, color: widget.color, size: 16),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            value,
+            widget.value,
             style: theme.textTheme.headlineMedium?.copyWith(
-              color: color,
+              color: widget.color,
               fontWeight: FontWeight.w900,
               fontSize: 26,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Row(
             children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: color,
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.4),
-                      blurRadius: 4,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
+              AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: widget.color.withOpacity(0.18 * (1.0 - _pulseAnimation.value)),
+                        ),
+                      ),
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: widget.color,
+                          boxShadow: [
+                            BoxShadow(
+                              color: widget.color.withOpacity(0.48 * _pulseAnimation.value),
+                              blurRadius: 4 * _pulseAnimation.value,
+                              spreadRadius: 0.5 * _pulseAnimation.value,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Text(
                 'Live metrics',
                 style: theme.textTheme.labelSmall?.copyWith(

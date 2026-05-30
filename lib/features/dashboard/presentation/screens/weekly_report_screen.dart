@@ -449,45 +449,99 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
       backgroundColor: scheme.surface.withValues(alpha: 0.72),
       borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
       borderRadius: 22,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 36),
-      child: Center(
-        child: Column(
-          children: [
-            const SizedBox(
-              width: 48,
-              height: 48,
-              child: CircularProgressIndicator(
-                strokeWidth: 3.5,
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Compiling AI Analysis',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                color: isDark ? Colors.white : scheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Text(
-                _generationStep > 0 && _generationStep <= _steps.length
-                    ? _steps[_generationStep - 1]
-                    : 'Initializing diagnostics...',
-                key: ValueKey<int>(_generationStep),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF10B981),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.8,
+                  valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
                 ),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  'Compiling AI Analysis...',
+                  style: TextStyle(
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : scheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List.generate(_steps.length, (index) {
+              final isCompleted = _generationStep > index;
+              final isCurrent = _generationStep == index;
+              
+              Color stepColor;
+              if (isCompleted) {
+                stepColor = const Color(0xFF10B981);
+              } else if (isCurrent) {
+                stepColor = scheme.primary;
+              } else {
+                stepColor = isDark ? Colors.white24 : Colors.black26;
+              }
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 300),
+                  opacity: isCurrent || isCompleted ? 1.0 : 0.45,
+                  child: Row(
+                    children: [
+                      if (isCompleted)
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: Color(0xFF10B981),
+                          size: 20,
+                        )
+                      else if (isCurrent)
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
+                          ),
+                        )
+                      else
+                        Icon(
+                          Icons.radio_button_off_rounded,
+                          color: isDark ? Colors.white24 : Colors.black26,
+                          size: 20,
+                        ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          _steps[index],
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
+                            color: isCurrent
+                                ? (isDark ? Colors.white : scheme.onSurface)
+                                : (isCompleted
+                                    ? (isDark ? Colors.white70 : scheme.onSurface.withOpacity(0.7))
+                                    : (isDark ? Colors.white30 : scheme.onSurface.withOpacity(0.3))),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
       ),
     );
   }
