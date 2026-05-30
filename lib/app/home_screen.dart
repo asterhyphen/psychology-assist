@@ -6,6 +6,7 @@ import '../features/journaling/presentation/screens/journaling_screen.dart';
 import '../features/appointments/presentation/screens/appointments_screen.dart';
 import '../features/psychologists/presentation/screens/psychologists_screen.dart';
 import '../features/psychologists/presentation/screens/psychologist_subscriptions_screen.dart';
+import '../features/psychologists/presentation/screens/psychologist_patients_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../features/wellness_tools/presentation/screens/wellness_tools_screen.dart';
 import 'app_state.dart';
@@ -25,6 +26,7 @@ class HomeScreen extends ConsumerWidget {
     final pages = isPsychologist
         ? [
             const PsychologistsScreen(),
+            const PsychologistPatientsScreen(),
             const PsychologistSubscriptionsScreen(),
             const SettingsScreen(),
           ]
@@ -117,18 +119,25 @@ class _PillBottomNavigation extends StatelessWidget {
                         onTap: () => onTap(0),
                       ),
                       _NavItem(
+                        icon: Icons.groups_outlined,
+                        activeIcon: Icons.groups,
+                        label: 'Patients',
+                        isSelected: selectedIndex == 1,
+                        onTap: () => onTap(1),
+                      ),
+                      _NavItem(
                         icon: Icons.subscriptions_outlined,
                         activeIcon: Icons.subscriptions,
                         label: 'Subscriptions',
-                        isSelected: selectedIndex == 1,
-                        onTap: () => onTap(1),
+                        isSelected: selectedIndex == 2,
+                        onTap: () => onTap(2),
                       ),
                       _NavItem(
                         icon: Icons.tune_outlined,
                         activeIcon: Icons.tune,
                         label: 'Settings',
-                        isSelected: selectedIndex == 2,
-                        onTap: () => onTap(2),
+                        isSelected: selectedIndex == 3,
+                        onTap: () => onTap(3),
                       ),
                     ]
                   : [
