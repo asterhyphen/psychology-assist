@@ -296,10 +296,10 @@ class _SubscriptionCard extends StatelessWidget {
                   width: double.infinity,
                   child: SmoothButton(
                     onPressed: () {},
-                    label: recommended ? 'Claim Special Plan' : 'Select Plan',
+                    label: 'Select Plan',
                     backgroundColor: recommended ? const Color(0xFF8B5CF6) : accentColor,
                     textColor: Colors.white,
-                    borderRadius: 14,
+                    borderRadius: 12,
                   ),
                 ),
               ],

@@ -261,12 +261,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Expanded(child: SizedBox()),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
                             Expanded(
                               child: _ThemeButton(
                                 title: 'Journal',
@@ -280,10 +274,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                 },
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(child: SizedBox()),
-                            const SizedBox(width: 12),
-                            Expanded(child: SizedBox()),
                           ],
                         ),
                       ],
@@ -400,19 +390,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                             ),
                           ),
                           const SizedBox(height: 10),
-                          Slider(
-                            value: preferences.moodCheckInInterval.toDouble(),
-                            min: 2,
-                            max: 12,
-                            divisions: 5,
-                            label: '${preferences.moodCheckInInterval}h',
-                            onChanged: (value) {
-                              final hours = value.toInt();
-                              ref
-                                  .read(userPreferencesProvider.notifier)
-                                  .updateMoodCheckInInterval(hours);
-                              _scheduleMoodCheckIns(hours);
-                            },
+                          SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              thumbShape: const RoundSliderThumbShape(
+                                enabledThumbRadius: 10.0,
+                              ),
+                              overlayShape: const RoundSliderOverlayShape(
+                                overlayRadius: 24.0,
+                              ),
+                              activeTrackColor: theme.colorScheme.primary,
+                              inactiveTrackColor: theme.colorScheme.primary.withValues(alpha: 0.16),
+                              thumbColor: theme.colorScheme.primary,
+                              overlayColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                            ),
+                            child: Slider(
+                              value: preferences.moodCheckInInterval.toDouble(),
+                              min: 2,
+                              max: 12,
+                              divisions: 5,
+                              label: '${preferences.moodCheckInInterval}h',
+                              onChanged: (value) {
+                                final hours = value.toInt();
+                                ref
+                                    .read(userPreferencesProvider.notifier)
+                                    .updateMoodCheckInInterval(hours);
+                                _scheduleMoodCheckIns(hours);
+                              },
+                            ),
                           ),
                           Text(
                             'Randomized during the day, about every ${preferences.moodCheckInInterval} hours.',
@@ -484,17 +488,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Slider(
-                          value: session.lockTimeoutMinutes.toDouble(),
-                          min: 1,
-                          max: 60,
-                          divisions: 59,
-                          label: '${session.lockTimeoutMinutes} min',
-                          onChanged: (value) {
-                            ref
-                                .read(appSessionProvider.notifier)
-                                .updateLockTimeout(value.toInt());
-                          },
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 10.0,
+                            ),
+                            overlayShape: const RoundSliderOverlayShape(
+                              overlayRadius: 24.0,
+                            ),
+                            activeTrackColor: theme.colorScheme.primary,
+                            inactiveTrackColor: theme.colorScheme.primary.withValues(alpha: 0.16),
+                            thumbColor: theme.colorScheme.primary,
+                            overlayColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+                          ),
+                          child: Slider(
+                            value: session.lockTimeoutMinutes.toDouble(),
+                            min: 1,
+                            max: 60,
+                            divisions: 59,
+                            label: '${session.lockTimeoutMinutes} min',
+                            onChanged: (value) {
+                              ref
+                                  .read(appSessionProvider.notifier)
+                                  .updateLockTimeout(value.toInt());
+                            },
+                          ),
                         ),
                         Text(
                           'Ask for PIN after ${session.lockTimeoutMinutes} minutes away from the app.',
@@ -630,7 +648,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                   .updateProfile(
                                     AppProfile(
                                       role: UserRole.patient,
-                                      name: 'Demo Patient',
+                                      name: 'Mindful Friend',
                                       email: 'patient@example.com',
                                       psychologistEmail: demoPsychologistEmail,
                                       avatarColorValue: 0xFF8B5CF6,
@@ -642,7 +660,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                               AppSnackBar.showSuccess(
                                 context,
                                 title: 'Switched to Patient',
-                                message: 'You are now viewing as Demo Patient.',
+                                message: 'You are now viewing as Mindful Friend.',
                               );
                             } else {
                               ref
@@ -685,11 +703,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     backgroundColor: Theme.of(context)
                         .colorScheme
                         .errorContainer
-                        .withValues(alpha: 0.12),
+                        .withValues(alpha: 0.03),
                     borderColor: Theme.of(context)
                         .colorScheme
                         .error
-                        .withValues(alpha: 0.2),
+                        .withValues(alpha: 0.1),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -700,12 +718,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           ),
                         ),
                         const SizedBox(height: 16),
-                        FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: theme.brightness == Brightness.dark
-                                ? theme.colorScheme.error.withValues(alpha: 0.3)
-                                : theme.colorScheme.error.withValues(alpha: 0.85),
-                            foregroundColor: Colors.white,
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: theme.brightness == Brightness.dark
+                                  ? theme.colorScheme.error.withValues(alpha: 0.4)
+                                  : theme.colorScheme.error.withValues(alpha: 0.6),
+                              width: 1.2,
+                            ),
+                            foregroundColor: theme.brightness == Brightness.dark
+                                ? theme.colorScheme.error.withValues(alpha: 0.85)
+                                : theme.colorScheme.error.withValues(alpha: 0.9),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           onPressed: () {
                             ref.read(appSessionProvider.notifier).logout();
@@ -717,7 +744,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                   'You can now sign in again as a patient or psychologist.',
                             );
                           },
-                          icon: const Icon(Icons.logout),
+                          icon: const Icon(Icons.logout, size: 18),
                           label: const Text('Log out / switch account'),
                         ),
                       ],

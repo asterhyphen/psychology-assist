@@ -55,6 +55,33 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
     ),
   ];
 
+  bool _isGibberish(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return false;
+    if (trimmed.length < 4) return false;
+
+    final words = trimmed.split(RegExp(r'\s+'));
+    int validWordCount = 0;
+    final vowelRegex = RegExp(r'[aeiouAEIOU]');
+    
+    for (final word in words) {
+      if (vowelRegex.hasMatch(word)) {
+        validWordCount++;
+      } else {
+        final lower = word.toLowerCase();
+        final commonNonVowelWords = {
+          'by', 'my', 'cry', 'dry', 'fly', 'shh', 'sh', 'hm', 'hmm', 
+          'tv', 'sms', 'gps', 'try', 'sky', 'why', 'gym', 'spy', 'shy', 
+          'myth', 'lynx', 'rhythm'
+        };
+        if (commonNonVowelWords.contains(lower)) {
+          validWordCount++;
+        }
+      }
+    }
+    return validWordCount == 0;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -244,20 +271,28 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                       ),
                     ),
                     const SizedBox(height: 18),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      alignment: WrapAlignment.center,
-                      children: List.generate(
-                        _moods.length,
-                        (index) => _MoodSelector(
-                          mood: _moods[index],
-                          isSelected: _selectedMoodIndex == index,
-                          onTap: () {
-                            setState(() {
-                              _selectedMoodIndex = index;
-                            });
-                          },
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: List.generate(
+                          _moods.length,
+                          (index) => Padding(
+                            padding: EdgeInsets.only(
+                              left: index == 0 ? 0 : 10,
+                              right: index == _moods.length - 1 ? 0 : 0,
+                            ),
+                            child: _MoodSelector(
+                              mood: _moods[index],
+                              isSelected: _selectedMoodIndex == index,
+                              onTap: () {
+                                setState(() {
+                                  _selectedMoodIndex = index;
+                                });
+                              },
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -296,6 +331,9 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                       controller: _journalController,
                       minLines: 6,
                       maxLines: null,
+                      onChanged: (text) {
+                        setState(() {});
+                      },
                       decoration: InputDecoration(
                         hintText: 'Write freely — this is your private space.',
                         hintStyle: TextStyle(
@@ -329,6 +367,65 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                       style: AppTypography.bodyMedium.copyWith(
                         color: theme.textTheme.bodyMedium?.color,
                       ),
+                    ),
+                    AnimatedCrossFade(
+                      firstChild: const SizedBox.shrink(),
+                      secondChild: Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: SmoothCard(
+                          borderRadius: 14,
+                          backgroundColor: isDark
+                              ? const Color(0xFF8B5CF6).withOpacity(0.08)
+                              : const Color(0xFF8B5CF6).withOpacity(0.05),
+                          borderColor: const Color(0xFF8B5CF6).withOpacity(0.2),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.lightbulb_outline_rounded,
+                                color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Not sure what to write? Try starting with how your body feels right now.',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? Colors.white70 : Colors.black87,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _journalController.text = 'Today, I am feeling... because...';
+                                    _journalController.selection = TextSelection.collapsed(offset: _journalController.text.length);
+                                  });
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  'Use Template',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      crossFadeState: _isGibberish(_journalController.text)
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 300),
                     ),
                     const SizedBox(height: 10),
                     Text(

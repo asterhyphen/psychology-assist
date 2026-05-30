@@ -31,7 +31,7 @@ class _ConfirmedAppointmentCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  appointment.patientName,
+                  appointment.displayPatientName,
                   style: AppTypography.labelLarge,
                 ),
                 Text(

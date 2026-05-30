@@ -30,6 +30,33 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
   int _backspaceCount = 0;
   int _previousLength = 0;
 
+  bool _isGibberish(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return false;
+    if (trimmed.length < 4) return false;
+
+    final words = trimmed.split(RegExp(r'\s+'));
+    int validWordCount = 0;
+    final vowelRegex = RegExp(r'[aeiouAEIOU]');
+    
+    for (final word in words) {
+      if (vowelRegex.hasMatch(word)) {
+        validWordCount++;
+      } else {
+        final lower = word.toLowerCase();
+        final commonNonVowelWords = {
+          'by', 'my', 'cry', 'dry', 'fly', 'shh', 'sh', 'hm', 'hmm', 
+          'tv', 'sms', 'gps', 'try', 'sky', 'why', 'gym', 'spy', 'shy', 
+          'myth', 'lynx', 'rhythm'
+        };
+        if (commonNonVowelWords.contains(lower)) {
+          validWordCount++;
+        }
+      }
+    }
+    return validWordCount == 0;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -81,20 +108,29 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
     }
   }
 
-  Future<void> _autosaveNoteSilently() async {
+  Future<void> _autosaveNoteSilently({bool? isShared}) async {
     final notes = _controller.text.trim();
     if (notes.isEmpty) return;
 
     try {
       final notifier = ref.read(appSessionProvider.notifier);
+      final sharingState = isShared ?? (_editingEntry?.sharedWithPsychologist ?? false);
       if (_editingEntry == null) {
         notifier.addJournalEntry(notes);
         final list = ref.read(appSessionProvider).journalEntries;
         if (list.isNotEmpty) {
           _editingEntry = list.last;
+          if (sharingState) {
+            notifier.updateJournalEntry(_editingEntry!.copyWith(sharedWithPsychologist: true));
+          }
         }
       } else {
-        notifier.updateJournalEntry(_editingEntry!.copyWith(content: notes));
+        notifier.updateJournalEntry(
+          _editingEntry!.copyWith(
+            content: notes,
+            sharedWithPsychologist: sharingState,
+          ),
+        );
       }
 
       if (mounted) {
@@ -303,36 +339,102 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        child: TextField(
-                          controller: _controller,
-                          focusNode: _editorFocusNode,
-                          autofocus: true,
-                          maxLines: null,
-                          keyboardType: TextInputType.multiline,
-                          onChanged: (text) {
-                            setModalState(() {});
-                          },
-                          style: TextStyle(
-                            fontSize: 17,
-                            height: 1.55,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'How are you feeling today? Put your stream of consciousness into words...',
-                            hintStyle: TextStyle(
-                              color: isDark ? Colors.white30 : Colors.black38,
-                              fontWeight: FontWeight.w400,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _controller,
+                                focusNode: _editorFocusNode,
+                                autofocus: true,
+                                maxLines: null,
+                                keyboardType: TextInputType.multiline,
+                                onChanged: (text) {
+                                  setModalState(() {});
+                                },
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  height: 1.55,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: 'How are you feeling today? Put your stream of consciousness into words...',
+                                  hintStyle: TextStyle(
+                                    color: isDark ? Colors.white30 : Colors.black38,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                  border: InputBorder.none,
+                                ),
+                              ),
                             ),
-                            border: InputBorder.none,
-                          ),
+                            AnimatedCrossFade(
+                              firstChild: const SizedBox.shrink(),
+                              secondChild: Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: SmoothCard(
+                                  borderRadius: 14,
+                                  backgroundColor: isDark
+                                      ? const Color(0xFF8B5CF6).withOpacity(0.08)
+                                      : const Color(0xFF8B5CF6).withOpacity(0.05),
+                                  borderColor: const Color(0xFF8B5CF6).withOpacity(0.2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.lightbulb_outline_rounded,
+                                        color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          'Not sure what to write? Try starting with how your body feels right now.',
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: isDark ? Colors.white70 : Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      TextButton(
+                                        onPressed: () {
+                                          setModalState(() {
+                                            _controller.text = 'Right now, my body feels... and my mind is...';
+                                            _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
+                                          });
+                                        },
+                                        style: TextButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        child: Text(
+                                          'Use Template',
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w800,
+                                            color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              crossFadeState: _isGibberish(_controller.text)
+                                  ? CrossFadeState.showSecond
+                                  : CrossFadeState.showFirst,
+                              duration: const Duration(milliseconds: 300),
+                            ),
+                          ],
                         ),
                       ),
                     ),
 
                     // Editor Footer Toolbar
                     Container(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF1B263B).withOpacity(0.3) : Colors.black.withOpacity(0.02),
                         border: Border.all(
@@ -341,98 +443,47 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
                         ),
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          Text(
+                            '$wordCount words | ${_controller.text.length} chars',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white38 : Colors.black38,
+                            ),
+                          ),
+                          
+                          // Psychologist Share Toggle
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
+                              Icon(
+                                Icons.share_outlined,
+                                size: 14,
+                                color: shareState ? const Color(0xFF0FA58A) : Colors.grey,
+                              ),
+                              const SizedBox(width: 6),
                               Text(
-                                '$wordCount words | ${_controller.text.length} chars',
+                                'Share with provider',
                                 style: TextStyle(
                                   fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white38 : Colors.black38,
+                                  fontWeight: FontWeight.w700,
+                                  color: shareState ? const Color(0xFF0FA58A) : Colors.grey,
                                 ),
                               ),
-                              
-                              // Psychologist Share Toggle
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.share_outlined,
-                                    size: 14,
-                                    color: shareState ? const Color(0xFF0FA58A) : Colors.grey,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Share with provider',
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: shareState ? const Color(0xFF0FA58A) : Colors.grey,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Switch.adaptive(
-                                    value: shareState,
-                                    activeColor: const Color(0xFF0FA58A),
-                                    onChanged: (val) {
-                                      setModalState(() {
-                                        shareState = val;
-                                      });
-                                    },
-                                  ),
-                                ],
+                              const SizedBox(width: 8),
+                              Switch.adaptive(
+                                value: shareState,
+                                activeColor: const Color(0xFF0FA58A),
+                                onChanged: (val) {
+                                  setModalState(() {
+                                    shareState = val;
+                                  });
+                                  _autosaveNoteSilently(isShared: val);
+                                },
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Large Gradient Save Button
-                          Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF0FA58A), Color(0xFF8B5CF6)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF0FA58A).withOpacity(0.2),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton.icon(
-                              onPressed: _isSaving
-                                  ? null
-                                  : () async {
-                                      await _saveNote(isShared: shareState);
-                                      Navigator.of(context).pop();
-                                      setState(() {}); // Rebuild list
-                                    },
-                              icon: const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 18),
-                              label: const Text(
-                                'Save Reflection',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 14.5,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                            ),
                           ),
                         ],
                       ),
@@ -973,7 +1024,7 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
               ),
             ] else ...[
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 96),
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 112),
                 sliver: SliverList.builder(
                   itemCount: entries.length,
                   itemBuilder: (context, index) {

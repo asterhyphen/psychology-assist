@@ -26,6 +26,9 @@ class _PsychologistDashboard extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Dr. Panipuri Dashboard'),
         centerTitle: true,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           IconButton(
             onPressed: () {
@@ -243,7 +246,7 @@ class _PsychologistDashboard extends ConsumerWidget {
                             MaterialPageRoute<void>(
                               builder: (_) => ChatScreen(
                                 otherUserId: 'patient', // Demo patient ID
-                                otherUserName: appointment.patientName,
+                                otherUserName: appointment.displayPatientName,
                                 currentUserId: appointment
                                     .psychologistEmail, // Current psychologist ID
                               ),
@@ -397,7 +400,7 @@ class _PsychologistDashboard extends ConsumerWidget {
     final selectedMedicines = <String>[];
     final selectedTimes = <MedicationTime>[];
     final noteController = TextEditingController();
-    final patientName = appointment.patientName;
+    final patientName = appointment.displayPatientName;
     final patientEmail = appointment.patientEmail;
     final doctorName = session.profile?.name ?? 'Dr. Panipuri';
     final doctorEmail = session.profile?.email ?? demoPsychologistEmail;

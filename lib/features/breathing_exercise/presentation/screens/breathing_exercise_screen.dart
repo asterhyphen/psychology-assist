@@ -227,376 +227,575 @@ class _BreathingExerciseScreenState extends ConsumerState<BreathingExerciseScree
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Breath Coach'),
+        title: Text(_isRunning ? 'Deep Breathing' : 'Breath Coach'),
         centerTitle: true,
+        leading: _isRunning
+            ? IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: _stopExercise,
+                tooltip: 'Exit exercise',
+              )
+            : (Navigator.of(context).canPop()
+                ? IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                    onPressed: () => Navigator.of(context).pop(),
+                  )
+                : null),
       ),
       body: Container(
         color: theme.scaffoldBackgroundColor,
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Header Card ──
-                SmoothCard(
-                  backgroundColor: scheme.surface.withValues(alpha: 0.72),
-                  borderColor: scheme.primary.withValues(alpha: 0.12),
-                  borderRadius: 20,
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            switchInCurve: Curves.easeInOutCubic,
+            switchOutCurve: Curves.easeInOutCubic,
+            child: _isRunning
+                ? _buildImmersiveMode(context, scheme, theme, activeTechnique)
+                : _buildSelectionMode(context, scheme, theme, activeTechnique, driftPercent, profile),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImmersiveMode(
+    BuildContext context,
+    ColorScheme scheme,
+    ThemeData theme,
+    _BreathingTechnique activeTechnique,
+  ) {
+    return Center(
+      key: const ValueKey('immersive'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Spacer(),
+            Text(
+              activeTechnique.name,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: scheme.primary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _getLabelForPhase(_currentPhaseIndex).toUpperCase(),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                color: scheme.onSurface.withValues(alpha: 0.54),
+                letterSpacing: 2.0,
+              ),
+            ),
+            const Spacer(),
+            
+            // Giant Guided Breathing Pulse Circle
+            SizedBox(
+              width: 280,
+              height: 280,
+              child: AnimatedBuilder(
+                animation: _scaleController,
+                builder: (context, child) {
+                  final double currentScale = _scaleController.value;
+                  
+                  return Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: scheme.primary.withValues(alpha: 0.08),
-                          border: Border.all(
-                            color: scheme.primary.withValues(alpha: 0.16),
-                            width: 1.0,
+                      // Concentric atmospheric halos
+                      Transform.scale(
+                        scale: currentScale * 1.45,
+                        child: Container(
+                          width: 130,
+                          height: 130,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF10B981).withValues(alpha: 0.03),
+                            border: Border.all(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                              width: 1.0,
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.air_rounded,
-                          color: scheme.primary,
-                          size: 24,
                         ),
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Breath Coach',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                color: scheme.onSurface,
+                      // Mid glowing halo
+                      Transform.scale(
+                        scale: currentScale * 1.22,
+                        child: Container(
+                          width: 130,
+                          height: 130,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.18 * currentScale),
+                                blurRadius: 28 * currentScale,
+                                spreadRadius: 2.0 * currentScale,
                               ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'AI-guided breathing for stress relief',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                color: scheme.onSurface.withValues(alpha: 0.58),
-                                fontWeight: FontWeight.w500,
-                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Central primary breathing circle
+                      Container(
+                        width: 130 * currentScale,
+                        height: 130 * currentScale,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF10B981), Color(0xFF059669)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.32 * currentScale),
+                              blurRadius: 20 * currentScale,
+                              spreadRadius: 1 * currentScale,
+                              offset: const Offset(0, 4),
                             ),
                           ],
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.35),
+                            width: 2.0,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // ── AI Recommendation Card ──
-                SmoothCard(
-                  backgroundColor: scheme.surface.withValues(alpha: 0.72),
-                  borderColor: scheme.primary.withValues(alpha: 0.12),
-                  borderRadius: 20,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
-                                Icons.psychology_outlined,
-                                color: scheme.onSurface.withValues(alpha: 0.9),
-                                size: 18,
+                              const Icon(
+                                Icons.spa_rounded,
+                                size: 28,
+                                color: Colors.white,
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(height: 6),
                               Text(
-                                'AI Recommendation',
-                                style: TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w800,
-                                  color: scheme.onSurface,
+                                '${_secondsRemaining}s',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
                                 ),
                               ),
                             ],
                           ),
-                          OutlinedButton.icon(
-                            onPressed: _isRunning || _isRecommending
-                                ? null
-                                : () => _askAiRecommendation(profile),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              side: BorderSide(
-                                color: scheme.primary.withOpacity(0.24),
-                                width: 1.0,
-                              ),
-                            ),
-                            icon: _isRecommending
-                                ? SizedBox(
-                                    width: 12,
-                                    height: 12,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: scheme.primary,
-                                    ),
-                                  )
-                                : Icon(Icons.auto_awesome, size: 12, color: scheme.primary),
-                            label: Text(
-                              _isRecommending ? 'Analyzing...' : 'Ask AI',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: scheme.primary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Click "Ask AI" to get a personalised breathing recommendation based on your Drift Index ($driftPercent).',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.onSurface.withValues(alpha: 0.48),
-                          fontWeight: FontWeight.w500,
-                          height: 1.45,
                         ),
                       ),
                     ],
+                  );
+                },
+              ),
+            ),
+            const Spacer(),
+            
+            // Immersive Phase capsules
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildPhaseBox('Inhale', '${activeTechnique.inhaleSeconds}s', _currentPhaseIndex == 0),
+                const SizedBox(width: 8),
+                _buildPhaseBox('Hold', '${activeTechnique.holdSeconds1}s', _currentPhaseIndex == 1),
+                const SizedBox(width: 8),
+                _buildPhaseBox('Exhale', '${activeTechnique.exhaleSeconds}s', _currentPhaseIndex == 2),
+                const SizedBox(width: 8),
+                _buildPhaseBox('Hold', '${activeTechnique.holdSeconds2}s', _currentPhaseIndex == 3),
+              ],
+            ),
+            const Spacer(),
+            
+            // Stopping controllers
+            ElevatedButton.icon(
+              onPressed: _stopExercise,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: scheme.error.withValues(alpha: 0.12),
+                foregroundColor: scheme.error,
+                padding: const EdgeInsets.symmetric(horizontal: 42, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                side: BorderSide(
+                  color: scheme.error.withValues(alpha: 0.3),
+                  width: 1.2,
+                ),
+              ),
+              icon: const Icon(Icons.close_rounded, size: 18),
+              label: const Text(
+                'End Exercise',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14.5,
+                ),
+              ),
+            ),
+            const Spacer(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectionMode(
+    BuildContext context,
+    ColorScheme scheme,
+    ThemeData theme,
+    _BreathingTechnique activeTechnique,
+    int driftPercent,
+    AppProfile? profile,
+  ) {
+    return SingleChildScrollView(
+      key: const ValueKey('selection'),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Header Card ──
+          SmoothCard(
+            backgroundColor: scheme.surface.withValues(alpha: 0.72),
+            borderColor: scheme.primary.withValues(alpha: 0.12),
+            borderRadius: 20,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.08),
+                    border: Border.all(
+                      color: scheme.primary.withValues(alpha: 0.16),
+                      width: 1.0,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.air_rounded,
+                    color: scheme.primary,
+                    size: 24,
                   ),
                 ),
-                const SizedBox(height: 16),
-
-                // ── Selection Grid (2x2) ──
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildTechniqueCard(0),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildTechniqueCard(1),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildTechniqueCard(2),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildTechniqueCard(3),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // ── Active Sequencer Panel ──
-                SmoothCard(
-                  backgroundColor: scheme.surface.withValues(alpha: 0.72),
-                  borderColor: scheme.primary.withValues(alpha: 0.12),
-                  borderRadius: 24,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 26),
+                const SizedBox(width: 14),
+                Expanded(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Large guided breathing pulse circle
-                      Center(
-                        child: SizedBox(
-                          width: 240,
-                          height: 240,
-                          child: AnimatedBuilder(
-                            animation: _scaleController,
-                            builder: (context, child) {
-                              final double currentScale = _scaleController.value;
-                              
-                              return Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  // Outer atmospheric halo
-                                  Transform.scale(
-                                    scale: currentScale * 1.35,
-                                    child: Container(
-                                      width: 120,
-                                      height: 120,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: const Color(0xFF10B981).withValues(alpha: 0.03),
-                                        border: Border.all(
-                                          color: const Color(0xFF10B981).withValues(alpha: 0.08),
-                                          width: 1.0,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  // Mid glowing halo
-                                  Transform.scale(
-                                    scale: currentScale * 1.18,
-                                    child: Container(
-                                      width: 120,
-                                      height: 120,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: const Color(0xFF10B981).withValues(alpha: 0.08),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(0xFF10B981).withValues(alpha: 0.16 * currentScale),
-                                            blurRadius: 24 * currentScale,
-                                            spreadRadius: 1.5 * currentScale,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  // Central primary breathing circle
-                                  Container(
-                                    width: 120 * currentScale,
-                                    height: 120 * currentScale,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: const LinearGradient(
-                                        colors: [Color(0xFF10B981), Color(0xFF059669)],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFF10B981).withValues(alpha: 0.28 * currentScale),
-                                          blurRadius: 18 * currentScale,
-                                          spreadRadius: 1 * currentScale,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                      border: Border.all(
-                                        color: Colors.white.withOpacity(0.3),
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          const Icon(
-                                            Icons.spa_rounded,
-                                            size: 26,
-                                            color: Colors.white,
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            _isRunning ? _getLabelForPhase(_currentPhaseIndex) : 'Ready',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                          ),
-                                          if (_isRunning) ...[
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              '${_secondsRemaining}s',
-                                              style: TextStyle(
-                                                color: Colors.white.withOpacity(0.9),
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w900,
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
+                      Text(
+                        'Breath Coach',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: scheme.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 16),
-
-                      // Horizontal phase duration capsules
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildPhaseBox('Inhale', '${activeTechnique.inhaleSeconds}s', _isRunning && _currentPhaseIndex == 0),
-                          const SizedBox(width: 8),
-                          _buildPhaseBox('Hold', '${activeTechnique.holdSeconds1}s', _isRunning && _currentPhaseIndex == 1),
-                          const SizedBox(width: 8),
-                          _buildPhaseBox('Exhale', '${activeTechnique.exhaleSeconds}s', _isRunning && _currentPhaseIndex == 2),
-                          const SizedBox(width: 8),
-                          _buildPhaseBox('Hold', '${activeTechnique.holdSeconds2}s', _isRunning && _currentPhaseIndex == 3),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Start / Stop controller play pill button
-                      Center(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF0FA58A), Color(0xFF8B5CF6)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: ElevatedButton.icon(
-                            onPressed: _isRunning ? _stopExercise : _startExercise,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            icon: Icon(
-                              _isRunning ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            label: Text(
-                              _isRunning ? 'Stop' : 'Start',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-
-                      // Bottom descriptive subtext
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text(
-                            activeTechnique.longDescription,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: scheme.onSurface.withValues(alpha: 0.36),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              height: 1.4,
-                            ),
-                          ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'AI-guided breathing for stress relief',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: scheme.onSurface.withValues(alpha: 0.58),
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
               ],
             ),
           ),
-        ),
+          const SizedBox(height: 14),
+
+          // ── AI Recommendation Card ──
+          SmoothCard(
+            backgroundColor: scheme.surface.withValues(alpha: 0.72),
+            borderColor: scheme.primary.withValues(alpha: 0.12),
+            borderRadius: 20,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.psychology_outlined,
+                          color: scheme.onSurface.withValues(alpha: 0.9),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'AI Recommendation',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            color: scheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _isRunning || _isRecommending
+                          ? null
+                          : () => _askAiRecommendation(profile),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        side: BorderSide(
+                          color: scheme.primary.withOpacity(0.24),
+                          width: 1.0,
+                        ),
+                      ),
+                      icon: _isRecommending
+                          ? SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: scheme.primary,
+                              ),
+                            )
+                          : Icon(Icons.auto_awesome, size: 12, color: scheme.primary),
+                      label: Text(
+                        _isRecommending ? 'Analyzing...' : 'Ask AI',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: scheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Click "Ask AI" to get a personalised breathing recommendation based on your Drift Index ($driftPercent%).',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurface.withValues(alpha: 0.48),
+                    fontWeight: FontWeight.w500,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // ── Selection Grid (2x2) ──
+          Row(
+            children: [
+              Expanded(
+                child: _buildTechniqueCard(0),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTechniqueCard(1),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildTechniqueCard(2),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildTechniqueCard(3),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Active Sequencer Panel ──
+          SmoothCard(
+            backgroundColor: scheme.surface.withValues(alpha: 0.72),
+            borderColor: scheme.primary.withValues(alpha: 0.12),
+            borderRadius: 24,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 26),
+            child: Column(
+              children: [
+                // Guided breathing pulse circle
+                Center(
+                  child: GestureDetector(
+                    onTap: _startExercise,
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: SizedBox(
+                        width: 240,
+                        height: 240,
+                        child: AnimatedBuilder(
+                          animation: _scaleController,
+                          builder: (context, child) {
+                            final double currentScale = _scaleController.value;
+                            
+                            return Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Outer atmospheric halo
+                                Transform.scale(
+                                  scale: currentScale * 1.35,
+                                  child: Container(
+                                    width: 120,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: const Color(0xFF10B981).withValues(alpha: 0.03),
+                                      border: Border.all(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Mid glowing halo
+                                Transform.scale(
+                                  scale: currentScale * 1.18,
+                                  child: Container(
+                                    width: 120,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF10B981).withValues(alpha: 0.16 * currentScale),
+                                          blurRadius: 24 * currentScale,
+                                          spreadRadius: 1.5 * currentScale,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                // Central primary breathing circle (Interactive action trigger)
+                                Container(
+                                  width: 120 * currentScale,
+                                  height: 120 * currentScale,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.28 * currentScale),
+                                        blurRadius: 18 * currentScale,
+                                        spreadRadius: 1 * currentScale,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.3),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.play_arrow_rounded,
+                                          size: 32,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        const Text(
+                                          'START',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 1.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Horizontal phase duration capsules
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildPhaseBox('Inhale', '${activeTechnique.inhaleSeconds}s', false),
+                    const SizedBox(width: 8),
+                    _buildPhaseBox('Hold', '${activeTechnique.holdSeconds1}s', false),
+                    const SizedBox(width: 8),
+                    _buildPhaseBox('Exhale', '${activeTechnique.exhaleSeconds}s', false),
+                    const SizedBox(width: 8),
+                    _buildPhaseBox('Hold', '${activeTechnique.holdSeconds2}s', false),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Unified Tap indicator badge (replacing separated button)
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: scheme.primary.withValues(alpha: 0.12),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.touch_app_rounded, size: 14, color: scheme.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Tap the circle to begin session',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: scheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // Bottom descriptive subtext
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      activeTechnique.longDescription,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: scheme.onSurface.withValues(alpha: 0.36),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }

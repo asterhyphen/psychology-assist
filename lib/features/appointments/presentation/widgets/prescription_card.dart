@@ -34,17 +34,26 @@ class _PrescriptionCard extends StatelessWidget {
                   Text(
                     'From ${prescription.prescribedByName}',
                     style: AppTypography.labelLarge,
+                    softWrap: true,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     prescription.medicines.take(2).join(', ') +
                         (prescription.medicines.length > 2 ? '...' : ''),
                     style: AppTypography.bodySmall,
+                    softWrap: true,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Issued ${prescription.createdAt.day}/${prescription.createdAt.month}/${prescription.createdAt.year}',
                     style: AppTypography.caption,
+                    softWrap: true,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

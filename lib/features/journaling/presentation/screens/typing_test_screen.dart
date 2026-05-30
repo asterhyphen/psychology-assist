@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../app/app_state.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -160,6 +161,32 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
   }
 
   void _showCompletionDialog(_TypingResult result) {
+    final originalTheme = Theme.of(context);
+    final cleanTextTheme = GoogleFonts.plusJakartaSansTextTheme(
+      ThemeData(brightness: originalTheme.brightness).textTheme
+    ).apply(
+      bodyColor: originalTheme.colorScheme.onSurface,
+      displayColor: originalTheme.colorScheme.onSurface,
+    );
+    final dialogTheme = originalTheme.copyWith(
+      textTheme: cleanTextTheme,
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 14),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 14),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+      ),
+    );
+
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
@@ -180,16 +207,19 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
                 insetPadding: EdgeInsets.zero,
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 460),
-                  child: _PremiumReportCard(
-                    result: result,
-                    onRetry: () {
-                      Navigator.of(context).pop();
-                      _resetTest();
-                    },
-                    onDone: () {
-                      Navigator.of(context).pop(); // Dismiss Dialog
-                      Navigator.of(context).pop(); // Return from Screen
-                    },
+                  child: Theme(
+                    data: dialogTheme,
+                    child: _PremiumReportCard(
+                      result: result,
+                      onRetry: () {
+                        Navigator.of(context).pop();
+                        _resetTest();
+                      },
+                      onDone: () {
+                        Navigator.of(context).pop(); // Dismiss Dialog
+                        Navigator.of(context).pop(); // Return from Screen
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -272,7 +302,37 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final originalTheme = Theme.of(context);
+    
+    // Force a highly legible, premium Sans-Serif font system (Plus Jakarta Sans)
+    // for all typography in the typing stress test to reduce cognitive load,
+    // overriding the handwritten/cursive fonts of the journal theme.
+    final cleanTextTheme = GoogleFonts.plusJakartaSansTextTheme(
+      ThemeData(brightness: originalTheme.brightness).textTheme
+    ).apply(
+      bodyColor: originalTheme.colorScheme.onSurface,
+      displayColor: originalTheme.colorScheme.onSurface,
+    );
+    
+    final theme = originalTheme.copyWith(
+      textTheme: cleanTextTheme,
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 14),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 14),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+      ),
+    );
+    
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
@@ -283,11 +343,13 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
     final progress = (_normalize(_controller.text).length / _normalize(_prompt).length)
         .clamp(0.0, 1.0);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Typing Stress Test'),
-        centerTitle: true,
-      ),
+    return Theme(
+      data: theme,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Typing Stress Test'),
+          centerTitle: true,
+        ),
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
@@ -299,96 +361,111 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
               mainAxisSize: MainAxisSize.min, // Make column tight and centered vertically
               children: [
                 // Elegant central circular breathing guide
-                Center(
-                  child: AnimatedBuilder(
-                    animation: _breathingController,
-                    builder: (context, child) {
-                      final value = _breathingController.value;
-                      final scale = 1.0 + (value * 0.15); // Scale from 1.0 to 1.15
-                      final text = value < 0.5 ? 'Hold & Inhale...' : 'Pause & Exhale...';
+                AnimatedCrossFade(
+                  firstChild: const SizedBox.shrink(),
+                  secondChild: Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: Center(
+                      child: AnimatedBuilder(
+                        animation: _breathingController,
+                        builder: (context, child) {
+                          final value = _breathingController.value;
+                          final scale = 1.0 + (value * 0.15); // Scale from 1.0 to 1.15
+                          final text = value < 0.5 ? 'Hold & Inhale...' : 'Pause & Exhale...';
 
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Stack(
-                            alignment: Alignment.center,
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Concentric glowing halo 2
-                              Transform.scale(
-                                scale: scale * 1.28,
-                                child: Container(
-                                  width: 96,
-                                  height: 96,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: const Color(0xFF0FA58A).withValues(alpha: 0.05),
-                                    border: Border.all(
-                                      color: const Color(0xFF0FA58A).withValues(alpha: 0.1),
-                                      width: 1.0,
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  // Concentric glowing halo 2
+                                  Transform.scale(
+                                    scale: scale * 1.28,
+                                    child: Container(
+                                      width: 96,
+                                      height: 96,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: const Color(0xFF0FA58A).withValues(alpha: 0.05),
+                                        border: Border.all(
+                                          color: const Color(0xFF0FA58A).withValues(alpha: 0.1),
+                                          width: 1.0,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
-                              // Concentric glowing halo 1
-                              Transform.scale(
-                                scale: scale,
-                                child: Container(
-                                  width: 82,
-                                  height: 82,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: const Color(0xFF0FA58A).withValues(alpha: 0.12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF0FA58A).withValues(alpha: 0.22),
-                                        blurRadius: 18,
-                                        spreadRadius: 2,
+                                  // Concentric glowing halo 1
+                                  Transform.scale(
+                                    scale: scale,
+                                    child: Container(
+                                      width: 82,
+                                      height: 82,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: const Color(0xFF0FA58A).withValues(alpha: 0.12),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xFF0FA58A).withValues(alpha: 0.22),
+                                            blurRadius: 18,
+                                            spreadRadius: 2,
+                                          ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
+                                  // Central Circle
+                                  Container(
+                                    width: 68,
+                                    height: 68,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        colors: [Color(0xFF0FA58A), Color(0xFF14B8A6)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.spa_rounded,
+                                      color: Colors.white,
+                                      size: 26,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              // Central Circle
-                              Container(
-                                width: 68,
-                                height: 68,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    colors: [Color(0xFF0FA58A), Color(0xFF14B8A6)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.spa_rounded,
-                                  color: Colors.white,
-                                  size: 26,
+                              const SizedBox(height: 12),
+                              Text(
+                                text,
+                                style: TextStyle(
+                                  color: scheme.primary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.2,
                                 ),
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            text,
-                            style: TextStyle(
-                              color: scheme.primary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                          );
+                        },
+                      ),
+                    ),
                   ),
+                  crossFadeState: _focusNode.hasFocus
+                      ? CrossFadeState.showFirst
+                      : CrossFadeState.showSecond,
+                  duration: const Duration(milliseconds: 300),
                 ),
-                const SizedBox(height: 18),
+                SizedBox(height: _focusNode.hasFocus ? 0 : 18),
 
-                // Prompt Glassmorphic Card
-                Container(
+                // Prompt Glassmorphic Card (Collapses/shrinks on focus)
+                 AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOutCubic,
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 24),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: _focusNode.hasFocus ? 20 : 28,
+                    vertical: _focusNode.hasFocus ? 16 : 28,
+                  ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF14B8A6), Color(0xFF0B7A66)],
@@ -410,9 +487,9 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
                   ),
                   child: RichText(
                     text: TextSpan(
-                      style: const TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         color: Colors.white,
-                        fontSize: 19.0,
+                        fontSize: _focusNode.hasFocus ? 19.0 : 23.0,
                         fontWeight: FontWeight.w600,
                         height: 1.65,
                       ),
@@ -420,7 +497,7 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: _focusNode.hasFocus ? 8 : 16),
                 
                 // Live metrics arranged horizontally in a sleek premium stats bar
                 Container(
@@ -440,7 +517,7 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: _focusNode.hasFocus ? 8 : 14),
                 
                 // Typing input card with focus glow
                 SmoothCard(
@@ -596,7 +673,7 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
           ),
         ),
       ),
-    );
+    ),);
   }
 
   List<TextSpan> _buildPromptSpans(BuildContext context) {
@@ -615,15 +692,12 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
       spans.add(
         TextSpan(
           text: _prompt[i],
-          style: TextStyle(
+          style: GoogleFonts.plusJakartaSans(
             color: isWrong
                 ? const Color(0xFFFFB0B0)
                 : hasTyped
                     ? Colors.white
                     : Colors.white.withValues(alpha: 0.52),
-            backgroundColor: isCurrent
-                ? Colors.white.withValues(alpha: 0.28)
-                : Colors.transparent,
             decoration: isWrong ? TextDecoration.underline : null,
             decorationColor: const Color(0xFFFFB0B0),
             decorationThickness: 2.0,
@@ -637,10 +711,10 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
       spans.add(
         TextSpan(
           text: typed.substring(_prompt.length),
-          style: const TextStyle(
-            color: Color(0xFFFFB0B0),
+          style: GoogleFonts.plusJakartaSans(
+            color: const Color(0xFFFFB0B0),
             decoration: TextDecoration.underline,
-            decorationColor: Color(0xFFFFB0B0),
+            decorationColor: const Color(0xFFFFB0B0),
             decorationThickness: 2.0,
           ),
         ),

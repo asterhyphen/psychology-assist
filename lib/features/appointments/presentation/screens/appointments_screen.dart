@@ -285,6 +285,14 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
     _showMessage('Appointment requested successfully!', success: true);
   }
 
+  String _formatDateHeader(DateTime date) {
+    final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final weekday = weekdays[date.weekday - 1];
+    final month = months[date.month - 1];
+    return '$weekday, $month ${date.day}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(appSessionProvider);
@@ -326,10 +334,31 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
     final List<Widget> listWidgets = [];
     String? lastHeader;
 
-    for (final slot in sortedSlots) {
+    final resolvedSlots = sortedSlots.map((slot) {
+      if (slot.dateIndex == 0) {
+        return slot; // Keep 'Tomorrow'
+      } else {
+        final futureDate = DateTime.now().add(Duration(days: slot.dateIndex + 1));
+        return _DoctorSlot(
+          name: slot.name,
+          rating: slot.rating,
+          specialty: slot.specialty,
+          time: slot.time,
+          duration: slot.duration,
+          type: slot.type,
+          email: slot.email,
+          isFull: slot.isFull,
+          dateHeader: _formatDateHeader(futureDate),
+          dateIndex: slot.dateIndex,
+          initials: slot.initials,
+        );
+      }
+    }).toList();
+
+    for (final slot in resolvedSlots) {
       if (slot.dateHeader != lastHeader) {
         lastHeader = slot.dateHeader;
-        final groupCount = sortedSlots.where((s) => s.dateHeader == lastHeader && !s.isFull).length;
+        final groupCount = resolvedSlots.where((s) => s.dateHeader == lastHeader && !s.isFull).length;
 
         listWidgets.add(
           Padding(
@@ -405,13 +434,13 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.star_rounded,
+                            Icons.bolt_rounded,
                             color: Color(0xFFEF4444),
                             size: 14,
                           ),
                           SizedBox(width: 6),
                           Text(
-                            'PRIORITY — CRITICAL PATIENT',
+                            '⚡ PRIORITY SLOT — ACCELERATED CARE',
                             style: TextStyle(
                               color: Color(0xFFEF4444),
                               fontSize: 11,
@@ -490,25 +519,41 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                               scrollDirection: Axis.horizontal,
                               child: Row(
                                 children: [
-                                  Icon(Icons.schedule_outlined, size: 13, color: Colors.white.withOpacity(0.4)),
+                                  Icon(
+                                    Icons.schedule_outlined,
+                                    size: 13,
+                                    color: Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.white.withOpacity(0.54)
+                                        : Colors.black.withOpacity(0.54),
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     slot.time,
                                     style: TextStyle(
                                       fontSize: 11.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white.withOpacity(0.48),
+                                      fontWeight: FontWeight.w700,
+                                      color: Theme.of(context).brightness == Brightness.dark
+                                          ? Colors.white.withOpacity(0.68)
+                                          : Colors.black.withOpacity(0.68),
                                     ),
                                   ),
                                   const SizedBox(width: 10),
-                                  Icon(Icons.timelapse_outlined, size: 13, color: Colors.white.withOpacity(0.4)),
+                                  Icon(
+                                    Icons.timelapse_outlined,
+                                    size: 13,
+                                    color: Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.white.withOpacity(0.54)
+                                        : Colors.black.withOpacity(0.54),
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     slot.duration,
                                     style: TextStyle(
                                       fontSize: 11.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white.withOpacity(0.48),
+                                      fontWeight: FontWeight.w700,
+                                      color: Theme.of(context).brightness == Brightness.dark
+                                          ? Colors.white.withOpacity(0.68)
+                                          : Colors.black.withOpacity(0.68),
                                     ),
                                   ),
                                   const SizedBox(width: 10),
@@ -601,38 +646,31 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
                           ),
                         ),
                       ] else ...[
-                        OutlinedButton(
+                        FilledButton(
                           onPressed: () => _bookSlot(slot),
-                          style: OutlinedButton.styleFrom(
+                          style: FilledButton.styleFrom(
                             backgroundColor: isWebbPriority
-                                ? const Color(0xFFEF4444).withOpacity(0.08)
-                                : Colors.transparent,
+                                ? const Color(0xFFEF4444)
+                                : const Color(0xFF0FA58A),
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            side: BorderSide(
-                              color: isWebbPriority
-                                  ? const Color(0xFFEF4444)
-                                  : const Color(0xFF0FA58A),
-                              width: 1.2,
-                            ),
+                            elevation: 2,
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               if (isWebbPriority) ...[
-                                const Icon(Icons.bolt_rounded, color: Color(0xFFEF4444), size: 14),
+                                const Icon(Icons.bolt_rounded, color: Colors.white, size: 14),
                                 const SizedBox(width: 4),
                               ],
                               Text(
                                 isWebbPriority ? 'Book Priority' : 'Book',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w900,
-                                  color: isWebbPriority
-                                      ? const Color(0xFFEF4444)
-                                      : const Color(0xFF0FA58A),
                                 ),
                               ),
                             ],

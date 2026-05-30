@@ -88,7 +88,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       });
     final nextPrescription = relatedPrescriptions.isEmpty
         ? 'No reminders set'
-        : '${relatedPrescriptions.first.medicines.join(', ')} at ${relatedPrescriptions.first.reminderTimes.isNotEmpty ? relatedPrescriptions.first.reminderTimes.first.toDisplayString() : 'No time'}';
+        : '${relatedPrescriptions.first.medicines.join(', ')} ${relatedPrescriptions.first.reminderTimes.isNotEmpty ? 'at ' + relatedPrescriptions.first.reminderTimes.first.toDisplayString() : '(Time not set)'}';
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -332,6 +332,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return 'Good evening';
   }
 
+  String _displayName(String? name) {
+    if (name == null || name.trim().isEmpty) return 'Mindful Friend';
+    final lower = name.trim().toLowerCase();
+    if (lower == 'patient' || lower == 'demo patient') return 'Mindful Friend';
+    return name;
+  }
+
   double _heightForDay(List<MoodEntry> entries, int dayIndex) {
     final now = DateTime.now();
     final weekStart = DateTime(
@@ -429,7 +436,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    profile?.name ?? 'Welcome',
+                    _displayName(profile?.name),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -938,20 +945,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     String sentimentText;
     
     if (drift < 0.35) {
-      speedText = '${(4.8 - drift * 2.0).toStringAsFixed(1)} c/s';
-      backspaceText = '${(4 + drift * 20).toInt()}%';
-      pauseText = '${(0.2 + drift * 0.5).toStringAsFixed(1)}s';
-      sentimentText = 'Positive';
+      speedText = '${(4.8 - drift * 2.0).toStringAsFixed(1)} c/s • Normal';
+      backspaceText = '${(4 + drift * 20).toInt()}% • Optimal';
+      pauseText = '${(0.2 + drift * 0.5).toStringAsFixed(1)}s • Steady';
+      sentimentText = 'Positive • Healthy';
     } else if (drift < 0.65) {
-      speedText = '${(4.8 - drift * 2.5).toStringAsFixed(1)} c/s';
-      backspaceText = '${(4 + drift * 30).toInt()}%';
-      pauseText = '${(0.2 + drift * 0.8).toStringAsFixed(1)}s';
-      sentimentText = 'Neutral';
+      speedText = '${(4.8 - drift * 2.5).toStringAsFixed(1)} c/s • Steady';
+      backspaceText = '${(4 + drift * 30).toInt()}% • Moderate';
+      pauseText = '${(0.2 + drift * 0.8).toStringAsFixed(1)}s • Reflective';
+      sentimentText = 'Neutral • Stable';
     } else {
-      speedText = '${(4.8 - drift * 3.0).toStringAsFixed(1)} c/s';
-      backspaceText = '${(4 + drift * 40).toInt()}%';
-      pauseText = '${(0.2 + drift * 1.2).toStringAsFixed(1)}s';
-      sentimentText = 'Stressed';
+      speedText = '${(4.8 - drift * 3.0).toStringAsFixed(1)} c/s • Slower';
+      backspaceText = '${(4 + drift * 40).toInt()}% • Restless';
+      pauseText = '${(0.2 + drift * 1.2).toStringAsFixed(1)}s • Distracted';
+      sentimentText = 'Stressed • Rest Needed';
     }
 
     return SmoothCard(
@@ -1250,25 +1257,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           const SizedBox(height: 14),
 
           // Environment code tag pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.04) : scheme.onSurface.withOpacity(0.04),
-              border: Border.all(
-                color: isDark ? Colors.white.withOpacity(0.08) : scheme.onSurface.withOpacity(0.08),
-                width: 1.0,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              'VITE_OLLAMA_MODEL=mistral',
-              style: TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 11.5,
-                color: isDark ? Colors.white.withOpacity(0.4) : scheme.onSurface.withOpacity(0.54),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+          const SizedBox(height: 10),
+          SmoothButton(
+            onPressed: () {
+              ref.read(selectedTabProvider.notifier).state = 4; // Settings tab
+              AppSnackBar.showInfo(
+                context,
+                title: 'AI Settings',
+                message: 'Scroll down to NFC/Lock or AI options to configure.',
+              );
+            },
+            icon: const Icon(Icons.settings_suggest_rounded, size: 16, color: Colors.white),
+            label: 'Configure AI Model',
+            backgroundColor: scheme.primary,
           ),
         ],
       ),
@@ -1639,14 +1640,25 @@ class _TrendLinePainter extends CustomPainter {
     final cleanValues = values.map((val) => val.isNaN || val.isInfinite ? 50.0 : val).toList();
     if (cleanValues.isEmpty) return;
 
+    final lineShader = const LinearGradient(
+      begin: Alignment.bottomCenter,
+      end: Alignment.topCenter,
+      colors: [
+        Color(0xFF10B981), // Calming green
+        Color(0xFFF59E0B), // Gentle amber
+        Color(0xFFEF4444), // Coral Red
+      ],
+      stops: [0.15, 0.55, 0.95],
+    ).createShader(Rect.fromLTRB(0, 0, size.width, size.height));
+
     final paintLine = Paint()
-      ..color = activeColor
+      ..shader = lineShader
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
+      ..strokeWidth = 3.5
       ..strokeCap = StrokeCap.round;
 
     final paintLineShadow = Paint()
-      ..color = activeColor.withOpacity(0.24)
+      ..shader = lineShader
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8.0
       ..strokeCap = StrokeCap.round
@@ -1728,13 +1740,16 @@ class _TrendLinePainter extends CustomPainter {
     fillPath.close();
 
     final fillPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
+      ..shader = const LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
         colors: [
-          activeColor.withOpacity(0.24),
-          activeColor.withOpacity(0.00),
+          Color(0x0610B981), // Faint green at 0%
+          Color(0x1A10B981), // Faint green at 30%
+          Color(0x20F59E0B), // Soft amber in middle
+          Color(0x12EF4444), // Soft coral red at top
         ],
+        stops: [0.0, 0.35, 0.65, 1.0],
       ).createShader(Rect.fromLTRB(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;
 

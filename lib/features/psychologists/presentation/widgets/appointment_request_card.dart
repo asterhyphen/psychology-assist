@@ -33,7 +33,7 @@ class _AppointmentRequestCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      appointment.patientName,
+                      appointment.displayPatientName,
                       style: AppTypography.labelLarge,
                     ),
                     Text(

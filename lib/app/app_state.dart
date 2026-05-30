@@ -96,6 +96,23 @@ class Appointment {
   final bool confirmed;
   final double driftIndex;
 
+  String get displayPatientName {
+    final trimmed = patientName.trim();
+    if (trimmed.isEmpty || trimmed.toLowerCase() == 'patient') {
+      if (patientEmail != null && patientEmail!.isNotEmpty) {
+        final emailStub = patientEmail!.split('@').first;
+        if (emailStub.isNotEmpty) {
+          if (emailStub.toLowerCase() == 'patient') {
+            return 'Unnamed Client';
+          }
+          return emailStub[0].toUpperCase() + emailStub.substring(1);
+        }
+      }
+      return 'Unnamed Client';
+    }
+    return patientName;
+  }
+
   const Appointment({
     required this.psychologistEmail,
     required this.psychologistName,
