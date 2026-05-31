@@ -846,7 +846,23 @@ class AppSessionNotifier extends StateNotifier<AppSession> {
     final profile = state.profile;
     if (profile == null) return;
 
-    double drift = 0.35; // baseline
+    final hasNoData = state.moodEntries.isEmpty &&
+        state.typingHistory.isEmpty &&
+        state.breathingHistory.isEmpty &&
+        state.adherenceHistory.isEmpty &&
+        state.journalEntries.isEmpty &&
+        state.appointments.isEmpty;
+
+    if (hasNoData) {
+      state = state.copyWith(
+        profile: profile.copyWith(driftIndex: 0.0),
+        driftHistory: [],
+      );
+      _persist();
+      return;
+    }
+
+    double drift = 0.20; // baseline starts at a stable, neutral level (20)
 
     // 1. Mood Component (25% weight)
     if (state.moodEntries.isNotEmpty) {
@@ -966,6 +982,15 @@ class AppSessionNotifier extends StateNotifier<AppSession> {
       lockPin: lockPin,
       profile: profile,
       isLocked: false,
+      appointments: [],
+      journalEntries: [],
+      moodEntries: [],
+      typingHistory: [],
+      breathingHistory: [],
+      driftHistory: [],
+      adherenceHistory: [],
+      prescriptions: [],
+      clinicalNotes: [],
     );
     recalculateDriftIndex('Onboarding Complete');
   }
@@ -1052,6 +1077,209 @@ class AppSessionNotifier extends StateNotifier<AppSession> {
   void updateProfile(AppProfile profile) {
     state = state.copyWith(profile: profile);
     _persist();
+  }
+
+  Future<void> switchUser(String email, UserRole defaultRole, String defaultName) async {
+    await _persist();
+    final newSessionData = await _store.loadUserSession(email);
+    if (newSessionData != null) {
+      state = AppSession.fromJson(newSessionData);
+    } else {
+      final now = DateTime.now();
+      List<Appointment> initialAppointments = [];
+      List<JournalEntry> initialJournals = [];
+
+      if (email == demoPsychologistEmail) {
+        initialAppointments = [
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Alex Morgan',
+            patientEmail: 'alex.m@example.com',
+            startsAt: now.subtract(const Duration(hours: 2)),
+            type: 'Therapy',
+            note: 'Burnout Risk, Sleep Issues, High Stress',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.82,
+          ),
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Casey Kim',
+            patientEmail: 'casey.k@example.com',
+            startsAt: now.subtract(const Duration(hours: 5)),
+            type: 'Consultation',
+            note: 'Work Stress, Fatigue',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.61,
+          ),
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Jordan Lee',
+            patientEmail: 'jordan.l@example.com',
+            startsAt: now.subtract(const Duration(days: 1)),
+            type: 'CBT Session',
+            note: 'Anxiety, Rumination',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.54,
+          ),
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Taylor Pham',
+            patientEmail: 'taylor.p@example.com',
+            startsAt: now.subtract(const Duration(minutes: 30)),
+            type: 'General Check-up',
+            note: 'Stable, Positive',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.24,
+          ),
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Sam Rivera',
+            patientEmail: 'sam.r@example.com',
+            startsAt: now.subtract(const Duration(hours: 3)),
+            type: 'Support Group',
+            note: 'Stable, Consistent',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.18,
+          ),
+        ];
+
+        initialJournals = [
+          JournalEntry(
+            createdAt: now.subtract(const Duration(hours: 2)),
+            content: 'Lately I feel like I am running on empty constantly. Sleep is elusive and my brain won\'t turn off at 3 AM.',
+            summary: 'Feel like running on empty constantly. Sleep is elusive and mind racing at 3 AM.',
+            sharedWithPsychologist: true,
+          ),
+          JournalEntry(
+            createdAt: now.subtract(const Duration(days: 1)),
+            content: 'Overthinking everything Jordan said today. Felt my heart racing at my desk for no good reason. Tried a quick breathing exercise.',
+            summary: 'Overthinking social interactions. Felt chest tightness at desk and tried breathing exercise.',
+            sharedWithPsychologist: true,
+          ),
+        ];
+      } else if (email == 'alex.m@example.com') {
+        initialAppointments = [
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Alex Morgan',
+            patientEmail: 'alex.m@example.com',
+            startsAt: now.subtract(const Duration(hours: 2)),
+            type: 'Therapy',
+            note: 'Burnout Risk, Sleep Issues, High Stress',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.82,
+          ),
+        ];
+        initialJournals = [
+          JournalEntry(
+            createdAt: now.subtract(const Duration(hours: 2)),
+            content: 'Lately I feel like I am running on empty constantly. Sleep is elusive and my brain won\'t turn off at 3 AM.',
+            summary: 'Feel like running on empty constantly. Sleep is elusive and mind racing at 3 AM.',
+            sharedWithPsychologist: true,
+          ),
+        ];
+      } else if (email == 'casey.k@example.com') {
+        initialAppointments = [
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Casey Kim',
+            patientEmail: 'casey.k@example.com',
+            startsAt: now.subtract(const Duration(hours: 5)),
+            type: 'Consultation',
+            note: 'Work Stress, Fatigue',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.61,
+          ),
+        ];
+      } else if (email == 'jordan.l@example.com') {
+        initialAppointments = [
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Jordan Lee',
+            patientEmail: 'jordan.l@example.com',
+            startsAt: now.subtract(const Duration(days: 1)),
+            type: 'CBT Session',
+            note: 'Anxiety, Rumination',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.54,
+          ),
+        ];
+        initialJournals = [
+          JournalEntry(
+            createdAt: now.subtract(const Duration(days: 1)),
+            content: 'Overthinking everything Jordan said today. Felt my heart racing at my desk for no good reason. Tried a quick breathing exercise.',
+            summary: 'Overthinking social interactions. Felt chest tightness at desk and tried breathing exercise.',
+            sharedWithPsychologist: true,
+          ),
+        ];
+      } else if (email == 'taylor.p@example.com') {
+        initialAppointments = [
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Taylor Pham',
+            patientEmail: 'taylor.p@example.com',
+            startsAt: now.subtract(const Duration(minutes: 30)),
+            type: 'General Check-up',
+            note: 'Stable, Positive',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.24,
+          ),
+        ];
+      } else if (email == 'sam.r@example.com') {
+        initialAppointments = [
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Sam Rivera',
+            patientEmail: 'sam.r@example.com',
+            startsAt: now.subtract(const Duration(hours: 3)),
+            type: 'Support Group',
+            note: 'Stable, Consistent',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.18,
+          ),
+        ];
+      }
+
+      state = AppSession(
+        onboardingComplete: true,
+        appLockSet: state.appLockSet,
+        lockPin: state.lockPin,
+        lockTimeoutMinutes: state.lockTimeoutMinutes,
+        isLocked: false,
+        profile: AppProfile(
+          role: defaultRole,
+          name: defaultName,
+          email: email,
+          driftIndex: (email == 'alex.m@example.com') ? 0.82 :
+                      (email == 'casey.k@example.com') ? 0.61 :
+                      (email == 'jordan.l@example.com') ? 0.54 :
+                      (email == 'taylor.p@example.com') ? 0.24 :
+                      (email == 'sam.r@example.com') ? 0.18 : 0.0,
+          status: PatientStatus.active,
+        ),
+        moodEntries: [],
+        typingHistory: [],
+        breathingHistory: [],
+        driftHistory: [],
+        adherenceHistory: [],
+        journalEntries: initialJournals,
+        appointments: initialAppointments,
+        prescriptions: [],
+        clinicalNotes: [],
+      );
+    }
+    await _store.setActiveUser(email);
+    await _persist();
   }
 
   void addJournalEntry(String content) {

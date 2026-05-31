@@ -40,7 +40,7 @@ Generated on: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().yea
 **Overall Drift Index**: $driftIndex
 
 **Insights**:
-Based on recent check-ins and journal patterns, the patient is showing steady engagement but may benefit from discussing cognitive reframing strategies during the next session.
+Based on recent check-ins and mood patterns, the patient is showing steady engagement but may benefit from discussing cognitive reframing strategies during the next session.
 ''';
 
     ref.read(appSessionProvider.notifier).addMessage(
@@ -210,12 +210,12 @@ Based on recent check-ins and journal patterns, the patient is showing steady en
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Recent journal notes',
+                  Text('Recent Mood Notes',
                       style: AppTypography.headingSmall),
                   const SizedBox(height: 12),
                   if (recentEntries.isEmpty)
                     Text(
-                      'No journal notes yet. Add a mood entry to start tracking.',
+                      'No mood notes yet. Add a mood entry to start tracking.',
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.lightSubtext,
                       ),

@@ -79,14 +79,7 @@ Current Metrics:
     } catch (e) {
       if (mounted) {
         setState(() {
-          // Fallback insight based on drift
-          if (currentDrift < 0.35) {
-            _dailyInsight = 'Your emotional coherence is stable. Keep prioritizing consistency in your wellness rituals today.';
-          } else if (currentDrift < 0.65) {
-            _dailyInsight = 'A slight decline in coherence has been detected. Consider taking a 2-minute physiological sigh break.';
-          } else {
-            _dailyInsight = 'Your stress markers are elevated today. Please slow down and practice a deep guided box breathing cycle.';
-          }
+          _dailyInsight = 'AI insights temporarily unavailable. Please try again later.';
           _isRefreshingInsight = false;
         });
       }
@@ -336,7 +329,7 @@ Current Metrics:
                 if (profile?.role == UserRole.patient) ...[
                   _buildWeeklyDriftTrend(context, profile, session, scheme),
                   const SizedBox(height: 18),
-                  _buildPassiveBehavioralSignals(context, profile, scheme),
+                  _buildPassiveBehavioralSignals(context, session, scheme),
                   const SizedBox(height: 18),
                   _buildAiDailyInsight(context, scheme),
                   const SizedBox(height: 18),
@@ -1025,10 +1018,76 @@ Current Metrics:
   bool _isRefreshingInsight = false;
 
   // ── Widget: Passive Behavioral Signals Card ──
-  Widget _buildPassiveBehavioralSignals(BuildContext context, AppProfile? profile, ColorScheme scheme) {
+  Widget _buildPassiveBehavioralSignals(BuildContext context, AppSession session, ColorScheme scheme) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final profile = session.profile;
     final drift = profile?.driftIndex ?? 0.18;
+
+    if (session.typingHistory.isEmpty) {
+      return SmoothCard(
+        backgroundColor: scheme.surface.withValues(alpha: 0.72),
+        borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
+        borderRadius: 22,
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.visibility_outlined,
+                  color: isDark ? Colors.white.withOpacity(0.9) : scheme.onSurface.withOpacity(0.8),
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Passive Behavioral Signals',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : scheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.keyboard_alt_outlined,
+                    color: isDark ? Colors.white24 : Colors.black26,
+                    size: 32,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No typing data available',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : scheme.onSurface.withOpacity(0.7),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Complete a typing test or chat with AI to see signals.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: isDark ? Colors.white30 : scheme.onSurface.withOpacity(0.35),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+        ),
+      );
+    }
     
     // Scale typing metrics based on drift index (stress levels)
     // Stable (< 0.35), Declining (< 0.65), Critical (>= 0.65)

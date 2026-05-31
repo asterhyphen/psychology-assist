@@ -128,7 +128,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
     AppSnackBar.showSuccess(
       context,
       title: 'Mood saved',
-      message: 'Your entry is saved to your journal.',
+      message: 'Your entry is saved as a mood note.',
       duration: const Duration(milliseconds: 1400),
     );
   }
@@ -244,7 +244,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
             children: [
               const SizedBox(height: 16),
               Text(
-                'Journal & Mood Notes',
+                'Mood Check-In',
                 style: AppTypography.displayMedium.copyWith(
                   color: theme.textTheme.displayMedium?.color,
                 ),
@@ -455,7 +455,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Recent journal entries',
+                      'Recent Mood Notes',
                       style: AppTypography.headingSmall.copyWith(
                         color: theme.textTheme.titleMedium?.color,
                       ),
@@ -548,7 +548,7 @@ class _MoodLogScreenState extends ConsumerState<MoodLogScreen>
                   backgroundColor:
                       theme.colorScheme.surface.withValues(alpha: 0.72),
                   child: Text(
-                    'No journal entries yet. Save a mood entry to start building your notes.',
+                    'No mood notes yet. Save a mood entry to start building your notes.',
                     style: AppTypography.bodySmall.copyWith(
                       color: theme.textTheme.bodySmall?.color,
                     ),

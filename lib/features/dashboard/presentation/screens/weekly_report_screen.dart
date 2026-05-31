@@ -278,6 +278,13 @@ REC 3: <Actionable recommendation 3>
         ? _journalCount 
         : session.journalEntries.length;
 
+    final hasNoData = session.moodEntries.isEmpty &&
+        session.typingHistory.isEmpty &&
+        session.breathingHistory.isEmpty &&
+        session.adherenceHistory.isEmpty &&
+        session.journalEntries.isEmpty &&
+        session.appointments.isEmpty;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -497,7 +504,9 @@ REC 3: <Actionable recommendation 3>
                                 reportSummary: _reportSummary,
                                 recommendations: _recommendations,
                               )
-                            : _buildGeneratePromptCard(isDark, scheme),
+                            : hasNoData
+                                ? _buildInsufficientDataCard(isDark, scheme)
+                                : _buildGeneratePromptCard(isDark, scheme),
                   ),
                 ],
               ),
@@ -531,6 +540,59 @@ REC 3: <Actionable recommendation 3>
           ),
           const SizedBox(height: 8),
           valueWidget,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsufficientDataCard(bool isDark, ColorScheme scheme) {
+    return SmoothCard(
+      backgroundColor: scheme.surface.withValues(alpha: 0.72),
+      borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
+      borderRadius: 22,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: scheme.error.withValues(alpha: 0.08),
+              border: Border.all(
+                color: scheme.error.withValues(alpha: 0.16),
+                width: 1.0,
+              ),
+            ),
+            child: Icon(
+              Icons.warning_amber_rounded,
+              color: scheme.error,
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Insufficient data to generate report.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16.5,
+              fontWeight: FontWeight.w900,
+              color: isDark ? Colors.white : scheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              'We need some health activity records to compile your weekly report. Please log mood notes, complete breathing exercises, medication logs, or take a typing stress test first.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.45,
+                color: isDark ? Colors.white38 : scheme.onSurface.withOpacity(0.54),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
         ],
       ),
     );

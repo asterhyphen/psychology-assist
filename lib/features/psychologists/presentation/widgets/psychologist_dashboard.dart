@@ -33,20 +33,19 @@ class _PsychologistDashboard extends ConsumerWidget {
         scrolledUnderElevation: 0,
         actions: [
           IconButton(
-            onPressed: () {
-              ref.read(appSessionProvider.notifier).updateProfile(
-                    AppProfile(
-                      role: UserRole.patient,
-                      name: 'Patient',
-                      email: 'patient@example.com',
-                      psychologistEmail: demoPsychologistEmail,
-                    ),
+            onPressed: () async {
+              await ref.read(appSessionProvider.notifier).switchUser(
+                    'patient@example.com',
+                    UserRole.patient,
+                    'Patient',
                   );
-              AppSnackBar.showInfo(
-                context,
-                title: 'Switched to Patient',
-                message: 'You are now viewing as a patient.',
-              );
+              if (context.mounted) {
+                AppSnackBar.showInfo(
+                  context,
+                  title: 'Switched to Patient',
+                  message: 'You are now viewing as patient@example.com.',
+                );
+              }
             },
             icon: const Icon(Icons.switch_account),
             tooltip: 'Switch to Patient View',

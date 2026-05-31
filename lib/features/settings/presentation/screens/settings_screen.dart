@@ -1073,53 +1073,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                               .withValues(alpha: 0.85),
                                   foregroundColor: Colors.white,
                                 ),
-                                onPressed: () {
+                                onPressed: () async {
                                   if (profile?.role == UserRole.psychologist) {
-                                    ref
+                                    await ref
                                         .read(appSessionProvider.notifier)
-                                        .updateProfile(
-                                          AppProfile(
-                                            role: UserRole.patient,
-                                            name: 'Mindful Friend',
-                                            email: 'patient@example.com',
-                                            psychologistEmail:
-                                                demoPsychologistEmail,
-                                            avatarColorValue: 0xFF8B5CF6,
-                                            avatarIconCodePoint:
-                                                Icons.person.codePoint,
-                                          ),
+                                        .switchUser(
+                                          'patient@example.com',
+                                          UserRole.patient,
+                                          'Mindful Friend',
                                         );
                                     ref
                                         .read(selectedTabProvider.notifier)
                                         .state = 0;
-                                    AppSnackBar.showSuccess(
-                                      context,
-                                      title: 'Switched to Patient',
-                                      message:
-                                          'You are now viewing as Mindful Friend.',
-                                    );
+                                    if (context.mounted) {
+                                      AppSnackBar.showSuccess(
+                                        context,
+                                        title: 'Switched to Patient',
+                                        message:
+                                            'You are now viewing as Mindful Friend.',
+                                      );
+                                    }
                                   } else {
-                                    ref
+                                    await ref
                                         .read(appSessionProvider.notifier)
-                                        .updateProfile(
-                                          AppProfile(
-                                            role: UserRole.psychologist,
-                                            name: 'Dr. Panipuri',
-                                            email: demoPsychologistEmail,
-                                            avatarColorValue: 0xFF4A6CF7,
-                                            avatarIconCodePoint:
-                                                Icons.psychology_alt.codePoint,
-                                          ),
+                                        .switchUser(
+                                          demoPsychologistEmail,
+                                          UserRole.psychologist,
+                                          'Dr. Panipuri',
                                         );
                                     ref
                                         .read(selectedTabProvider.notifier)
                                         .state = 0;
-                                    AppSnackBar.showSuccess(
-                                      context,
-                                      title: 'Switched to Psychologist',
-                                      message:
-                                          'You are now viewing as Dr. Panipuri.',
-                                    );
+                                    if (context.mounted) {
+                                      AppSnackBar.showSuccess(
+                                        context,
+                                        title: 'Switched to Psychologist',
+                                        message:
+                                            'You are now viewing as Dr. Panipuri.',
+                                      );
+                                    }
                                   }
                                 },
                                 icon: Icon(

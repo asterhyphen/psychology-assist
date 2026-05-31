@@ -315,7 +315,7 @@ class GeminiAdapter implements AiService {
           if (kDebugMode) {
             debugPrint(errorMsg);
           }
-          return errorMsg; // Return quota message directly to avoid fallback conversion
+          throw HttpException(errorMsg);
         }
         if (resp.statusCode == 404) {
           if (kDebugMode) {
@@ -366,7 +366,7 @@ class GeminiAdapter implements AiService {
           if (kDebugMode) {
             debugPrint(errorMsg2);
           }
-          return errorMsg2; // Return quota message directly to avoid fallback conversion
+          throw HttpException(errorMsg2);
         }
         if (resp2.statusCode == 404) {
           if (kDebugMode) {
