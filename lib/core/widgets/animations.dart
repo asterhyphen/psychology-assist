@@ -113,80 +113,116 @@ class StaggeredAnimationBuilder extends StatefulWidget {
 }
 
 class _StaggeredAnimationBuilderState extends State<StaggeredAnimationBuilder>
-    with TickerProviderStateMixin {
-  late List<AnimationController> _controllers;
-  late List<Animation<double>> _animations;
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controllers = List.generate(
-      widget.children.length,
-      (i) => AnimationController(duration: widget.duration, vsync: this),
+    _controller = AnimationController(
+      duration: widget.duration + widget.delay * widget.children.length,
+      vsync: this,
     );
+    _controller.forward();
+  }
 
-    _animations = _controllers
-        .asMap()
-        .entries
-        .map(
-          (entry) => Tween<double>(
-            begin: 0,
-            end: 1,
-          ).animate(CurvedAnimation(parent: entry.value, curve: widget.curve)),
-        )
-        .toList();
-
-    Future.delayed(Duration.zero, () {
-      for (int i = 0; i < _controllers.length; i++) {
-        Future.delayed(widget.delay * i, () {
-          if (mounted) {
-            _controllers[i].forward();
-          }
-        });
+  @override
+  void didUpdateWidget(covariant StaggeredAnimationBuilder oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final newDuration = widget.duration + widget.delay * widget.children.length;
+    if (_controller.duration != newDuration) {
+      _controller.duration = newDuration;
+      if (!_controller.isAnimating && _controller.value < 1.0) {
+        _controller.forward();
       }
-    });
+    }
   }
 
   @override
   void dispose() {
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final childrenCount = widget.children.length;
+    final totalDurationMs = _controller.duration?.inMilliseconds ?? 1;
+
     return widget.direction == Axis.vertical
         ? Column(
             crossAxisAlignment: widget.crossAxisAlignment,
             children: List.generate(
-              widget.children.length,
-              (i) => FadeTransition(
-                opacity: _animations[i],
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.06),
-                    end: Offset.zero,
-                  ).animate(_animations[i]),
-                  child: widget.children[i],
-                ),
-              ),
+              childrenCount,
+              (i) {
+                final delayMs = widget.delay.inMilliseconds * i;
+                final durationMs = widget.duration.inMilliseconds;
+                
+                final begin = (delayMs / totalDurationMs).clamp(0.0, 1.0);
+                final end = ((delayMs + durationMs) / totalDurationMs).clamp(0.0, 1.0);
+
+                final Animation<double> animation = Tween<double>(
+                  begin: 0.0,
+                  end: 1.0,
+                ).animate(
+                  CurvedAnimation(
+                    parent: _controller,
+                    curve: Interval(
+                      begin,
+                      end,
+                      curve: widget.curve,
+                    ),
+                  ),
+                );
+
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.06),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: widget.children[i],
+                  ),
+                );
+              },
             ),
           )
         : Row(
             children: List.generate(
-              widget.children.length,
-              (i) => FadeTransition(
-                opacity: _animations[i],
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.06, 0),
-                    end: Offset.zero,
-                  ).animate(_animations[i]),
-                  child: widget.children[i],
-                ),
-              ),
+              childrenCount,
+              (i) {
+                final delayMs = widget.delay.inMilliseconds * i;
+                final durationMs = widget.duration.inMilliseconds;
+                
+                final begin = (delayMs / totalDurationMs).clamp(0.0, 1.0);
+                final end = ((delayMs + durationMs) / totalDurationMs).clamp(0.0, 1.0);
+
+                final Animation<double> animation = Tween<double>(
+                  begin: 0.0,
+                  end: 1.0,
+                ).animate(
+                  CurvedAnimation(
+                    parent: _controller,
+                    curve: Interval(
+                      begin,
+                      end,
+                      curve: widget.curve,
+                    ),
+                  ),
+                );
+
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.06, 0),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: widget.children[i],
+                  ),
+                );
+              },
             ),
           );
   }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app_links/app_links.dart';
 import 'app/theme_provider.dart';
@@ -22,6 +23,7 @@ Future<void> main() async {
 Future<void> _startApp() async {
   WidgetsFlutterBinding.ensureInitialized();
   _installErrorHandlers();
+  await dotenv.load(fileName: '.env', isOptional: true);
 
   const store = AppSessionStore();
   final initialSession = await _loadInitialSession(store);
@@ -62,7 +64,82 @@ Future<AppSession> _loadInitialSession(AppSessionStore store) async {
   try {
     final savedSession = await store.load();
     if (savedSession == null) {
-      return const AppSession();
+      final now = DateTime.now();
+      final seededSession = AppSession(
+        appointments: [
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Aisha Mehta',
+            patientName: 'Alex Morgan',
+            patientEmail: 'alex.m@example.com',
+            startsAt: now.subtract(const Duration(hours: 2)),
+            type: 'Therapy',
+            note: 'Burnout Risk, Sleep Issues, High Stress',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.82,
+          ),
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Aisha Mehta',
+            patientName: 'Casey Kim',
+            patientEmail: 'casey.k@example.com',
+            startsAt: now.subtract(const Duration(hours: 5)),
+            type: 'Consultation',
+            note: 'Work Stress, Fatigue',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.61,
+          ),
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Aisha Mehta',
+            patientName: 'Jordan Lee',
+            patientEmail: 'jordan.l@example.com',
+            startsAt: now.subtract(const Duration(days: 1)),
+            type: 'CBT Session',
+            note: 'Anxiety, Rumination',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.54,
+          ),
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Aisha Mehta',
+            patientName: 'Taylor Pham',
+            patientEmail: 'taylor.p@example.com',
+            startsAt: now.subtract(const Duration(minutes: 30)),
+            type: 'General Check-up',
+            note: 'Stable, Positive',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.24,
+          ),
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Aisha Mehta',
+            patientName: 'Sam Rivera',
+            patientEmail: 'sam.r@example.com',
+            startsAt: now.subtract(const Duration(hours: 3)),
+            type: 'Support Group',
+            note: 'Stable, Consistent',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.18,
+          ),
+        ],
+        journalEntries: [
+          JournalEntry(
+            createdAt: now.subtract(const Duration(hours: 2)),
+            content: 'Lately I feel like I am running on empty constantly. Sleep is elusive and my brain won\'t turn off at 3 AM.',
+            summary: 'Feel like running on empty constantly. Sleep is elusive and mind racing at 3 AM.',
+            sharedWithPsychologist: true,
+          ),
+          JournalEntry(
+            createdAt: now.subtract(const Duration(days: 1)),
+            content: 'Overthinking everything Jordan said today. Felt my heart racing at my desk for no good reason. Tried a quick breathing exercise.',
+            summary: 'Overthinking social interactions. Felt chest tightness at desk and tried breathing exercise.',
+            sharedWithPsychologist: true,
+          ),
+        ],
+      );
+      await store.save(seededSession);
+      return seededSession;
     }
     return AppSession.fromJson(savedSession);
   } catch (error, stackTrace) {

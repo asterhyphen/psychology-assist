@@ -18,30 +18,34 @@ class AppTheme {
     },
   );
 
-  static const darkBackground = Color(0xFF090D14);
-  static const lightBackground = Color(0xFFF4F7FB);
+  static const darkBackground = Color(0xFF0E141B);
+  static const lightBackground = Color(0xFFF6F7FB);
 
   static const darkScheme = ColorScheme.dark(
-    primary: Color(0xFF65E0C2),
-    secondary: Color(0xFFFFC26F),
-    tertiary: Color(0xFF7E9DFF),
-    surface: Color(0xFF111927),
-    error: Color(0xFFFF6D7A),
-    onPrimary: Color(0xFF04110D),
-    onSecondary: Color(0xFF1C1200),
-    onSurface: Color(0xFFE8ECF5),
+    primary: Color(0xFF14B8A6), // Vibrant Teal
+    secondary: Color(0xFF22D3EE), // Vibrant Cyan
+    tertiary: Color(0xFF8B5CF6), // Vibrant Violet
+    surface: Color(0xFF0F141F), // Rich Midnight Navy
+    surfaceContainerHighest: Color(0xFF161D2B), // Premium Slate Container
+    outline: Color(0xFF2D3748), // Darker slate border
+    error: Color(0xFFF87171), // Calm error pink
+    onPrimary: Color(0xFF021E1A),
+    onSecondary: Color(0xFF011C20),
+    onSurface: Color(0xFFE2E8F0), // Slate Light Text
     onError: Color(0xFF2D0208),
   );
 
   static const lightScheme = ColorScheme.light(
-    primary: Color(0xFF0FA58A),
-    secondary: Color(0xFFE08A00),
-    tertiary: Color(0xFF4A6CF7),
-    surface: Color(0xFFFFFFFF),
-    error: Color(0xFFB3261E),
+    primary: Color(0xFF0FA58A), // Vibrant Teal
+    secondary: Color(0xFF8B5CF6), // Vibrant Violet
+    tertiary: Color(0xFF06B6D4), // Vibrant Cyan
+    surface: Color(0xFFFBFCFE),
+    surfaceContainerHighest: Color(0xFFF1F5F9), // Light Slate
+    outline: Color(0xFFE2E8F0),
+    error: Color(0xFFEF4444),
     onPrimary: Color(0xFFFFFFFF),
     onSecondary: Color(0xFFFFFFFF),
-    onSurface: Color(0xFF1A2433),
+    onSurface: Color(0xFF0F172A), // Charcoal Slate
     onError: Color(0xFFFFFFFF),
   );
 
@@ -52,12 +56,12 @@ class AppTheme {
     const softGreen = Color(0xFFB7C97B);
     const softBrown = Color(0xFFAA8B6F);
 
-    final scheme = ColorScheme.light(
+    const scheme = ColorScheme.light(
       primary: ink,
       secondary: softGreen,
       tertiary: softBrown,
       surface: cream,
-      error: const Color(0xFFB3261E),
+      error: Color(0xFFB3261E),
       onPrimary: Colors.white,
       onSecondary: ink,
       onTertiary: Colors.white,
@@ -299,7 +303,7 @@ class AppTheme {
       borderAlpha: 0.12,
       focusedBorderAlpha: 0.70,
       cardBorderAlpha: 0.10,
-      chipBackground: darkScheme.surface.withValues(alpha: 0.90),
+      chipBackground: const Color(0xFF1B2532),
       chipSelectedAlpha: 0.20,
       chipDisabled: darkScheme.surface.withValues(alpha: 0.50),
       outlinedBorderAlpha: 0.20,
@@ -371,15 +375,47 @@ class AppTheme {
       baseTextTheme,
     ).apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface);
     final textTheme = GoogleFonts.spaceGroteskTextTheme(baseText).copyWith(
+      bodyLarge: GoogleFonts.plusJakartaSans(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: scheme.onSurface,
+        height: 1.5,
+      ),
+      bodyMedium: GoogleFonts.plusJakartaSans(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: scheme.onSurface,
+        height: 1.5,
+      ),
+      bodySmall: GoogleFonts.plusJakartaSans(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: scheme.onSurface.withValues(alpha: 0.70),
+        height: 1.45,
+      ),
       titleLarge: GoogleFonts.spaceGrotesk(
         fontSize: 20,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         color: scheme.onSurface,
+        letterSpacing: 0,
       ),
       titleMedium: GoogleFonts.spaceGrotesk(
         fontSize: 17,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         color: scheme.onSurface,
+        letterSpacing: 0,
+      ),
+      labelLarge: GoogleFonts.plusJakartaSans(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: scheme.onSurface,
+        height: 1.35,
+      ),
+      labelMedium: GoogleFonts.plusJakartaSans(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: scheme.onSurface,
+        height: 1.35,
       ),
     );
 
@@ -390,15 +426,17 @@ class AppTheme {
       scaffoldBackgroundColor: scaffoldBackground,
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
-        backgroundColor: scheme.surface,
+        backgroundColor: scaffoldBackground,
         foregroundColor: scheme.onSurface,
         elevation: 0,
         centerTitle: false,
         titleTextStyle: textTheme.titleLarge,
       ),
       cardTheme: CardThemeData(
-        color: scheme.surface,
-        elevation: 0,
+        color: brightness == Brightness.dark
+            ? const Color(0xFF182231)
+            : const Color(0xFFFBFCFE),
+        elevation: brightness == Brightness.dark ? 0 : 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
@@ -445,7 +483,8 @@ class AppTheme {
           foregroundColor: scheme.onPrimary,
           elevation: 0,
           textStyle: const TextStyle(fontWeight: FontWeight.w700),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          minimumSize: const Size(48, 46),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -456,7 +495,8 @@ class AppTheme {
           backgroundColor: scheme.primary,
           foregroundColor: scheme.onPrimary,
           textStyle: const TextStyle(fontWeight: FontWeight.w700),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          minimumSize: const Size(48, 46),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -469,7 +509,8 @@ class AppTheme {
             color: scheme.onSurface.withValues(alpha: outlinedBorderAlpha),
           ),
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          minimumSize: const Size(48, 46),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -483,13 +524,17 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: scheme.surface,
+        backgroundColor: brightness == Brightness.dark
+            ? const Color(0xFF1F2B3A)
+            : scheme.surface,
         elevation: 0,
         insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
         contentTextStyle: TextStyle(color: scheme.onSurface),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: scheme.surface,
+        backgroundColor: brightness == Brightness.dark
+            ? const Color(0xFF151D27)
+            : scheme.surface,
         selectedItemColor: scheme.primary,
         unselectedItemColor: scheme.onSurface.withValues(alpha: 0.6),
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),

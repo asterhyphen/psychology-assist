@@ -14,36 +14,60 @@ class _MoodBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 480),
-          height: height,
-          width: 28,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                color.withValues(alpha: 0.9),
-                color.withValues(alpha: 0.5),
-              ],
+        Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            Container(
+              height: 110,
+              width: 24,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-          ),
-          curve: Curves.easeOutCubic,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 480),
+              height: height.clamp(14.0, 110.0),
+              width: 24,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    color,
+                    color.withValues(alpha: 0.35),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.36),
+                    blurRadius: 12,
+                    spreadRadius: 0.8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              curve: Curves.easeOutCubic,
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         Text(
           label,
           style: AppTypography.labelSmall.copyWith(
-            color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+            color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
     );
   }
 }
-
-/// Insight row widget

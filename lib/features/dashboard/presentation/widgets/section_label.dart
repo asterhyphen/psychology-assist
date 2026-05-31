@@ -13,10 +13,9 @@ class _SectionLabel extends StatelessWidget {
       child: Text(
         title,
         textAlign: TextAlign.left,
-        style: AppTypography.labelLarge.copyWith(
-          color: scheme.onSurface.withValues(alpha: 0.5),
-          letterSpacing: 0.8,
-          fontSize: 12,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: scheme.onSurface.withValues(alpha: 0.56),
+          fontWeight: FontWeight.w800,
         ),
       ),
     );

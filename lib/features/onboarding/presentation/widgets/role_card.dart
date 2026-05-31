@@ -15,25 +15,43 @@ class _RoleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return SmoothCard(
       onTap: onTap,
       borderRadius: 18,
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
-      backgroundColor: selected ? AppColors.neonViolet : Colors.white,
-      borderColor: selected ? const Color(0xFFB7C97B) : AppColors.lightBorder,
-      elevation: selected ? 18 : 0,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+      gradient: selected
+          ? const LinearGradient(
+              colors: [Color(0xFF0FA58A), Color(0xFF8B5CF6)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            )
+          : null,
+      backgroundColor: selected
+          ? null
+          : isDark
+              ? scheme.surface.withValues(alpha: 0.5)
+              : Colors.white,
+      borderColor: selected
+          ? Colors.white.withOpacity(0.4)
+          : scheme.primary.withValues(alpha: 0.16),
+      elevation: selected ? 14 : 0,
       child: Column(
         children: [
           Icon(
             icon,
-            color: selected ? Colors.white : AppColors.neonViolet,
+            color: selected ? Colors.white : scheme.primary,
             size: 28,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             title,
             style: AppTypography.labelLarge.copyWith(
-              color: selected ? Colors.white : AppColors.lightText,
+              color: selected ? Colors.white : scheme.onSurface,
+              fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
             ),
           ),
         ],

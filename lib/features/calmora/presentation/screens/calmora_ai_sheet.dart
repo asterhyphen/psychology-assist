@@ -1,9 +1,12 @@
 import 'dart:ui';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/services/ollama_service.dart';
 
-
+import '../../../../core/services/ai_service.dart';
+import '../../../../core/services/ai_settings.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 
 class CalmoraAiSheet extends ConsumerStatefulWidget {
   const CalmoraAiSheet({super.key});
@@ -14,11 +17,11 @@ class CalmoraAiSheet extends ConsumerStatefulWidget {
 
 class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
   final _controller = TextEditingController();
-  final _endpoint = Uri.parse('http://10.16.209.73:8000/chat');
-  String _chatHistory = 'CalmoraAI: Hello! I am CalmoraAI, your privacy-focused assistant. Let\'s explore what\'s on your mind together.\n\n';
-  String _aiContext = 'You are Calmora, a concise mental wellness assistant. Use Cognitive Behavioral Therapy (CBT) guided responses. Focus on cognitive restructuring, identifying cognitive distortions, and gentle behavioral activation. Be warm, practical, non-clinical, and suggest emergency help for crisis risk.\n\n';
+  String _chatHistory =
+      'CalmoraAI: Hello! I am CalmoraAI, your privacy-focused assistant. Let\'s explore what\'s on your mind together.\n\n';
+  String _aiContext =
+      'You are Calmora, a concise mental wellness assistant. Use Cognitive Behavioral Therapy (CBT) guided responses. Focus on cognitive restructuring, identifying cognitive distortions, and gentle behavioral activation. Be warm, practical, non-clinical, and suggest emergency help for crisis risk.\n\n';
   bool _loading = false;
-  final String _selectedModel = OllamaService.defaultQuantizedModel;
 
   @override
   void dispose() {
@@ -26,45 +29,68 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
     super.dispose();
   }
 
-  Future<String> _queryOllama(String prompt) async {
-    final ai = OllamaService(endpoint: _endpoint);
-    return await ai.summarize(prompt: prompt);
-  }
-
   Future<void> _send() async {
     final text = _controller.text.trim();
-    if (text.isEmpty || _loading) {
-      return;
-    }
-    
+    if (text.isEmpty || _loading) return;
+
     setState(() {
       _loading = true;
       _chatHistory += 'You: $text\n\n';
     });
-    
+
     _controller.clear();
 
     try {
       _aiContext += 'User: $text\nCalmoraAI:';
-      final response = await _queryOllama(_aiContext);
-      
+      final manager = ref.read(aiManagerProvider);
+      if (kDebugMode) {
+        debugPrint(
+            'CalmoraAI: selected mode=${ref.read(aiModeProvider)}, primary=${manager.primary.runtimeType}, secondary=${manager.secondary.runtimeType}, allowFallback=${manager.allowFallback}, primaryBackend=${manager.primaryBackend}');
+      }
+      String response;
+      try {
+        response = await manager.generate(_aiContext);
+      } catch (e, st) {
+        if (kDebugMode) {
+          debugPrint(
+              'CalmoraAI: manager.generate exception=${e.runtimeType}: ${e.toString()}');
+          debugPrint(
+              'CalmoraAI: provider primary=${manager.primary.runtimeType} secondary=${manager.secondary.runtimeType} allowFallback=${manager.allowFallback}');
+          debugPrint('CalmoraAI: stack=${st.toString()}');
+        }
+        response = '';
+      }
+
       final replyText = response.trim().isEmpty
           ? 'I could not generate a useful response. Try again in a moment.'
           : response.trim();
-          
+
       _aiContext += ' $replyText\n\n';
       setState(() => _chatHistory += 'CalmoraAI: $replyText\n\n');
     } catch (_) {
-      final mockResponse = _generateMockResponse(text);
-      final errorNote = '(Quantized model is configured for $_selectedModel, but Ollama is not reachable. Start Ollama on port 8000 or update the endpoint.)';
-      final fullReply = '$mockResponse\n\n$errorNote';
-      
-      _aiContext += ' $fullReply\n\n';
-      setState(() => _chatHistory += 'CalmoraAI: $fullReply\n\n');
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
+      final mode = ref.read(aiModeProvider);
+      if (mode == AiMode.auto) {
+        // Auto: preserve UX with local fallback
+        final mockResponse = _generateMockResponse(text);
+        final errorNote = '(AI backends unreachable. Using local fallback.)';
+        final fullReply = '$mockResponse\n\n$errorNote';
+
+        _aiContext += ' $fullReply\n\n';
+        setState(() => _chatHistory += 'CalmoraAI: $fullReply\n\n');
+      } else {
+        // Manual mode: inform user the selected provider is unavailable
+        final providerName =
+            mode == AiMode.calmora ? 'CalmoraAI (Ollama)' : 'Gemini';
+        final errorReply =
+            '$providerName is currently unavailable. Please check your settings or try Auto mode.';
+        _aiContext += ' $errorReply\n\n';
+        setState(() => _chatHistory += 'CalmoraAI: $errorReply\n\n');
+        AppSnackBar.showInfo(context,
+            title: 'Provider Unavailable',
+            message: '$providerName is not reachable.');
       }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -81,7 +107,7 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
     } else if (input.contains('worthless') || input.contains('failure')) {
       return 'That sounds like a very painful "labeling" thought. Remember, a single mistake or difficult moment doesn\'t define your worth. What would you say to a good friend who told you they felt this way?';
     } else {
-      return 'Thank you for sharing that. It\'s completely normal to have complex feelings. Let\'s explore the thought behind the emotion—what\'s the main story your mind is telling you right now?';
+      return 'Thank you for sharing that. It\'s completely normal to have complex feelings. Let\'s explore the thought behind the emotion. What\'s the main story your mind is telling you right now?';
     }
   }
 
@@ -92,84 +118,78 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      margin: const EdgeInsets.fromLTRB(14, 14, 14, 18),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: scheme.primary.withValues(alpha: 0.2),
-            blurRadius: 40,
-            spreadRadius: 4,
-            offset: const Offset(0, 10),
+            color: scheme.primary.withValues(alpha: isDark ? 0.16 : 0.10),
+            blurRadius: 34,
+            offset: const Offset(0, 14),
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.10),
             blurRadius: 24,
-            offset: const Offset(0, 8),
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(28),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
             decoration: BoxDecoration(
-              color: isDark 
-                  ? scheme.surface.withValues(alpha: 0.65)
-                  : scheme.surface.withValues(alpha: 0.85),
+              color: isDark
+                  ? scheme.surface.withValues(alpha: 0.84)
+                  : scheme.surface.withValues(alpha: 0.94),
               border: Border.all(
-                color: scheme.primary.withValues(alpha: 0.25),
-                width: 1.5,
+                color: scheme.primary.withValues(alpha: 0.18),
               ),
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: BorderRadius.circular(28),
             ),
             child: Stack(
               children: [
-                // Glowing orb background effect
                 Positioned(
-                  top: -50,
-                  right: -50,
+                  top: 0,
+                  left: 0,
+                  right: 0,
                   child: Container(
-                    width: 150,
-                    height: 150,
+                    height: 76,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: scheme.primary.withValues(alpha: 0.2),
+                      color: scheme.primary.withValues(alpha: 0.08),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: scheme.primary.withValues(alpha: 0.08),
+                        ),
+                      ),
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(10),
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  scheme.primary.withValues(alpha: 0.8),
-                                  scheme.tertiary.withValues(alpha: 0.8),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: scheme.primary.withValues(alpha: 0.4),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
+                              color: scheme.primary.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(14),
                             ),
-                            child: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+                            child: Icon(
+                              Icons.auto_awesome,
+                              color: scheme.primary,
+                              size: 22,
+                            ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,18 +197,16 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                                 Text(
                                   'CalmoraAI',
                                   style: theme.textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: -0.5,
-                                    foreground: Paint()..shader = LinearGradient(
-                                      colors: [scheme.primary, scheme.tertiary],
-                                    ).createShader(const Rect.fromLTWH(0.0, 0.0, 200.0, 70.0)),
+                                    fontWeight: FontWeight.w800,
+                                    color: scheme.onSurface,
                                   ),
                                 ),
                                 Text(
-                                  'Privacy-Focused Chatbot',
+                                  'Privacy-focused chatbot',
                                   style: theme.textTheme.labelMedium?.copyWith(
-                                    color: scheme.onSurface.withValues(alpha: 0.6),
-                                    fontWeight: FontWeight.w600,
+                                    color: scheme.onSurface.withValues(
+                                      alpha: 0.58,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -197,71 +215,233 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                           IconButton(
                             onPressed: () => Navigator.of(context).pop(),
                             icon: Icon(
-                              Icons.close,
-                              color: scheme.onSurface.withValues(alpha: 0.4),
+                              Icons.close_rounded,
+                              color: scheme.onSurface.withValues(alpha: 0.62),
                             ),
                             style: IconButton.styleFrom(
-                              backgroundColor: scheme.onSurface.withValues(alpha: 0.05),
+                              backgroundColor:
+                                  scheme.onSurface.withValues(alpha: 0.06),
+                              fixedSize: const Size(40, 40),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
-                      // Response area
+                      const SizedBox(height: 18),
                       Container(
                         width: double.infinity,
-                        constraints: const BoxConstraints(minHeight: 120, maxHeight: 250),
-                        padding: const EdgeInsets.all(20),
+                        constraints: const BoxConstraints(
+                          minHeight: 180,
+                          maxHeight: 320,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 12),
                         decoration: BoxDecoration(
-                          color: isDark 
-                              ? Colors.black.withValues(alpha: 0.2)
-                              : Colors.white.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(24),
+                          color: isDark
+                              ? const Color(0xFF131A26).withValues(alpha: 0.6)
+                              : scheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(22),
                           border: Border.all(
-                            color: scheme.onSurface.withValues(alpha: 0.05),
+                            color: scheme.primary.withValues(alpha: 0.12),
                           ),
                         ),
-                        child: _loading
-                            ? Column(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircularProgressIndicator(
-                                    color: scheme.primary,
-                                    strokeWidth: 3,
+                        child: SingleChildScrollView(
+                          reverse: true,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              ..._chatHistory
+                                  .split('\n\n')
+                                  .map((b) => b.trim())
+                                  .where((b) => b.isNotEmpty)
+                                  .map((bubble) {
+                                final isUser = bubble.startsWith('You:');
+                                final cleanContent = isUser
+                                    ? bubble.replaceFirst('You:', '').trim()
+                                    : bubble
+                                        .replaceFirst('CalmoraAI:', '')
+                                        .trim();
+
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 6),
+                                  child: Row(
+                                    mainAxisAlignment: isUser
+                                        ? MainAxisAlignment.end
+                                        : MainAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (!isUser) ...[
+                                        Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: scheme.primary
+                                                .withValues(alpha: 0.16),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.auto_awesome,
+                                            size: 14,
+                                            color: scheme.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
+                                      Flexible(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isUser
+                                                ? scheme.secondary
+                                                    .withValues(alpha: 0.14)
+                                                : scheme.primary.withValues(
+                                                    alpha: isDark ? 0.18 : 0.08,
+                                                  ),
+                                            borderRadius: BorderRadius.only(
+                                              topLeft:
+                                                  const Radius.circular(16),
+                                              topRight:
+                                                  const Radius.circular(16),
+                                              bottomLeft: isUser
+                                                  ? const Radius.circular(16)
+                                                  : const Radius.circular(4),
+                                              bottomRight: isUser
+                                                  ? const Radius.circular(4)
+                                                  : const Radius.circular(16),
+                                            ),
+                                            border: Border.all(
+                                              color: isUser
+                                                  ? scheme.secondary
+                                                      .withValues(alpha: 0.22)
+                                                  : scheme.primary
+                                                      .withValues(alpha: 0.16),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            cleanContent,
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                              color: scheme.onSurface,
+                                              height: 1.45,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      if (isUser) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: scheme.secondary
+                                                .withValues(alpha: 0.16),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.person,
+                                            size: 14,
+                                            color: scheme.secondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Mixing the masalas together for the perfect dish',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: scheme.onSurface.withValues(alpha: 0.5),
-                                      fontWeight: FontWeight.w500,
+                                );
+                              }),
+                              if (_loading) ...[
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: scheme.primary
+                                            .withValues(alpha: 0.16),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.auto_awesome,
+                                        size: 14,
+                                        color: scheme.primary,
+                                      ),
                                     ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              )
-                            : SingleChildScrollView(
-                                child: Text(
-                                  _chatHistory.trim(),
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    height: 1.6,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: scheme.primary.withValues(
+                                          alpha: isDark ? 0.18 : 0.08,
+                                        ),
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(16),
+                                          topRight: Radius.circular(16),
+                                          bottomLeft: Radius.circular(4),
+                                          bottomRight: Radius.circular(16),
+                                        ),
+                                        border: Border.all(
+                                          color: scheme.primary
+                                              .withValues(alpha: 0.16),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const SizedBox(
+                                            width: 12,
+                                            height: 12,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.0,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation(
+                                                      Color(0xFF0FA58A)),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Text(
+                                            'Calmora is reflecting...',
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                              color: scheme.primary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 20),
-                      // Input
+                      const SizedBox(height: 14),
                       Container(
                         decoration: BoxDecoration(
-                          color: scheme.surface,
-                          borderRadius: BorderRadius.circular(24),
+                          color: scheme.surface.withValues(alpha: 0.96),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: scheme.primary.withValues(alpha: 0.24),
+                            width: 1.2,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
+                              color: scheme.primary.withValues(
+                                alpha: isDark ? 0.16 : 0.04,
+                              ),
+                              blurRadius: 14,
+                              offset: const Offset(0, 6),
                             ),
                           ],
                         ),
@@ -272,10 +452,15 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                           style: theme.textTheme.bodyMedium,
                           decoration: InputDecoration(
                             hintText: 'Type your message...',
-                            hintStyle: TextStyle(color: scheme.onSurface.withValues(alpha: 0.4)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            hintStyle: TextStyle(
+                              color: scheme.onSurface.withValues(alpha: 0.42),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 14,
+                            ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius: BorderRadius.circular(22),
                               borderSide: BorderSide.none,
                             ),
                             suffixIcon: Padding(
@@ -288,8 +473,19 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                                   decoration: BoxDecoration(
                                     color: scheme.primary,
                                     shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: scheme.primary
+                                            .withValues(alpha: 0.35),
+                                        blurRadius: 6,
+                                      ),
+                                    ],
                                   ),
-                                  child: const Icon(Icons.send_rounded, color: Colors.white, size: 16),
+                                  child: Icon(
+                                    Icons.send_rounded,
+                                    color: scheme.onPrimary,
+                                    size: 16,
+                                  ),
                                 ),
                               ),
                             ),

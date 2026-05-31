@@ -21,27 +21,31 @@ class _PsychologistDashboard extends ConsumerWidget {
     final sharedJournals = session.journalEntries
         .where((entry) => entry.sharedWithPsychologist)
         .toList();
+    final patientProfile = session.profile;
+    final isCaseCompleted = patientProfile?.status == PatientStatus.completed;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dr. Panipuri Dashboard'),
         centerTitle: true,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         actions: [
           IconButton(
-            onPressed: () {
-              ref.read(appSessionProvider.notifier).updateProfile(
-                    AppProfile(
-                      role: UserRole.patient,
-                      name: 'Patient',
-                      email: 'patient@example.com',
-                      psychologistEmail: demoPsychologistEmail,
-                    ),
+            onPressed: () async {
+              await ref.read(appSessionProvider.notifier).switchUser(
+                    'patient@example.com',
+                    UserRole.patient,
+                    'Patient',
                   );
-              AppSnackBar.showInfo(
-                context,
-                title: 'Switched to Patient',
-                message: 'You are now viewing as a patient.',
-              );
+              if (context.mounted) {
+                AppSnackBar.showInfo(
+                  context,
+                  title: 'Switched to Patient',
+                  message: 'You are now viewing as patient@example.com.',
+                );
+              }
             },
             icon: const Icon(Icons.switch_account),
             tooltip: 'Switch to Patient View',
@@ -104,94 +108,128 @@ class _PsychologistDashboard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Active Patients (Local Device User)
-                Text(
-                  'Active Patients',
-                  style: AppTypography.headingMedium,
-                ),
-                const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: SmoothCard(
-                    borderRadius: 16,
-                    padding: const EdgeInsets.all(16),
-                    backgroundColor:
-                        AppColors.neonViolet.withValues(alpha: 0.1),
-                    borderColor: AppColors.neonViolet.withValues(alpha: 0.3),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: AppColors.neonViolet,
-                          child: const Icon(Icons.person, color: Colors.white),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Demo Patient',
-                                style: AppTypography.labelLarge,
-                              ),
-                              Text(
-                                'demo@patient.com',
-                                style: AppTypography.bodySmall,
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  OutlinedButton.icon(
-                                    onPressed: () {
-                                      // Mock an appointment to pass to the prescription dialog
-                                      final mockAppt = Appointment(
-                                        psychologistEmail: email,
-                                        psychologistName: 'Psychologist',
-                                        patientName: 'Demo Patient',
-                                        patientEmail: 'demo@patient.com',
-                                        startsAt: DateTime.now(),
-                                        type: 'Therapy',
-                                        note: '',
-                                      );
-                                      _showPrescriptionDialog(
-                                          context, ref, mockAppt);
-                                    },
-                                    icon:
-                                        const Icon(Icons.assignment, size: 16),
-                                    label: const Text('Prescribe'),
-                                    style: OutlinedButton.styleFrom(
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  FilledButton.icon(
-                                    onPressed: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute<void>(
-                                          builder: (_) => ChatScreen(
-                                            otherUserId: 'patient',
-                                            otherUserName: 'Demo Patient',
-                                            currentUserId: email,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    icon:
-                                        const Icon(Icons.chat_bubble, size: 16),
-                                    label: const Text('Message'),
-                                    style: FilledButton.styleFrom(
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                if (!isCaseCompleted) ...[
+                  Text(
+                    'Active Patients',
+                    style: AppTypography.headingMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SmoothCard(
+                      borderRadius: 16,
+                      padding: const EdgeInsets.all(16),
+                      backgroundColor:
+                          AppColors.neonViolet.withValues(alpha: 0.1),
+                      borderColor: AppColors.neonViolet.withValues(alpha: 0.3),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: AppColors.neonViolet,
+                            child: const Icon(Icons.person, color: Colors.white),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  patientProfile?.name ?? 'Demo Patient',
+                                  style: AppTypography.labelLarge,
+                                ),
+                                Text(
+                                  patientProfile?.email ?? 'demo@patient.com',
+                                  style: AppTypography.bodySmall,
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    OutlinedButton.icon(
+                                      onPressed: () {
+                                        final mockAppt = Appointment(
+                                          psychologistEmail: email,
+                                          psychologistName: 'Psychologist',
+                                          patientName: patientProfile?.name ?? 'Demo Patient',
+                                          patientEmail: patientProfile?.email ?? 'demo@patient.com',
+                                          startsAt: DateTime.now(),
+                                          type: 'Therapy',
+                                          note: '',
+                                        );
+                                        _showPrescriptionDialog(
+                                            context, ref, mockAppt);
+                                      },
+                                      icon:
+                                          const Icon(Icons.assignment, size: 16),
+                                      label: const Text('Prescribe'),
+                                      style: OutlinedButton.styleFrom(
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ),
+                                    FilledButton.icon(
+                                      onPressed: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute<void>(
+                                            builder: (_) => ChatScreen(
+                                              otherUserId: 'patient',
+                                              otherUserName: patientProfile?.name ?? 'Demo Patient',
+                                              currentUserId: email,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      icon:
+                                          const Icon(Icons.chat_bubble, size: 16),
+                                      label: const Text('Message'),
+                                      style: FilledButton.styleFrom(
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ),
+                                    OutlinedButton.icon(
+                                      onPressed: () => _showClinicalNotesDialog(context, ref),
+                                      icon: const Icon(Icons.note_add_rounded, size: 16),
+                                      label: const Text('Add Note'),
+                                      style: OutlinedButton.styleFrom(
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ),
+                                    OutlinedButton.icon(
+                                      onPressed: () => _showTimelineDialog(context, ref),
+                                      icon: const Icon(Icons.timeline_rounded, size: 16),
+                                      label: const Text('Timeline'),
+                                      style: OutlinedButton.styleFrom(
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ),
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        ref.read(appSessionProvider.notifier).updatePatientStatus(PatientStatus.completed);
+                                        AppSnackBar.showSuccess(
+                                          context,
+                                          title: 'Case Completed',
+                                          message: 'Patient case marked as completed successfully.',
+                                        );
+                                      },
+                                      icon: const Icon(Icons.check_circle_rounded, size: 16),
+                                      label: const Text('Complete Case'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.teal.withOpacity(0.2),
+                                        foregroundColor: Colors.teal,
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
+                ],
+                const SizedBox(height: 12),
 
                 // Pending Appointments
                 if (pendingAppointments.isNotEmpty) ...[
@@ -242,7 +280,7 @@ class _PsychologistDashboard extends ConsumerWidget {
                             MaterialPageRoute<void>(
                               builder: (_) => ChatScreen(
                                 otherUserId: 'patient', // Demo patient ID
-                                otherUserName: appointment.patientName,
+                                otherUserName: appointment.displayPatientName,
                                 currentUserId: appointment
                                     .psychologistEmail, // Current psychologist ID
                               ),
@@ -268,8 +306,10 @@ class _PsychologistDashboard extends ConsumerWidget {
                       child: SmoothCard(
                         borderRadius: 16,
                         padding: const EdgeInsets.all(16),
-                        backgroundColor: AppColors.neonViolet.withOpacity(0.05),
-                        borderColor: AppColors.neonViolet.withOpacity(0.2),
+                        backgroundColor:
+                            AppColors.neonViolet.withValues(alpha: 0.05),
+                        borderColor:
+                            AppColors.neonViolet.withValues(alpha: 0.20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -296,7 +336,9 @@ class _PsychologistDashboard extends ConsumerWidget {
                               Container(
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: AppColors.neonViolet.withOpacity(0.1),
+                                  color: AppColors.neonViolet.withValues(
+                                    alpha: 0.10,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Column(
@@ -367,6 +409,91 @@ class _PsychologistDashboard extends ConsumerWidget {
                         ),
                       ),
                 ],
+                if (isCaseCompleted) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'Completed Cases',
+                    style: AppTypography.headingMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SmoothCard(
+                      borderRadius: 16,
+                      padding: const EdgeInsets.all(16),
+                      backgroundColor:
+                          Colors.grey.withOpacity(0.08),
+                      borderColor: Colors.grey.withOpacity(0.3),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: Colors.grey,
+                            child: const Icon(Icons.person, color: Colors.white),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      patientProfile?.name ?? 'Demo Patient',
+                                      style: AppTypography.labelLarge,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.teal.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Text(
+                                        'COMPLETED',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.teal,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  patientProfile?.email ?? 'demo@patient.com',
+                                  style: AppTypography.bodySmall,
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    OutlinedButton.icon(
+                                      onPressed: () => _showTimelineDialog(context, ref),
+                                      icon: const Icon(Icons.timeline_rounded, size: 16),
+                                      label: const Text('Timeline'),
+                                      style: OutlinedButton.styleFrom(
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ),
+                                    OutlinedButton.icon(
+                                      onPressed: () => _showClinicalNotesDialog(context, ref),
+                                      icon: const Icon(Icons.note_add_rounded, size: 16),
+                                      label: const Text('Add Note'),
+                                      style: OutlinedButton.styleFrom(
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -392,7 +519,7 @@ class _PsychologistDashboard extends ConsumerWidget {
     final selectedMedicines = <String>[];
     final selectedTimes = <MedicationTime>[];
     final noteController = TextEditingController();
-    final patientName = appointment.patientName;
+    final patientName = appointment.displayPatientName;
     final patientEmail = appointment.patientEmail;
     final doctorName = session.profile?.name ?? 'Dr. Panipuri';
     final doctorEmail = session.profile?.email ?? demoPsychologistEmail;
@@ -547,4 +674,260 @@ class _PsychologistDashboard extends ConsumerWidget {
       ),
     );
   }
+
+  Future<void> _showClinicalNotesDialog(BuildContext context, WidgetRef ref) async {
+    final noteController = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Clinical Session Notes'),
+        content: TextField(
+          controller: noteController,
+          decoration: const InputDecoration(
+            hintText: 'Enter session clinical notes here...',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 4,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final text = noteController.text.trim();
+              if (text.isNotEmpty) {
+                ref.read(appSessionProvider.notifier).addClinicalNote(
+                  ClinicalNote(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    timestamp: DateTime.now(),
+                    note: text,
+                    authorName: 'Dr. Aisha Mehta',
+                  ),
+                );
+                Navigator.of(context).pop();
+                AppSnackBar.showSuccess(context, message: 'Clinical note added successfully.');
+              }
+            },
+            child: const Text('Save Note'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTimelineDialog(BuildContext context, WidgetRef ref) {
+    final session = ref.read(appSessionProvider);
+    final List<_TimelineItem> items = [];
+
+    for (var entry in session.moodEntries) {
+      items.add(_TimelineItem(
+        timestamp: entry.createdAt,
+        title: 'Logged Mood',
+        description: 'Rating: ${entry.value}/5 (${entry.label})\nNote: ${entry.note}',
+        icon: Icons.mood_rounded,
+        color: Colors.orange,
+      ));
+    }
+
+    for (var entry in session.typingHistory) {
+      items.add(_TimelineItem(
+        timestamp: entry.timestamp,
+        title: 'Typing Stress Test',
+        description: '${entry.wpm} WPM | ${entry.accuracy.toStringAsFixed(1)}% Accuracy | ${entry.corrections} Corrections\nStress Score: ${entry.stressScore.toStringAsFixed(2)}',
+        icon: Icons.keyboard_rounded,
+        color: Colors.blue,
+      ));
+    }
+
+    for (var entry in session.breathingHistory) {
+      items.add(_TimelineItem(
+        timestamp: entry.timestamp,
+        title: 'Breathing Session',
+        description: '${entry.technique} | ${entry.cyclesCompleted} cycles (${entry.durationSeconds}s duration)',
+        icon: Icons.air_rounded,
+        color: Colors.teal,
+      ));
+    }
+
+    for (var entry in session.journalEntries) {
+      items.add(_TimelineItem(
+        timestamp: entry.createdAt,
+        title: 'Wellness Journal',
+        description: 'Content: ${entry.content}${entry.summary != null ? "\nAI Summary: ${entry.summary}" : ""}',
+        icon: Icons.book_rounded,
+        color: Colors.purple,
+      ));
+    }
+
+    for (var entry in session.appointments) {
+      items.add(_TimelineItem(
+        timestamp: entry.startsAt,
+        title: 'Appointment: ${entry.type}',
+        description: 'With ${entry.psychologistName}\nStatus: ${entry.status.name.toUpperCase()}\nNote: ${entry.note}',
+        icon: Icons.calendar_today_rounded,
+        color: Colors.green,
+      ));
+    }
+
+    for (var entry in session.prescriptions) {
+      items.add(_TimelineItem(
+        timestamp: entry.createdAt,
+        title: 'Prescribed Medication',
+        description: 'Medicines: ${entry.medicines.join(", ")}\nNote: ${entry.note}',
+        icon: Icons.assignment_rounded,
+        color: Colors.red,
+      ));
+    }
+
+    for (var entry in session.adherenceHistory) {
+      items.add(_TimelineItem(
+        timestamp: entry.timestamp,
+        title: 'Medication Adherence',
+        description: 'Medicine: ${entry.medicineName}\nStatus: ${entry.taken ? "TAKEN" : "MISSED"}',
+        icon: Icons.medical_services_rounded,
+        color: entry.taken ? Colors.green : Colors.red,
+      ));
+    }
+
+    items.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close',
+      barrierColor: Colors.black.withOpacity(0.65),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.teal.withOpacity(0.3)),
+            ),
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Patient Timeline',
+                          style: AppTypography.headingSmall.copyWith(
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  Expanded(
+                    child: items.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No timeline records found.',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: items.length,
+                            itemBuilder: (context, idx) {
+                              final item = items[idx];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Column(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: item.color.withOpacity(0.12),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(item.icon, size: 18, color: item.color),
+                                        ),
+                                        Container(
+                                          width: 2,
+                                          height: 40,
+                                          color: Colors.grey.withOpacity(0.3),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  item.title,
+                                                  style: AppTypography.labelMedium.copyWith(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              Text(
+                                                '${item.timestamp.day}/${item.timestamp.month} ${item.timestamp.hour.toString().padLeft(2, '0')}:${item.timestamp.minute.toString().padLeft(2, '0')}',
+                                                style: AppTypography.caption,
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            item.description,
+                                            style: AppTypography.bodySmall.copyWith(
+                                              color: isDark ? Colors.white70 : Colors.black87,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TimelineItem {
+  final DateTime timestamp;
+  final String title;
+  final String description;
+  final IconData icon;
+  final Color color;
+
+  _TimelineItem({
+    required this.timestamp,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.color,
+  });
 }

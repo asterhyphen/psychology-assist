@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/app_state.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/smooth_widgets.dart';
-import '../../../../core/services/ollama_service.dart';
+import '../../../../core/services/ai_service.dart';
+import '../../../../core/services/ai_settings.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 
 part '../widgets/journal_entry_card.dart';
@@ -92,12 +94,11 @@ class _JournalEntryCardState extends ConsumerState<_JournalEntryCard> {
   Future<void> _summarize() async {
     setState(() => _isSummarizing = true);
     try {
-      final ai =
-          OllamaService(endpoint: Uri.parse('http://10.16.209.73:8000/chat'));
+      final manager = ref.read(aiManagerProvider);
       final prompt = 'You are Calmora, a concise mental wellness assistant. '
           'Summarize the following journal entry into a short supportive reflection for the user, then add a therapist-ready summary below. '
           'Use warm, practical, non-clinical language.\n\nJournal entry:\n${widget.entry.content}';
-      final response = await ai.summarize(prompt: prompt);
+      final response = await manager.generate(prompt);
 
       final updatedEntry = widget.entry.copyWith(summary: response.trim());
       ref.read(appSessionProvider.notifier).updateJournalEntry(updatedEntry);
@@ -107,16 +108,32 @@ class _JournalEntryCardState extends ConsumerState<_JournalEntryCard> {
             title: 'AI Summary Generated',
             message: 'Your entry has been summarized.');
       }
-    } catch (_) {
-      if (mounted) {
-        // Fallback for demo if ollama fails
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint(
+            'JournalHistory: AI generate failed: ${e.runtimeType}: ${e.toString()}');
+        debugPrint(
+            'JournalHistory: provider primary=${ref.read(aiManagerProvider).primary.runtimeType} secondary=${ref.read(aiManagerProvider).secondary.runtimeType}');
+        debugPrint('JournalHistory: stack=${st.toString()}');
+      }
+      if (!mounted) return;
+      final mode = ref.read(aiModeProvider);
+      if (mode == AiMode.auto) {
+        // Fallback for demo if both AI backends fail
         final fallback =
             'Summary: The user is expressing their thoughts. Action: Recommend a breathing exercise.';
         final updatedEntry = widget.entry.copyWith(summary: fallback);
         ref.read(appSessionProvider.notifier).updateJournalEntry(updatedEntry);
         AppSnackBar.showInfo(context,
             title: 'Fallback Summary Generated',
-            message: 'Ollama unreachable. Used local fallback.');
+            message: 'AI unreachable. Used local fallback.');
+      } else {
+        // Manual mode: inform user provider is unavailable and do not auto-fallback
+        final providerName =
+            mode == AiMode.calmora ? 'CalmoraAI (Ollama)' : 'Gemini';
+        AppSnackBar.showInfo(context,
+            title: 'Provider Unavailable',
+            message: '$providerName is not reachable.');
       }
     } finally {
       if (mounted) {

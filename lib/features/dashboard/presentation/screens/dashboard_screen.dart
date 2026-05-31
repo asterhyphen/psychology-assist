@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,9 +9,13 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/smooth_widgets.dart';
 import '../../../../core/widgets/animations.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../calmora/presentation/screens/calmora_ai_sheet.dart';
 import '../../../mood_log/presentation/screens/mood_log_screen.dart';
 import 'stats_screen.dart';
+import 'weekly_report_screen.dart';
+import '../../../../core/services/ai_service.dart';
+import '../../../../core/services/ai_settings.dart';
 
 part '../widgets/section_label.dart';
 part '../widgets/mood_bar.dart';
@@ -27,6 +32,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
+  String? _dailyInsight;
 
   @override
   void initState() {
@@ -36,6 +42,48 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       vsync: this,
     );
     _animationController.forward();
+    Future.microtask(() => _loadOrGenerateInsight());
+  }
+
+  Future<void> _loadOrGenerateInsight() async {
+    final session = ref.read(appSessionProvider);
+    final profile = session.profile;
+    if (profile == null) return;
+
+    final currentDrift = profile.driftIndex;
+    final avgMood = session.moodEntries.isEmpty 
+        ? 3.0 
+        : session.moodEntries.map((e) => e.value).reduce((a, b) => a + b) / session.moodEntries.length;
+    
+    setState(() => _isRefreshingInsight = true);
+    try {
+      final manager = ref.read(aiManagerProvider);
+      final prompt = '''
+You are Calmora, a warm, supportive mental wellness assistant.
+Provide a single-sentence daily mental health insight for the user based on their current stats.
+Keep it extremely concise (max 20 words), practical, and highly personalized.
+
+Current Metrics:
+- Drift Index: ${currentDrift.toStringAsFixed(2)}
+- Average Mood: ${avgMood.toStringAsFixed(1)}/5
+- Guided Breathing Sessions: ${session.breathingHistory.length} completed this week
+- Medication Adherence: ${session.adherenceHistory.length} logs recorded
+''';
+      final response = await manager.generate(prompt);
+      if (mounted) {
+        setState(() {
+          _dailyInsight = response.trim();
+          _isRefreshingInsight = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _dailyInsight = 'AI insights temporarily unavailable. Please try again later.';
+          _isRefreshingInsight = false;
+        });
+      }
+    }
   }
 
   @override
@@ -85,39 +133,173 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       });
     final nextPrescription = relatedPrescriptions.isEmpty
         ? 'No reminders set'
-        : '${relatedPrescriptions.first.medicines.join(', ')} at ${relatedPrescriptions.first.reminderTimes.isNotEmpty ? relatedPrescriptions.first.reminderTimes.first.toDisplayString() : 'No time'}';
+        : '${relatedPrescriptions.first.medicines.join(', ')} ${relatedPrescriptions.first.reminderTimes.isNotEmpty ? 'at ' + relatedPrescriptions.first.reminderTimes.first.toDisplayString() : '(Time not set)'}';
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const MoodLogScreen(),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0FA58A), Color(0xFF8B5CF6)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0FA58A).withValues(alpha: 0.16),
+              blurRadius: 18,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
             ),
-          );
-        },
-        icon: const Icon(Icons.mood_outlined),
-        label: const Text('Log mood'),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: () {
+            if (profile?.status == PatientStatus.completed) {
+              AppSnackBar.showInfo(context, message: 'Treatment Completed. Active logging is locked.');
+              return;
+            }
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const MoodLogScreen(),
+              ),
+            );
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          highlightElevation: 0,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.self_improvement_rounded, color: Colors.white, size: 20),
+          label: const Text(
+            'Log Mood',
+            style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.2),
+          ),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: Container(
-        color: theme.scaffoldBackgroundColor,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(top: 18, bottom: 112),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: StaggeredAnimationBuilder(
-              duration: const Duration(milliseconds: 420),
-              delay: const Duration(milliseconds: 45),
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildScrollableHeader(context, profile, scheme),
-                const SizedBox(height: 22),
-                if (profile?.role == UserRole.patient) ...[
-                  _buildAiBanner(context, scheme),
+      body: Stack(
+        children: [
+          // Atmospheric Background
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: theme.brightness == Brightness.dark
+                      ? [
+                          const Color(0xFF080C11),
+                          const Color(0xFF0E121E),
+                        ]
+                      : [
+                          const Color(0xFFF7F8FC),
+                          const Color(0xFFF0EFF5),
+                        ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ),
+          // Top-left soft ambient teal glow
+          Positioned(
+            top: -140,
+            left: -140,
+            child: IgnorePointer(
+              child: Container(
+                width: 420,
+                height: 420,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF0FA58A).withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.15 : 0.08,
+                  ),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 110, sigmaY: 110),
+                  child: const SizedBox(),
+                ),
+              ),
+            ),
+          ),
+          // Mid-right soft ambient indigo glow
+          Positioned(
+            top: 280,
+            right: -180,
+            child: IgnorePointer(
+              child: Container(
+                width: 500,
+                height: 500,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF8B5CF6).withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.12 : 0.06,
+                  ),
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 120, sigmaY: 120),
+                  child: const SizedBox(),
+                ),
+              ),
+            ),
+          ),
+          // Scrollable main body
+          Positioned.fill(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 10, bottom: 108),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: StaggeredAnimationBuilder(
+                  duration: const Duration(milliseconds: 420),
+                  delay: const Duration(milliseconds: 45),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildScrollableHeader(context, profile, scheme),
+                const SizedBox(height: 16),
+                if (profile?.role == UserRole.patient && profile?.status == PatientStatus.completed) ...[
+                  SmoothCard(
+                    borderRadius: 20,
+                    padding: const EdgeInsets.all(18),
+                    backgroundColor: Colors.teal.withOpacity(0.12),
+                    borderColor: Colors.teal.withOpacity(0.3),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.check_circle_rounded, color: Colors.teal, size: 24),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Treatment Completed',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: theme.brightness == Brightness.dark ? Colors.white : Colors.black,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Your primary therapist has marked your case as completed. All active logging, journaling, and appointment actions are locked. However, all your historical logs, reports, and insights remain fully accessible to you.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87,
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                 ],
-                const SizedBox(height: 20),
+                if (profile?.role == UserRole.patient) ...[
+                  _AiHeroCard(onTap: () => _showAiChat(context)),
+                  const SizedBox(height: 18),
+                  _buildMentalStateOverview(context, profile, scheme),
+                ],
+                const SizedBox(height: 18),
 
                 // ── Quick Stats Row ──
                 _SectionLabel(title: 'Quick Overview', scheme: scheme),
@@ -141,82 +323,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
 
-                // ── Weekly Mood Trend Card ──
-                _SectionLabel(title: 'Mood Trend', scheme: scheme),
-                const SizedBox(height: 10),
-                SmoothCard(
-                  backgroundColor: scheme.surface.withValues(alpha: 0.72),
-                  borderColor: scheme.primary.withValues(alpha: 0.12),
-                  elevation: 0,
-                  borderRadius: 20,
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'This Week',
-                            style: AppTypography.labelLarge.copyWith(
-                              color: scheme.onSurface,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: scheme.primary.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              '${session.moodEntries.length} saved',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: scheme.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: List.generate(
-                          7,
-                          (i) => _MoodBar(
-                            height: _heightForDay(session.moodEntries, i),
-                            label: [
-                              'Mon',
-                              'Tue',
-                              'Wed',
-                              'Thu',
-                              'Fri',
-                              'Sat',
-                              'Sun'
-                            ][i],
-                            color: scheme.primary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
+                // ── 7-Day Drift Trend Card ──
+                if (profile?.role == UserRole.patient) ...[
+                  _buildWeeklyDriftTrend(context, profile, session, scheme),
+                  const SizedBox(height: 18),
+                  _buildPassiveBehavioralSignals(context, session, scheme),
+                  const SizedBox(height: 18),
+                  _buildAiDailyInsight(context, scheme),
+                  const SizedBox(height: 18),
+                  _buildWeeklyReportCard(context, scheme),
+                  const SizedBox(height: 18),
+                ],
 
                 // ── Quick Insights Card ──
                 _SectionLabel(title: 'Insights', scheme: scheme),
                 const SizedBox(height: 10),
                 SmoothCard(
                   backgroundColor: scheme.surface.withValues(alpha: 0.72),
-                  borderColor: scheme.secondary.withValues(alpha: 0.12),
+                  borderColor: scheme.secondary.withValues(alpha: theme.brightness == Brightness.dark ? 0.22 : 0.15),
                   borderRadius: 20,
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(18),
                   child: Column(
                     children: [
                       _InsightRow(
@@ -252,7 +380,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
                 SizedBox(
                   width: double.infinity,
@@ -280,7 +408,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
         ),
       ),
-    );
+    ],
+  ),
+);
   }
 
   String _greeting() {
@@ -288,6 +418,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';
+  }
+
+  String _displayName(String? name) {
+    if (name == null || name.trim().isEmpty) return 'Mindful Friend';
+    final lower = name.trim().toLowerCase();
+    if (lower == 'patient' || lower == 'demo patient') return 'Mindful Friend';
+    return name;
   }
 
   double _heightForDay(List<MoodEntry> entries, int dayIndex) {
@@ -342,136 +479,85 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
     return SafeArea(
       bottom: false,
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () {
-              ref.read(selectedTabProvider.notifier).state = 4;
-            },
-            child: CircleAvatar(
-              radius: 22,
-              backgroundColor: Color(
-                profile?.avatarColorValue ?? AppColors.neonViolet.toARGB32(),
-              ),
-              backgroundImage: profile?.profileImagePath == null
-                  ? null
-                  : FileImage(File(profile!.profileImagePath!)),
-              child: profile?.profileImagePath == null
-                  ? Icon(
-                      _avatarIconFor(
-                        profile?.avatarIconCodePoint ?? Icons.person.codePoint,
-                      ),
-                      color: Colors.white,
-                      size: 22,
-                    )
-                  : null,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _greeting(),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurface.withValues(alpha: 0.55),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  profile?.name ?? 'Welcome',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const StatsScreen(),
-                ),
-              );
-            },
-            icon: Icon(
-              Icons.insights_outlined,
-              color: scheme.onSurface.withValues(alpha: 0.7),
-            ),
-            tooltip: 'View stats',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAiBanner(BuildContext context, ColorScheme scheme) {
-    return GestureDetector(
-      onTap: () => _showAiChat(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            colors: [
-              scheme.primary,
-              scheme.tertiary,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: scheme.primary.withValues(alpha: 0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
+      child: SmoothCard(
+        borderRadius: 20,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        backgroundColor: scheme.surface.withValues(alpha: 0.78),
+        borderColor: scheme.primary.withValues(alpha: theme.brightness == Brightness.dark ? 0.20 : 0.14),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
+            GestureDetector(
+              onTap: () {
+                ref.read(selectedTabProvider.notifier).state = 4;
+              },
+              child: CircleAvatar(
+                radius: 22,
+                backgroundColor: Color(
+                  profile?.avatarColorValue ?? AppColors.neonViolet.toARGB32(),
+                ),
+                backgroundImage: profile?.profileImagePath == null
+                    ? null
+                    : FileImage(File(profile!.profileImagePath!)),
+                child: profile?.profileImagePath == null
+                    ? Icon(
+                        _avatarIconFor(
+                          profile?.avatarIconCodePoint ??
+                              Icons.person.codePoint,
+                        ),
+                        color: Colors.white,
+                        size: 22,
+                      )
+                    : null,
               ),
-              child:
-                  const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Hey, Try CalmoraAI',
-                    style: AppTypography.labelLarge.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                    _greeting(),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: scheme.onSurface.withValues(alpha: 0.58),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
-                    'Your private, intelligent wellness companion.',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Colors.white.withValues(alpha: 0.8),
+                    _displayName(profile?.name),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+            IconButton.filled(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const StatsScreen(),
+                  ),
+                );
+              },
+              style: IconButton.styleFrom(
+                backgroundColor: scheme.primary,
+                foregroundColor: Colors.white,
+              ),
+              icon: const Icon(
+                Icons.insights_outlined,
+                size: 20,
+              ),
+              tooltip: 'View stats',
+            ),
           ],
         ),
       ),
     );
   }
+
 
   void _showAiChat(BuildContext context) {
     showGeneralDialog(
@@ -510,6 +596,1397 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         );
       },
     );
+  }
+
+  // ── Helper: Calculate Drift For A Specific Day of the current week ──
+  double _driftForDay(List<DriftHistoryEntry> history, double currentDrift, int dayIndex) {
+    final now = DateTime.now();
+    final weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+    final day = weekStart.add(Duration(days: dayIndex));
+    
+    final dayEntries = history.where((entry) =>
+      entry.timestamp.year == day.year &&
+      entry.timestamp.month == day.month &&
+      entry.timestamp.day == day.day,
+    ).toList();
+
+    if (dayEntries.isEmpty) {
+      if (history.isEmpty) {
+        return -1.0;
+      }
+      return currentDrift * 100.0;
+    }
+
+    final averageDrift = dayEntries.map((e) => e.driftValue * 100.0).reduce((a, b) => a + b) / dayEntries.length;
+    return averageDrift.clamp(0.0, 100.0);
+  }
+
+  // ── Helper: Legend Item Builder ──
+  Widget _buildLegendItem(String label, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: TextStyle(
+            color: isDark ? Colors.white38 : Colors.black54,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Widget: Mental State Overview Card ──
+  Widget _buildMentalStateOverview(BuildContext context, AppProfile? profile, ColorScheme scheme) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final currentDrift = profile?.driftIndex ?? 0.18;
+    final driftPercent = (currentDrift * 100).toInt();
+
+    Color stateColor;
+    String stateLabel;
+    String description;
+
+    if (currentDrift < 0.35) {
+      stateColor = const Color(0xFF10B981); // Vibrant Green
+      stateLabel = 'Stable';
+      description = 'Your behavioral patterns look healthy. Keep maintaining your current routine.';
+    } else if (currentDrift < 0.65) {
+      stateColor = const Color(0xFFF59E0B); // Amber Orange
+      stateLabel = 'Declining';
+      description = 'Mild fluctuations in your wellness scores have been logged. Consider guided breathing.';
+    } else {
+      stateColor = const Color(0xFFEF4444); // Critical Coral Red
+      stateLabel = 'Critical';
+      description = 'Your stress indicators are elevated. We recommend taking a break or consulting a therapist.';
+    }
+
+    return SmoothCard(
+      backgroundColor: scheme.surface.withValues(alpha: 0.72),
+      borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
+      borderRadius: 22,
+      padding: const EdgeInsets.all(22),
+      child: Column(
+        children: [
+          // Centered circular progress arc gauge
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 140,
+                height: 140,
+                child: CustomPaint(
+                  painter: _CircularArcPainter(
+                    progress: currentDrift,
+                    activeColor: stateColor,
+                  ),
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$driftPercent',
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w900,
+                      color: stateColor,
+                      height: 1.1,
+                    ),
+                  ),
+                  Text(
+                    'Drift Index',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white54 : scheme.onSurface.withOpacity(0.54),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    stateLabel,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: stateColor.withOpacity(0.85),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Icon + title centered row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.psychology_outlined,
+                color: isDark ? Colors.white.withOpacity(0.9) : scheme.onSurface.withOpacity(0.8),
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Mental State Overview',
+                style: TextStyle(
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : scheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Double capsules row (status capsule + trend)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: stateColor.withOpacity(0.08),
+                  border: Border.all(
+                    color: stateColor.withOpacity(0.24),
+                    width: 1.0,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: stateColor,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      stateLabel,
+                      style: TextStyle(
+                        color: stateColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.trending_down,
+                    color: Color(0xFF10B981),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Trending well',
+                    style: TextStyle(
+                      color: isDark ? Colors.white.withOpacity(0.48) : scheme.onSurface.withOpacity(0.54),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Dynamic description text
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              description,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isDark ? Colors.white.withOpacity(0.54) : scheme.onSurface.withOpacity(0.64),
+                fontSize: 13,
+                height: 1.45,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => _showAiChat(context),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: isDark ? Colors.white : scheme.onSurface,
+                    foregroundColor: isDark ? Colors.black : scheme.surface,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Talk to AI Support',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    // Navigate directly to the priority appointments screen (tab index 3)
+                    ref.read(selectedTabProvider.notifier).state = 3;
+                  },
+                  icon: const Icon(
+                    Icons.bolt_rounded,
+                    color: Color(0xFFEF4444),
+                    size: 16,
+                  ),
+                  label: const Text(
+                    'Priority Appointment',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                      color: Color(0xFFEF4444),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    side: BorderSide(
+                      color: const Color(0xFFEF4444).withOpacity(0.3),
+                      width: 1.2,
+                    ),
+                    backgroundColor: const Color(0xFFEF4444).withOpacity(0.08),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Widget: 7-Day Drift Trend Line Card ──
+  Widget _buildWeeklyDriftTrend(BuildContext context, AppProfile? profile, AppSession session, ColorScheme scheme) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final currentDrift = profile?.driftIndex ?? 0.18;
+    final List<double> driftValues = List.generate(7, (i) => _driftForDay(session.driftHistory, currentDrift, i));
+
+    Color activeColor;
+    if (currentDrift < 0.35) {
+      activeColor = const Color(0xFF10B981);
+    } else if (currentDrift < 0.65) {
+      activeColor = const Color(0xFFF59E0B);
+    } else {
+      activeColor = const Color(0xFFEF4444);
+    }
+
+    return SmoothCard(
+      backgroundColor: scheme.surface.withValues(alpha: 0.72),
+      borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
+      borderRadius: 22,
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row: Title on left, Legend on right
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.show_chart_rounded,
+                    color: isDark ? Colors.white : scheme.onSurface,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '7-Day Drift Trend',
+                    style: AppTypography.labelLarge.copyWith(
+                      color: isDark ? Colors.white : scheme.onSurface,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  _buildLegendItem('Stable', const Color(0xFF10B981)),
+                  const SizedBox(width: 8),
+                  _buildLegendItem('Declining', const Color(0xFFF59E0B)),
+                  const SizedBox(width: 8),
+                  _buildLegendItem('Critical', const Color(0xFFEF4444)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+
+          // Main chart region (Y-axis + Canvas)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Y-Axis Labels Column
+              SizedBox(
+                height: 160,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: ['100', '75', '50', '25', '0'].map((label) {
+                    return Text(
+                      label,
+                      style: TextStyle(
+                        color: isDark ? Colors.white.withOpacity(0.32) : scheme.onSurface.withOpacity(0.48),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // Custom Painter Area
+              Expanded(
+                child: SizedBox(
+                  height: 160,
+                  child: CustomPaint(
+                    painter: _TrendLinePainter(
+                      values: driftValues,
+                      activeColor: activeColor,
+                      isDark: isDark,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Bottom X-Axis Days Labels Row
+          Row(
+            children: [
+              const SizedBox(width: 32), // Matches Y-axis labels space
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) {
+                    return Text(
+                      day,
+                      style: TextStyle(
+                        color: isDark ? Colors.white.withOpacity(0.32) : scheme.onSurface.withOpacity(0.48),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Stateful Refresh State Variable ──
+  bool _isRefreshingInsight = false;
+
+  // ── Widget: Passive Behavioral Signals Card ──
+  Widget _buildPassiveBehavioralSignals(BuildContext context, AppSession session, ColorScheme scheme) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final profile = session.profile;
+    final drift = profile?.driftIndex ?? 0.18;
+
+    if (session.typingHistory.isEmpty) {
+      return SmoothCard(
+        backgroundColor: scheme.surface.withValues(alpha: 0.72),
+        borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
+        borderRadius: 22,
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.visibility_outlined,
+                  color: isDark ? Colors.white.withOpacity(0.9) : scheme.onSurface.withOpacity(0.8),
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Passive Behavioral Signals',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : scheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.keyboard_alt_outlined,
+                    color: isDark ? Colors.white24 : Colors.black26,
+                    size: 32,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No typing data available',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : scheme.onSurface.withOpacity(0.7),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Complete a typing test or chat with AI to see signals.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: isDark ? Colors.white30 : scheme.onSurface.withOpacity(0.35),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+        ),
+      );
+    }
+    
+    // Scale typing metrics based on drift index (stress levels)
+    // Stable (< 0.35), Declining (< 0.65), Critical (>= 0.65)
+    String speedText;
+    String backspaceText;
+    String pauseText;
+    String sentimentText;
+    
+    if (drift < 0.35) {
+      speedText = '${(4.8 - drift * 2.0).toStringAsFixed(1)} c/s • Normal';
+      backspaceText = '${(4 + drift * 20).toInt()}% • Optimal';
+      pauseText = '${(0.2 + drift * 0.5).toStringAsFixed(1)}s • Steady';
+      sentimentText = 'Positive • Healthy';
+    } else if (drift < 0.65) {
+      speedText = '${(4.8 - drift * 2.5).toStringAsFixed(1)} c/s • Steady';
+      backspaceText = '${(4 + drift * 30).toInt()}% • Moderate';
+      pauseText = '${(0.2 + drift * 0.8).toStringAsFixed(1)}s • Reflective';
+      sentimentText = 'Neutral • Stable';
+    } else {
+      speedText = '${(4.8 - drift * 3.0).toStringAsFixed(1)} c/s • Slower';
+      backspaceText = '${(4 + drift * 40).toInt()}% • Restless';
+      pauseText = '${(0.2 + drift * 1.2).toStringAsFixed(1)}s • Distracted';
+      sentimentText = 'Stressed • Rest Needed';
+    }
+
+    return SmoothCard(
+      backgroundColor: scheme.surface.withValues(alpha: 0.72),
+      borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
+      borderRadius: 22,
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row: Title & Eye Icon
+          Row(
+            children: [
+              Icon(
+                Icons.visibility_outlined,
+                color: isDark ? Colors.white.withOpacity(0.9) : scheme.onSurface.withOpacity(0.8),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Passive Behavioral Signals',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : scheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // 2x2 grid of metrics
+          Row(
+            children: [
+              Expanded(
+                child: _buildSignalTile(
+                  icon: Icons.bolt_outlined,
+                  label: 'Typing Speed',
+                  value: speedText,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildSignalTile(
+                  icon: Icons.show_chart_rounded,
+                  label: 'Backspace Rate',
+                  value: backspaceText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSignalTile(
+                  icon: Icons.access_time_outlined,
+                  label: 'Avg Pause',
+                  value: pauseText,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildSignalTile(
+                  icon: Icons.psychology_outlined,
+                  label: 'Sentiment',
+                  value: sentimentText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Footer muted description text
+          Center(
+            child: Text(
+              'Updates in real-time as you type in AI Chat',
+              style: TextStyle(
+                color: isDark ? Colors.white.withOpacity(0.32) : scheme.onSurface.withOpacity(0.48),
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Helper Widget: Passive Signal Grid Tile ──
+  Widget _buildSignalTile({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final scheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF10B981).withOpacity(isDark ? 0.04 : 0.08),
+        border: Border.all(
+          color: const Color(0xFF10B981).withOpacity(isDark ? 0.12 : 0.2),
+          width: 1.0,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                color: const Color(0xFF10B981).withOpacity(0.48),
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isDark ? Colors.white.withOpacity(0.32) : scheme.onSurface.withOpacity(0.54),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xFF10B981),
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Widget: AI Daily Insight Card ──
+  Widget _buildAiDailyInsight(BuildContext context, ColorScheme scheme) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final isGeminiConfigured = ref.watch(geminiConfiguredProvider);
+    final ollamaEndpointAsync = ref.watch(ollamaEndpointProvider);
+    final ollamaEndpoint = ollamaEndpointAsync.asData?.value;
+    final isOllamaConfigured = ollamaEndpoint != null && ollamaEndpoint.isNotEmpty;
+    final hasAnyProvider = isGeminiConfigured || isOllamaConfigured;
+
+    final activeProviderText = isGeminiConfigured 
+        ? 'Gemini Active' 
+        : (isOllamaConfigured ? 'Ollama Active' : 'Offline Mode');
+
+    return SmoothCard(
+      backgroundColor: scheme.surface.withValues(alpha: 0.72),
+      borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
+      borderRadius: 22,
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        children: [
+          // Header Row: Rounded Sparkle container, Title, Warning badge on left & Refresh on right
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    // Rounded square sparkling container
+                    Container(
+                      padding: const EdgeInsets.all(9),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withOpacity(0.06) : scheme.onSurface.withOpacity(0.06),
+                        border: Border.all(
+                          color: isDark ? Colors.white.withOpacity(0.1) : scheme.onSurface.withOpacity(0.1),
+                          width: 1.0,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.auto_awesome_outlined,
+                        color: isDark ? Colors.white : scheme.onSurface,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Title & smart fallback status
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'AI Daily Insight',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? Colors.white : scheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              Icon(
+                                hasAnyProvider ? Icons.auto_awesome : Icons.wifi_off_rounded,
+                                color: hasAnyProvider ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                activeProviderText,
+                                style: TextStyle(
+                                  color: hasAnyProvider ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Premium Refresh button
+              OutlinedButton(
+                onPressed: _isRefreshingInsight
+                    ? null
+                    : () async {
+                        await _loadOrGenerateInsight();
+                        if (mounted) {
+                          AppSnackBar.showSuccess(
+                            context,
+                            title: 'Insights Updated',
+                            message: 'AI Daily Insights compiled successfully.',
+                          );
+                        }
+                      },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  side: BorderSide(
+                    color: isDark ? Colors.white.withOpacity(0.12) : scheme.onSurface.withOpacity(0.16),
+                    width: 1.0,
+                  ),
+                  backgroundColor: Colors.transparent,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isRefreshingInsight) ...[
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: isDark ? Colors.white : scheme.onSurface,
+                        ),
+                      ),
+                    ] else ...[
+                      Icon(
+                        Icons.refresh_rounded,
+                        color: isDark ? Colors.white : scheme.onSurface,
+                        size: 16,
+                      ),
+                    ],
+                    const SizedBox(width: 6),
+                    Text(
+                      'Refresh',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : scheme.onSurface,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Central warning/instruction text
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              _dailyInsight ?? (hasAnyProvider
+                  ? 'Compiling daily insight...'
+                  : 'Add an Ollama model or Gemini key to get personalised AI insights'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isDark ? Colors.white.withOpacity(0.85) : scheme.onSurface,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                height: 1.45,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // Configure button - ONLY shown when no provider exists
+          if (!hasAnyProvider) ...[
+            const SizedBox(height: 10),
+            SmoothButton(
+              onPressed: () {
+                ref.read(selectedTabProvider.notifier).state = 4; // Settings tab
+                AppSnackBar.showInfo(
+                  context,
+                  title: 'AI Settings',
+                  message: 'Scroll down to NFC/Lock or AI options to configure.',
+                );
+              },
+              icon: const Icon(Icons.settings_suggest_rounded, size: 16, color: Colors.white),
+              label: 'Configure AI Model',
+              backgroundColor: scheme.primary,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeeklyReportCard(BuildContext context, ColorScheme scheme) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return SmoothCard(
+      backgroundColor: scheme.surface.withValues(alpha: 0.72),
+      borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
+      borderRadius: 22,
+      padding: const EdgeInsets.all(18),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const WeeklyReportScreen(),
+          ),
+        );
+      },
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0FA58A), Color(0xFF8B5CF6)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.assignment_outlined,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Weekly Mental Health Report',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Generate psychiatric summaries and stress logs based on your typing signals.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: isDark ? Colors.white54 : scheme.onSurface.withOpacity(0.54),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            color: isDark ? Colors.white38 : scheme.onSurface.withOpacity(0.38),
+            size: 16,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AiHeroCard extends StatefulWidget {
+  final VoidCallback onTap;
+
+  const _AiHeroCard({required this.onTap});
+
+  @override
+  State<_AiHeroCard> createState() => _AiHeroCardState();
+}
+
+class _AiHeroCardState extends State<_AiHeroCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 2600),
+      vsync: this,
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.94, end: 1.06).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutSine),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: AnimatedBuilder(
+        animation: _pulseAnimation,
+        builder: (context, child) {
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF0FA58A), // Teal
+                  Color(0xFF3B82F6), // Blue
+                  Color(0xFF8B5CF6), // Violet
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.28),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0FA58A).withValues(
+                    alpha: 0.25 * _pulseAnimation.value,
+                  ),
+                  blurRadius: 28 * _pulseAnimation.value,
+                  spreadRadius: _pulseAnimation.value,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: const Color(0xFF8B5CF6).withValues(
+                    alpha: 0.16 * _pulseAnimation.value,
+                  ),
+                  blurRadius: 18 * _pulseAnimation.value,
+                  spreadRadius: -2,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: child,
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+              color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.04),
+              child: Row(
+                children: [
+                  // Glowing Pulsing AI Badge
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      ScaleTransition(
+                        scale: _pulseAnimation,
+                        child: Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                        child: const Icon(
+                          Icons.auto_awesome,
+                          color: Color(0xFF0FA58A),
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 18),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'CalmoraAI flagship',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Hey, Try CalmoraAI',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Your private, intelligent wellness companion.',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.88),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Premium CTA Glass Pill Button
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.22),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.36),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Custom Painter: Circular Progress Arc ──
+class _CircularArcPainter extends CustomPainter {
+  final double progress; // 0.0 to 1.0
+  final Color activeColor;
+
+  _CircularArcPainter({
+    required this.progress,
+    required this.activeColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+    if (progress.isNaN || progress.isInfinite) return;
+    
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - 12) / 2;
+    if (radius <= 0 || radius.isNaN || radius.isInfinite) return;
+
+    // Background track paint
+    final paintTrack = Paint()
+      ..color = Colors.white.withOpacity(0.06)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 9.0
+      ..strokeCap = StrokeCap.round;
+
+    // Glowing shadow paint for active arc
+    final paintActiveShadow = Paint()
+      ..color = activeColor.withOpacity(0.24)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 13.0
+      ..strokeCap = StrokeCap.round;
+    paintActiveShadow.maskFilter = const MaskFilter.blur(BlurStyle.normal, 5.0);
+
+    // Main active arc paint
+    final paintActive = Paint()
+      ..color = activeColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 9.0
+      ..strokeCap = StrokeCap.round;
+
+    // Draw background full circle track
+    canvas.drawCircle(center, radius, paintTrack);
+
+    // Draw active arc sweep starting from 12 o'clock (-90 degrees)
+    final double sweepAngle = 2 * 3.1415926535 * progress;
+    if (sweepAngle.isNaN || sweepAngle.isInfinite) return;
+
+    // Draw shadow first to put it in the background
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -3.1415926535 / 2,
+      sweepAngle,
+      false,
+      paintActiveShadow,
+    );
+
+    // Draw primary glowing stroke
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -3.1415926535 / 2,
+      sweepAngle,
+      false,
+      paintActive,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CircularArcPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.activeColor != activeColor;
+  }
+}
+
+// ── Custom Painter: Sleek Bezier Trend Graph ──
+class _TrendLinePainter extends CustomPainter {
+  final List<double> values; // 7 values for Mon-Sun (0.0 to 100.0)
+  final Color activeColor;
+  final bool isDark;
+
+  _TrendLinePainter({
+    required this.values,
+    required this.activeColor,
+    required this.isDark,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+
+    final cleanValues = values.map((val) => val.isNaN || val.isInfinite ? 50.0 : val).toList();
+    if (cleanValues.isEmpty) return;
+
+    final allEmpty = cleanValues.every((val) => val < 0);
+    if (allEmpty) {
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: 'No logs recorded. Keep using Calmora to populate stats.',
+          style: TextStyle(
+            color: isDark ? Colors.white38 : Colors.black45,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout(maxWidth: size.width - 20);
+      textPainter.paint(
+        canvas,
+        Offset(
+          (size.width - textPainter.width) / 2,
+          (size.height - textPainter.height) / 2,
+        ),
+      );
+      return;
+    }
+
+    final lineShader = const LinearGradient(
+      begin: Alignment.bottomCenter,
+      end: Alignment.topCenter,
+      colors: [
+        Color(0xFF10B981), // Calming green
+        Color(0xFFF59E0B), // Gentle amber
+        Color(0xFFEF4444), // Coral Red
+      ],
+      stops: [0.15, 0.55, 0.95],
+    ).createShader(Rect.fromLTRB(0, 0, size.width, size.height));
+
+    final paintLine = Paint()
+      ..shader = lineShader
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+
+    final paintLineShadow = Paint()
+      ..shader = lineShader
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8.0
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
+
+    final paintGrid = Paint()
+      ..color = isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.06)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    final paintStableDash = Paint()
+      ..color = const Color(0xFF10B981).withOpacity(isDark ? 0.12 : 0.22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    final paintDecliningDash = Paint()
+      ..color = const Color(0xFFF59E0B).withOpacity(isDark ? 0.12 : 0.22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    final paintCriticalDash = Paint()
+      ..color = const Color(0xFFEF4444).withOpacity(isDark ? 0.12 : 0.22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    // Draw Y grid lines
+    final double stepY = size.height / 4;
+    for (int i = 0; i <= 4; i++) {
+      final y = i * stepY;
+      if (y.isNaN || y.isInfinite) continue;
+      _drawDashedLine(canvas, Offset(0, y), Offset(size.width, y), paintGrid, dashWidth: 5, dashSpace: 5);
+    }
+
+    // Threshold Guideline calculations:
+    // Stable < 35, Declining < 65, Critical >= 65
+    final double yDeclining = size.height * (1.0 - 0.35); // 35% line
+    final double yCritical = size.height * (1.0 - 0.65);  // 65% line
+
+    if (!yDeclining.isNaN && !yDeclining.isInfinite) {
+      _drawDashedLine(canvas, Offset(0, yDeclining), Offset(size.width, yDeclining), paintDecliningDash, dashWidth: 4, dashSpace: 4);
+    }
+    if (!yCritical.isNaN && !yCritical.isInfinite) {
+      _drawDashedLine(canvas, Offset(0, yCritical), Offset(size.width, yCritical), paintCriticalDash, dashWidth: 4, dashSpace: 4);
+    }
+
+    // Data points placement
+    final double stepX = size.width / (cleanValues.length > 1 ? cleanValues.length - 1 : 1);
+    final List<Offset> points = [];
+    for (int i = 0; i < cleanValues.length; i++) {
+      final val = cleanValues[i].clamp(0.0, 100.0);
+      final y = size.height * (1.0 - (val / 100.0));
+      final x = i * stepX;
+      if (y.isNaN || y.isInfinite || x.isNaN || x.isInfinite) continue;
+      points.add(Offset(x, y));
+    }
+
+    if (points.isEmpty) return;
+
+    // Compute Spline path using Bezier Cubic anchors
+    final path = Path();
+    path.moveTo(points[0].dx, points[0].dy);
+
+    for (int i = 0; i < points.length - 1; i++) {
+      final p0 = points[i];
+      final p1 = points[i + 1];
+      final control1 = Offset(p0.dx + stepX / 2.2, p0.dy);
+      final control2 = Offset(p1.dx - stepX / 2.2, p1.dy);
+      path.cubicTo(
+        control1.dx, control1.dy,
+        control2.dx, control2.dy,
+        p1.dx, p1.dy,
+      );
+    }
+
+    // Draw vertical underfill gradient shape
+    final fillPath = Path.from(path);
+    fillPath.lineTo(points.last.dx, size.height);
+    fillPath.lineTo(points.first.dx, size.height);
+    fillPath.close();
+
+    final fillPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: [
+          Color(0x0610B981), // Faint green at 0%
+          Color(0x1A10B981), // Faint green at 30%
+          Color(0x20F59E0B), // Soft amber in middle
+          Color(0x12EF4444), // Soft coral red at top
+        ],
+        stops: [0.0, 0.35, 0.65, 1.0],
+      ).createShader(Rect.fromLTRB(0, 0, size.width, size.height))
+      ..style = PaintingStyle.fill;
+
+    canvas.drawPath(fillPath, fillPaint);
+
+    // Draw path shadow
+    canvas.drawPath(path, paintLineShadow);
+
+    // Draw primary path line
+    canvas.drawPath(path, paintLine);
+
+    // Draw exact data circles
+    final pointPaint = Paint()
+      ..color = activeColor
+      ..style = PaintingStyle.fill;
+    final pointBorderPaint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke;
+
+    for (var pt in points) {
+      canvas.drawCircle(pt, 4.0, pointPaint);
+      canvas.drawCircle(pt, 4.0, pointBorderPaint);
+    }
+  }
+
+  void _drawDashedLine(Canvas canvas, Offset p1, Offset p2, Paint paint, {double dashWidth = 5, double dashSpace = 5}) {
+    double distance = (p2 - p1).distance;
+    if (distance <= 0.0 || distance.isNaN || distance.isInfinite) return;
+    double currentDistance = 0.0;
+    Offset direction = (p2 - p1) / distance;
+    while (currentDistance < distance) {
+      canvas.drawLine(
+        p1 + direction * currentDistance,
+        p1 + direction * (currentDistance + dashWidth < distance ? currentDistance + dashWidth : distance),
+        paint,
+      );
+      currentDistance += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _TrendLinePainter oldDelegate) {
+    if (oldDelegate.activeColor != activeColor || oldDelegate.isDark != isDark) return true;
+    if (oldDelegate.values.length != values.length) return true;
+    for (int i = 0; i < values.length; i++) {
+      if (oldDelegate.values[i] != values[i]) return true;
+    }
+    return false;
   }
 }
 

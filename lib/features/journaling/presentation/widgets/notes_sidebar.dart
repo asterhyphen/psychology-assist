@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../app/app_state.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/app_theme.dart';
 import 'note_list_tile.dart';
 
 class NotesSidebar extends StatelessWidget {
@@ -29,54 +30,56 @@ class NotesSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.28),
+        color: isDark 
+            ? const Color(0xFF11161F) 
+            : scheme.surfaceContainerHighest.withValues(alpha: 0.18),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        padding: EdgeInsets.fromLTRB(14, compact ? 6 : 12, 14, compact ? 4 : 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text(
-                  'Journal',
-                  style: AppTypography.headingSmall.copyWith(
-                    color: theme.textTheme.titleLarge?.color,
+            if (!compact) ...[
+              Row(
+                children: [
+                  Text(
+                    'Journal Reflections',
+                    style: AppTypography.headingSmall.copyWith(
+                      color: scheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
                   ),
-                ),
-                const Spacer(),
-                Text(
-                  '${entries.length}',
-                  style: AppTypography.labelMedium.copyWith(
-                    color: theme.textTheme.bodySmall?.color
-                        ?.withValues(alpha: 0.7),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${entries.length}',
+                      style: AppTypography.labelMedium.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            SearchBar(
-              controller: searchController,
-              hintText: 'Search notes',
-              leading: const Icon(Icons.search, size: 20),
-              elevation: const WidgetStatePropertyAll(0),
-              padding: const WidgetStatePropertyAll(
-                EdgeInsets.symmetric(horizontal: 12),
+                ],
               ),
-              constraints: const BoxConstraints(minHeight: 44),
-              backgroundColor: WidgetStatePropertyAll(
-                scheme.surface.withValues(alpha: 0.9),
-              ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 10),
+            ],
+            
             Expanded(
               child: entries.isEmpty
                   ? _EmptyNotes(compact: compact)
                   : ListView.separated(
                       itemCount: entries.length,
+                      padding: EdgeInsets.symmetric(vertical: compact ? 2 : 6),
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final entry = entries[index];
@@ -106,36 +109,53 @@ class _EmptyNotes extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Center(
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 18),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.sticky_note_2_outlined,
-              size: compact ? 34 : 46,
-              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.36),
+        padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 12, vertical: compact ? 4 : 12),
+        child: Container(
+          constraints: BoxConstraints(maxWidth: compact ? 260 : 320),
+          padding: EdgeInsets.all(compact ? 10 : 16),
+          decoration: BoxDecoration(
+            color: scheme.primary.withValues(alpha: isDark ? 0.08 : 0.04),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: scheme.primary.withValues(alpha: isDark ? 0.16 : 0.08),
+              width: 1.0,
             ),
-            const SizedBox(height: 10),
-            Text(
-              'No notes found',
-              textAlign: TextAlign.center,
-              style: AppTypography.labelMedium.copyWith(
-                color: theme.textTheme.titleMedium?.color,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.self_improvement_rounded,
+                size: compact ? 22 : 32,
+                color: scheme.primary.withValues(alpha: 0.8),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Create a note or adjust your search.',
-              textAlign: TextAlign.center,
-              style: AppTypography.bodySmall.copyWith(
-                color:
-                    theme.textTheme.bodySmall?.color?.withValues(alpha: 0.65),
+              const SizedBox(height: 6),
+              Text(
+                'Your Mindful Space',
+                textAlign: TextAlign.center,
+                style: AppTypography.labelLarge.copyWith(
+                  color: scheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                  fontSize: compact ? 13 : 15,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                'Start writing in Write Pad to record your thoughts and reflections.',
+                textAlign: TextAlign.center,
+                style: AppTypography.bodySmall.copyWith(
+                  color: scheme.mutedText,
+                  height: 1.35,
+                  fontSize: compact ? 11 : 12,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

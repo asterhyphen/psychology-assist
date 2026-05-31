@@ -40,7 +40,7 @@ Generated on: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().yea
 **Overall Drift Index**: $driftIndex
 
 **Insights**:
-Based on recent check-ins and journal patterns, the patient is showing steady engagement but may benefit from discussing cognitive reframing strategies during the next session.
+Based on recent check-ins and mood patterns, the patient is showing steady engagement but may benefit from discussing cognitive reframing strategies during the next session.
 ''';
 
     ref.read(appSessionProvider.notifier).addMessage(
@@ -64,6 +64,8 @@ Based on recent check-ins and journal patterns, the patient is showing steady en
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(appSessionProvider);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final entries = session.moodEntries.toList();
     final averageMood = entries.isEmpty
         ? 0.0
@@ -75,7 +77,7 @@ Based on recent check-ins and journal patterns, the patient is showing steady en
     return Scaffold(
       appBar: AppBar(title: const Text('Stats')),
       body: Container(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: theme.scaffoldBackgroundColor,
         child: ListView(
           padding: const EdgeInsets.all(18),
           children: [
@@ -123,26 +125,80 @@ Based on recent check-ins and journal patterns, the patient is showing steady en
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Weekly trend', style: AppTypography.headingSmall),
-                  const SizedBox(height: 14),
+                  Text('Weekly Trend', style: AppTypography.headingSmall),
+                  const SizedBox(height: 16),
                   Column(
-                    children: weeklyTrend
-                        .map(
-                          (item) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(item.day, style: AppTypography.bodyMedium),
-                                Text('${item.count} entries',
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: AppColors.lightSubtext,
-                                    )),
-                              ],
-                            ),
+                    children: () {
+                      final maxCount = weeklyTrend.map((e) => e.count).reduce((a, b) => a > b ? a : b);
+                      final double divisor = maxCount == 0 ? 1.0 : maxCount.toDouble();
+
+                      return weeklyTrend.map((item) {
+                        final double percent = item.count.toDouble() / divisor;
+                        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 42,
+                                child: Text(
+                                  item.day,
+                                  style: AppTypography.labelMedium.copyWith(
+                                    color: scheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? Colors.white.withOpacity(0.05)
+                                          : Colors.black.withOpacity(0.04),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    alignment: Alignment.centerLeft,
+                                    child: FractionallySizedBox(
+                                      widthFactor: percent.clamp(0.02, 1.0),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              scheme.primary,
+                                              scheme.secondary,
+                                            ],
+                                            begin: Alignment.centerLeft,
+                                            end: Alignment.centerRight,
+                                          ),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              SizedBox(
+                                width: 56,
+                                child: Text(
+                                  '${item.count} ${item.count == 1 ? 'entry' : 'entries'}',
+                                  textAlign: TextAlign.end,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: scheme.onSurface.withValues(alpha: 0.58),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        )
-                        .toList(),
+                        );
+                      }).toList();
+                    }(),
                   ),
                 ],
               ),
@@ -154,12 +210,12 @@ Based on recent check-ins and journal patterns, the patient is showing steady en
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Recent journal notes',
+                  Text('Recent Mood Notes',
                       style: AppTypography.headingSmall),
                   const SizedBox(height: 12),
                   if (recentEntries.isEmpty)
                     Text(
-                      'No journal notes yet. Add a mood entry to start tracking.',
+                      'No mood notes yet. Add a mood entry to start tracking.',
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.lightSubtext,
                       ),

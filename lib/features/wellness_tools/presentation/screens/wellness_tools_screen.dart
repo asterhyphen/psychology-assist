@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/smooth_widgets.dart';
 import '../../../breathing_exercise/presentation/screens/breathing_exercise_screen.dart';
 import '../../../journaling/presentation/screens/typing_test_screen.dart';
 import '../../../mood_log/presentation/screens/mood_log_screen.dart';
@@ -19,22 +19,22 @@ class WellnessToolsScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
           children: [
             Text(
               'Tools',
-              style: AppTypography.headingMedium.copyWith(
-                color: theme.textTheme.titleLarge?.color,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               'Check in, reset your breathing, or run a quick typing stress test.',
-              style: AppTypography.bodySmall.copyWith(
-                color: theme.textTheme.bodySmall?.color,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurface.withValues(alpha: 0.66),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             _WellnessToolTile(
               icon: Icons.mood_outlined,
               title: 'Log mood',
@@ -49,7 +49,7 @@ class WellnessToolsScreen extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             _WellnessToolTile(
               icon: Icons.air,
               title: 'Breathing exercise',
@@ -63,7 +63,7 @@ class WellnessToolsScreen extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             _WellnessToolTile(
               icon: Icons.keyboard_outlined,
               title: 'Typing stress test',
@@ -103,62 +103,68 @@ class _WellnessToolTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Material(
-      color: scheme.surface.withValues(alpha: 0.86),
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: color.withValues(alpha: 0.22),
+    return SmoothCard(
+      onTap: onTap,
+      borderRadius: 18,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      backgroundColor: isDark
+          ? scheme.surface.withValues(alpha: 0.68)
+          : Colors.white.withOpacity(0.92),
+      borderColor: color.withValues(alpha: 0.2),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  color.withValues(alpha: 0.22),
+                  color.withValues(alpha: 0.08),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: color.withValues(alpha: 0.28),
+                width: 1.0,
+              ),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.58),
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: AppTypography.labelLarge.copyWith(
-                        color: theme.textTheme.titleMedium?.color,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: theme.textTheme.bodySmall?.color,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right,
-                color: scheme.onSurface.withValues(alpha: 0.45),
-              ),
-            ],
+          const SizedBox(width: 8),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: scheme.onSurface.withValues(alpha: 0.38),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -4,6 +4,144 @@ import '../core/services/app_session_store.dart';
 const demoPsychologistEmail = 'panipuri@macxcode';
 
 enum UserRole { psychologist, patient }
+enum AppointmentStatus { pending, confirmed, cancelled, completed, noShow }
+enum PatientStatus { newCase, active, underTreatment, followUp, completed, cancelled }
+
+class DriftHistoryEntry {
+  final double driftValue;
+  final DateTime timestamp;
+  final String source;
+
+  const DriftHistoryEntry({
+    required this.driftValue,
+    required this.timestamp,
+    required this.source,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'driftValue': driftValue,
+        'timestamp': timestamp.toIso8601String(),
+        'source': source,
+      };
+
+  factory DriftHistoryEntry.fromJson(Map<String, dynamic> json) => DriftHistoryEntry(
+        driftValue: (json['driftValue'] as num?)?.toDouble() ?? 0.0,
+        timestamp: DateTime.parse(json['timestamp'] as String),
+        source: json['source'] as String? ?? '',
+      );
+}
+
+class TypingHistoryEntry {
+  final DateTime timestamp;
+  final int wpm;
+  final double accuracy;
+  final int corrections;
+  final double stressScore;
+
+  const TypingHistoryEntry({
+    required this.timestamp,
+    required this.wpm,
+    required this.accuracy,
+    required this.corrections,
+    required this.stressScore,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'timestamp': timestamp.toIso8601String(),
+        'wpm': wpm,
+        'accuracy': accuracy,
+        'corrections': corrections,
+        'stressScore': stressScore,
+      };
+
+  factory TypingHistoryEntry.fromJson(Map<String, dynamic> json) => TypingHistoryEntry(
+        timestamp: DateTime.parse(json['timestamp'] as String),
+        wpm: json['wpm'] as int? ?? 0,
+        accuracy: (json['accuracy'] as num?)?.toDouble() ?? 0.0,
+        corrections: json['corrections'] as int? ?? 0,
+        stressScore: (json['stressScore'] as num?)?.toDouble() ?? 0.0,
+      );
+}
+
+class BreathingHistoryEntry {
+  final DateTime timestamp;
+  final String technique;
+  final int durationSeconds;
+  final int cyclesCompleted;
+
+  const BreathingHistoryEntry({
+    required this.timestamp,
+    required this.technique,
+    required this.durationSeconds,
+    required this.cyclesCompleted,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'timestamp': timestamp.toIso8601String(),
+        'technique': technique,
+        'durationSeconds': durationSeconds,
+        'cyclesCompleted': cyclesCompleted,
+      };
+
+  factory BreathingHistoryEntry.fromJson(Map<String, dynamic> json) => BreathingHistoryEntry(
+        timestamp: DateTime.parse(json['timestamp'] as String),
+        technique: json['technique'] as String? ?? '',
+        durationSeconds: json['durationSeconds'] as int? ?? 0,
+        cyclesCompleted: json['cyclesCompleted'] as int? ?? 0,
+      );
+}
+
+class ClinicalNote {
+  final String id;
+  final DateTime timestamp;
+  final String note;
+  final String authorName;
+
+  const ClinicalNote({
+    required this.id,
+    required this.timestamp,
+    required this.note,
+    required this.authorName,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'timestamp': timestamp.toIso8601String(),
+        'note': note,
+        'authorName': authorName,
+      };
+
+  factory ClinicalNote.fromJson(Map<String, dynamic> json) => ClinicalNote(
+        id: json['id'] as String? ?? '',
+        timestamp: DateTime.parse(json['timestamp'] as String),
+        note: json['note'] as String? ?? '',
+        authorName: json['authorName'] as String? ?? '',
+      );
+}
+
+class AdherenceRecord {
+  final DateTime timestamp;
+  final String medicineName;
+  final bool taken;
+
+  const AdherenceRecord({
+    required this.timestamp,
+    required this.medicineName,
+    required this.taken,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'timestamp': timestamp.toIso8601String(),
+        'medicineName': medicineName,
+        'taken': taken,
+      };
+
+  factory AdherenceRecord.fromJson(Map<String, dynamic> json) => AdherenceRecord(
+        timestamp: DateTime.parse(json['timestamp'] as String),
+        medicineName: json['medicineName'] as String? ?? '',
+        taken: json['taken'] as bool? ?? false,
+      );
+}
 
 class AppProfile {
   final UserRole role;
@@ -15,6 +153,7 @@ class AppProfile {
   final int avatarColorValue;
   final String? profileImagePath;
   final double driftIndex;
+  final PatientStatus status;
 
   const AppProfile({
     required this.role,
@@ -26,6 +165,7 @@ class AppProfile {
     this.avatarColorValue = 0xFF8B5CF6,
     this.profileImagePath,
     this.driftIndex = 0.0,
+    this.status = PatientStatus.active,
   });
 
   bool get hasPsychologist =>
@@ -41,6 +181,7 @@ class AppProfile {
     int? avatarColorValue,
     String? profileImagePath,
     double? driftIndex,
+    PatientStatus? status,
   }) {
     return AppProfile(
       role: role ?? this.role,
@@ -52,6 +193,7 @@ class AppProfile {
       avatarColorValue: avatarColorValue ?? this.avatarColorValue,
       profileImagePath: profileImagePath ?? this.profileImagePath,
       driftIndex: driftIndex ?? this.driftIndex,
+      status: status ?? this.status,
     );
   }
 
@@ -65,6 +207,7 @@ class AppProfile {
         'avatarColorValue': avatarColorValue,
         'profileImagePath': profileImagePath,
         'driftIndex': driftIndex,
+        'status': status.name,
       };
 
   factory AppProfile.fromJson(Map<String, dynamic> json) => AppProfile(
@@ -82,6 +225,10 @@ class AppProfile {
         avatarColorValue: json['avatarColorValue'] as int? ?? 0xFF8B5CF6,
         profileImagePath: json['profileImagePath'] as String?,
         driftIndex: (json['driftIndex'] as num?)?.toDouble() ?? 0.0,
+        status: PatientStatus.values.firstWhere(
+          (e) => e.name == json['status'],
+          orElse: () => PatientStatus.active,
+        ),
       );
 }
 
@@ -93,8 +240,25 @@ class Appointment {
   final DateTime startsAt;
   final String type;
   final String note;
-  final bool confirmed;
+  final AppointmentStatus status;
   final double driftIndex;
+
+  String get displayPatientName {
+    final trimmed = patientName.trim();
+    if (trimmed.isEmpty || trimmed.toLowerCase() == 'patient') {
+      if (patientEmail != null && patientEmail!.isNotEmpty) {
+        final emailStub = patientEmail!.split('@').first;
+        if (emailStub.isNotEmpty) {
+          if (emailStub.toLowerCase() == 'patient') {
+            return 'Unnamed Client';
+          }
+          return emailStub[0].toUpperCase() + emailStub.substring(1);
+        }
+      }
+      return 'Unnamed Client';
+    }
+    return patientName;
+  }
 
   const Appointment({
     required this.psychologistEmail,
@@ -104,9 +268,11 @@ class Appointment {
     required this.startsAt,
     required this.type,
     required this.note,
-    this.confirmed = false,
+    this.status = AppointmentStatus.pending,
     this.driftIndex = 0.0,
   });
+
+  bool get confirmed => status == AppointmentStatus.confirmed;
 
   Appointment copyWith({
     String? psychologistEmail,
@@ -116,7 +282,7 @@ class Appointment {
     DateTime? startsAt,
     String? type,
     String? note,
-    bool? confirmed,
+    AppointmentStatus? status,
     double? driftIndex,
   }) {
     return Appointment(
@@ -127,7 +293,7 @@ class Appointment {
       startsAt: startsAt ?? this.startsAt,
       type: type ?? this.type,
       note: note ?? this.note,
-      confirmed: confirmed ?? this.confirmed,
+      status: status ?? this.status,
       driftIndex: driftIndex ?? this.driftIndex,
     );
   }
@@ -140,21 +306,32 @@ class Appointment {
         'startsAt': startsAt.toIso8601String(),
         'type': type,
         'note': note,
-        'confirmed': confirmed,
+        'status': status.name,
         'driftIndex': driftIndex,
       };
 
-  factory Appointment.fromJson(Map<String, dynamic> json) => Appointment(
-        psychologistEmail: json['psychologistEmail'] as String? ?? '',
-        psychologistName: json['psychologistName'] as String? ?? '',
-        patientName: json['patientName'] as String? ?? '',
-        patientEmail: json['patientEmail'] as String?,
-        startsAt: DateTime.parse(json['startsAt'] as String),
-        type: json['type'] as String? ?? '',
-        note: json['note'] as String? ?? '',
-        confirmed: json['confirmed'] as bool? ?? false,
-        driftIndex: (json['driftIndex'] as num?)?.toDouble() ?? 0.0,
+  factory Appointment.fromJson(Map<String, dynamic> json) {
+    AppointmentStatus status = AppointmentStatus.pending;
+    if (json.containsKey('status')) {
+      status = AppointmentStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => AppointmentStatus.pending,
       );
+    } else if (json['confirmed'] as bool? ?? false) {
+      status = AppointmentStatus.confirmed;
+    }
+    return Appointment(
+      psychologistEmail: json['psychologistEmail'] as String? ?? '',
+      psychologistName: json['psychologistName'] as String? ?? '',
+      patientName: json['patientName'] as String? ?? '',
+      patientEmail: json['patientEmail'] as String?,
+      startsAt: DateTime.parse(json['startsAt'] as String),
+      type: json['type'] as String? ?? '',
+      note: json['note'] as String? ?? '',
+      status: status,
+      driftIndex: (json['driftIndex'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
 }
 
 /// Represents a medication time for prescription reminders
@@ -474,6 +651,11 @@ class AppSession {
   final int lockTimeoutMinutes;
   final int currentStreak;
   final int longestStreak;
+  final List<DriftHistoryEntry> driftHistory;
+  final List<TypingHistoryEntry> typingHistory;
+  final List<BreathingHistoryEntry> breathingHistory;
+  final List<AdherenceRecord> adherenceHistory;
+  final List<ClinicalNote> clinicalNotes;
 
   const AppSession({
     this.onboardingComplete = false,
@@ -490,6 +672,11 @@ class AppSession {
     this.lockTimeoutMinutes = 10,
     this.currentStreak = 0,
     this.longestStreak = 0,
+    this.driftHistory = const [],
+    this.typingHistory = const [],
+    this.breathingHistory = const [],
+    this.adherenceHistory = const [],
+    this.clinicalNotes = const [],
   });
 
   AppSession copyWith({
@@ -507,6 +694,11 @@ class AppSession {
     int? lockTimeoutMinutes,
     int? currentStreak,
     int? longestStreak,
+    List<DriftHistoryEntry>? driftHistory,
+    List<TypingHistoryEntry>? typingHistory,
+    List<BreathingHistoryEntry>? breathingHistory,
+    List<AdherenceRecord>? adherenceHistory,
+    List<ClinicalNote>? clinicalNotes,
   }) {
     return AppSession(
       onboardingComplete: onboardingComplete ?? this.onboardingComplete,
@@ -523,6 +715,11 @@ class AppSession {
       lockTimeoutMinutes: lockTimeoutMinutes ?? this.lockTimeoutMinutes,
       currentStreak: currentStreak ?? this.currentStreak,
       longestStreak: longestStreak ?? this.longestStreak,
+      driftHistory: driftHistory ?? this.driftHistory,
+      typingHistory: typingHistory ?? this.typingHistory,
+      breathingHistory: breathingHistory ?? this.breathingHistory,
+      adherenceHistory: adherenceHistory ?? this.adherenceHistory,
+      clinicalNotes: clinicalNotes ?? this.clinicalNotes,
     );
   }
 
@@ -544,6 +741,11 @@ class AppSession {
         'lockTimeoutMinutes': lockTimeoutMinutes,
         'currentStreak': currentStreak,
         'longestStreak': longestStreak,
+        'driftHistory': driftHistory.map((e) => e.toJson()).toList(),
+        'typingHistory': typingHistory.map((e) => e.toJson()).toList(),
+        'breathingHistory': breathingHistory.map((e) => e.toJson()).toList(),
+        'adherenceHistory': adherenceHistory.map((e) => e.toJson()).toList(),
+        'clinicalNotes': clinicalNotes.map((e) => e.toJson()).toList(),
       };
 
   factory AppSession.fromJson(Map<String, dynamic> json) => AppSession(
@@ -587,6 +789,31 @@ class AppSession {
         lockTimeoutMinutes: json['lockTimeoutMinutes'] as int? ?? 10,
         currentStreak: json['currentStreak'] as int? ?? 0,
         longestStreak: json['longestStreak'] as int? ?? 0,
+        driftHistory: (json['driftHistory'] as List<dynamic>? ?? [])
+            .map((item) => DriftHistoryEntry.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ))
+            .toList(),
+        typingHistory: (json['typingHistory'] as List<dynamic>? ?? [])
+            .map((item) => TypingHistoryEntry.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ))
+            .toList(),
+        breathingHistory: (json['breathingHistory'] as List<dynamic>? ?? [])
+            .map((item) => BreathingHistoryEntry.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ))
+            .toList(),
+        adherenceHistory: (json['adherenceHistory'] as List<dynamic>? ?? [])
+            .map((item) => AdherenceRecord.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ))
+            .toList(),
+        clinicalNotes: (json['clinicalNotes'] as List<dynamic>? ?? [])
+            .map((item) => ClinicalNote.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ))
+            .toList(),
       );
 }
 
@@ -615,6 +842,136 @@ class AppSessionNotifier extends StateNotifier<AppSession> {
   })  : _store = store,
         super(initialSession);
 
+  void recalculateDriftIndex(String source) {
+    final profile = state.profile;
+    if (profile == null) return;
+
+    final hasNoData = state.moodEntries.isEmpty &&
+        state.typingHistory.isEmpty &&
+        state.breathingHistory.isEmpty &&
+        state.adherenceHistory.isEmpty &&
+        state.journalEntries.isEmpty &&
+        state.appointments.isEmpty;
+
+    if (hasNoData) {
+      state = state.copyWith(
+        profile: profile.copyWith(driftIndex: 0.0),
+        driftHistory: [],
+      );
+      _persist();
+      return;
+    }
+
+    double drift = 0.20; // baseline starts at a stable, neutral level (20)
+
+    // 1. Mood Component (25% weight)
+    if (state.moodEntries.isNotEmpty) {
+      final recentMoods = state.moodEntries.length > 7
+          ? state.moodEntries.sublist(state.moodEntries.length - 7)
+          : state.moodEntries;
+      double sum = 0.0;
+      for (var entry in recentMoods) {
+        sum += entry.value;
+      }
+      double avg = sum / recentMoods.length;
+      double moodScore = (5.0 - avg) / 4.0;
+      drift += moodScore * 0.25;
+    } else {
+      drift += 0.1 * 0.25;
+    }
+
+    // 2. Typing Component (25% weight)
+    if (state.typingHistory.isNotEmpty) {
+      final recentTyping = state.typingHistory.length > 7
+          ? state.typingHistory.sublist(state.typingHistory.length - 7)
+          : state.typingHistory;
+      double sum = 0.0;
+      for (var entry in recentTyping) {
+        sum += entry.stressScore;
+      }
+      double avg = sum / recentTyping.length;
+      drift += avg * 0.25;
+    } else {
+      drift += 0.1 * 0.25;
+    }
+
+    // 3. Journal Sentiment (20% weight / adjustment)
+    double journalAdj = 0.0;
+    if (state.journalEntries.isNotEmpty) {
+      final recentJournals = state.journalEntries.length > 7
+          ? state.journalEntries.sublist(state.journalEntries.length - 7)
+          : state.journalEntries;
+      for (var entry in recentJournals) {
+        final content = entry.content.toLowerCase();
+        int pos = 0;
+        int neg = 0;
+        final posWords = ["calm", "happy", "steady", "peaceful", "relaxed", "joy", "excited", "positive", "content", "great", "better", "excellent", "good"];
+        final negWords = ["anxiety", "anxious", "overthinking", "panic", "stressed", "stress", "sad", "depressed", "terrible", "bad", "lonely", "fear", "scared", "angry", "worry", "worried"];
+        for (var w in posWords) {
+          if (content.contains(w)) pos++;
+        }
+        for (var w in negWords) {
+          if (content.contains(w)) neg++;
+        }
+        if (neg > pos) {
+          journalAdj += 0.1;
+        } else if (pos > neg) {
+          journalAdj -= 0.1;
+        }
+      }
+      drift += journalAdj.clamp(-0.2, 0.2);
+    }
+
+    // 4. Medication Adherence (15% weight)
+    double medAdj = 0.0;
+    if (state.adherenceHistory.isNotEmpty) {
+      final recentAdherence = state.adherenceHistory.length > 7
+          ? state.adherenceHistory.sublist(state.adherenceHistory.length - 7)
+          : state.adherenceHistory;
+      int missed = recentAdherence.where((r) => !r.taken).length;
+      if (missed == 0) {
+        medAdj = -0.15;
+      } else {
+        medAdj = missed * 0.10;
+      }
+      drift += medAdj.clamp(-0.15, 0.35);
+    }
+
+    // 5. Appointments (15% weight)
+    double apptAdj = 0.0;
+    if (state.appointments.isNotEmpty) {
+      for (var appt in state.appointments) {
+        if (appt.status == AppointmentStatus.completed) {
+          apptAdj -= 0.05;
+        } else if (appt.status == AppointmentStatus.cancelled) {
+          apptAdj += 0.15;
+        }
+      }
+      drift += apptAdj.clamp(-0.15, 0.35);
+    }
+
+    // 6. Breathing Sessions relief
+    if (state.breathingHistory.isNotEmpty) {
+      drift -= 0.06 * state.breathingHistory.length;
+    }
+
+    drift = drift.clamp(0.0, 1.0);
+
+    final newHistoryEntry = DriftHistoryEntry(
+      driftValue: drift,
+      timestamp: DateTime.now(),
+      source: source,
+    );
+
+    final updatedHistory = [...state.driftHistory, newHistoryEntry];
+    
+    state = state.copyWith(
+      profile: profile.copyWith(driftIndex: drift),
+      driftHistory: updatedHistory,
+    );
+    _persist();
+  }
+
   void completeOnboarding({
     required AppProfile profile,
     required String lockPin,
@@ -625,8 +982,17 @@ class AppSessionNotifier extends StateNotifier<AppSession> {
       lockPin: lockPin,
       profile: profile,
       isLocked: false,
+      appointments: [],
+      journalEntries: [],
+      moodEntries: [],
+      typingHistory: [],
+      breathingHistory: [],
+      driftHistory: [],
+      adherenceHistory: [],
+      prescriptions: [],
+      clinicalNotes: [],
     );
-    _persist();
+    recalculateDriftIndex('Onboarding Complete');
   }
 
   void addAppointment(Appointment appointment) {
@@ -635,18 +1001,48 @@ class AppSessionNotifier extends StateNotifier<AppSession> {
       appointment,
     ]..sort((a, b) => a.startsAt.compareTo(b.startsAt));
     state = state.copyWith(appointments: updated);
-    _persist();
+    recalculateDriftIndex('Appointment Scheduled');
   }
 
   void approveAppointment(Appointment appointment) {
     final updated = state.appointments
         .map((item) =>
             identical(item, appointment) || _sameAppointment(item, appointment)
-                ? item.copyWith(confirmed: true)
+                ? item.copyWith(status: AppointmentStatus.confirmed)
                 : item)
         .toList();
     state = state.copyWith(appointments: updated);
     _persist();
+  }
+
+  void completeAppointment(Appointment appointment) {
+    final updated = state.appointments
+        .map((item) =>
+            identical(item, appointment) || _sameAppointment(item, appointment)
+                ? item.copyWith(status: AppointmentStatus.completed)
+                : item)
+        .toList();
+    state = state.copyWith(appointments: updated);
+    recalculateDriftIndex('Appointment Completed');
+  }
+
+  void cancelAppointment(Appointment appointment) {
+    final timeDiff = appointment.startsAt.difference(DateTime.now());
+    final isLateCancel = timeDiff.inHours < 24;
+
+    final updated = state.appointments
+        .map((item) =>
+            identical(item, appointment) || _sameAppointment(item, appointment)
+                ? item.copyWith(status: AppointmentStatus.cancelled)
+                : item)
+        .toList();
+    state = state.copyWith(appointments: updated);
+
+    if (isLateCancel) {
+      recalculateDriftIndex('Late Appointment Cancellation');
+    } else {
+      recalculateDriftIndex('Appointment Cancellation');
+    }
   }
 
   void removeAppointment(Appointment appointment) {
@@ -683,6 +1079,209 @@ class AppSessionNotifier extends StateNotifier<AppSession> {
     _persist();
   }
 
+  Future<void> switchUser(String email, UserRole defaultRole, String defaultName) async {
+    await _persist();
+    final newSessionData = await _store.loadUserSession(email);
+    if (newSessionData != null) {
+      state = AppSession.fromJson(newSessionData);
+    } else {
+      final now = DateTime.now();
+      List<Appointment> initialAppointments = [];
+      List<JournalEntry> initialJournals = [];
+
+      if (email == demoPsychologistEmail) {
+        initialAppointments = [
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Alex Morgan',
+            patientEmail: 'alex.m@example.com',
+            startsAt: now.subtract(const Duration(hours: 2)),
+            type: 'Therapy',
+            note: 'Burnout Risk, Sleep Issues, High Stress',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.82,
+          ),
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Casey Kim',
+            patientEmail: 'casey.k@example.com',
+            startsAt: now.subtract(const Duration(hours: 5)),
+            type: 'Consultation',
+            note: 'Work Stress, Fatigue',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.61,
+          ),
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Jordan Lee',
+            patientEmail: 'jordan.l@example.com',
+            startsAt: now.subtract(const Duration(days: 1)),
+            type: 'CBT Session',
+            note: 'Anxiety, Rumination',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.54,
+          ),
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Taylor Pham',
+            patientEmail: 'taylor.p@example.com',
+            startsAt: now.subtract(const Duration(minutes: 30)),
+            type: 'General Check-up',
+            note: 'Stable, Positive',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.24,
+          ),
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Sam Rivera',
+            patientEmail: 'sam.r@example.com',
+            startsAt: now.subtract(const Duration(hours: 3)),
+            type: 'Support Group',
+            note: 'Stable, Consistent',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.18,
+          ),
+        ];
+
+        initialJournals = [
+          JournalEntry(
+            createdAt: now.subtract(const Duration(hours: 2)),
+            content: 'Lately I feel like I am running on empty constantly. Sleep is elusive and my brain won\'t turn off at 3 AM.',
+            summary: 'Feel like running on empty constantly. Sleep is elusive and mind racing at 3 AM.',
+            sharedWithPsychologist: true,
+          ),
+          JournalEntry(
+            createdAt: now.subtract(const Duration(days: 1)),
+            content: 'Overthinking everything Jordan said today. Felt my heart racing at my desk for no good reason. Tried a quick breathing exercise.',
+            summary: 'Overthinking social interactions. Felt chest tightness at desk and tried breathing exercise.',
+            sharedWithPsychologist: true,
+          ),
+        ];
+      } else if (email == 'alex.m@example.com') {
+        initialAppointments = [
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Alex Morgan',
+            patientEmail: 'alex.m@example.com',
+            startsAt: now.subtract(const Duration(hours: 2)),
+            type: 'Therapy',
+            note: 'Burnout Risk, Sleep Issues, High Stress',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.82,
+          ),
+        ];
+        initialJournals = [
+          JournalEntry(
+            createdAt: now.subtract(const Duration(hours: 2)),
+            content: 'Lately I feel like I am running on empty constantly. Sleep is elusive and my brain won\'t turn off at 3 AM.',
+            summary: 'Feel like running on empty constantly. Sleep is elusive and mind racing at 3 AM.',
+            sharedWithPsychologist: true,
+          ),
+        ];
+      } else if (email == 'casey.k@example.com') {
+        initialAppointments = [
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Casey Kim',
+            patientEmail: 'casey.k@example.com',
+            startsAt: now.subtract(const Duration(hours: 5)),
+            type: 'Consultation',
+            note: 'Work Stress, Fatigue',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.61,
+          ),
+        ];
+      } else if (email == 'jordan.l@example.com') {
+        initialAppointments = [
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Jordan Lee',
+            patientEmail: 'jordan.l@example.com',
+            startsAt: now.subtract(const Duration(days: 1)),
+            type: 'CBT Session',
+            note: 'Anxiety, Rumination',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.54,
+          ),
+        ];
+        initialJournals = [
+          JournalEntry(
+            createdAt: now.subtract(const Duration(days: 1)),
+            content: 'Overthinking everything Jordan said today. Felt my heart racing at my desk for no good reason. Tried a quick breathing exercise.',
+            summary: 'Overthinking social interactions. Felt chest tightness at desk and tried breathing exercise.',
+            sharedWithPsychologist: true,
+          ),
+        ];
+      } else if (email == 'taylor.p@example.com') {
+        initialAppointments = [
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Taylor Pham',
+            patientEmail: 'taylor.p@example.com',
+            startsAt: now.subtract(const Duration(minutes: 30)),
+            type: 'General Check-up',
+            note: 'Stable, Positive',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.24,
+          ),
+        ];
+      } else if (email == 'sam.r@example.com') {
+        initialAppointments = [
+          Appointment(
+            psychologistEmail: demoPsychologistEmail,
+            psychologistName: 'Dr. Panipuri',
+            patientName: 'Sam Rivera',
+            patientEmail: 'sam.r@example.com',
+            startsAt: now.subtract(const Duration(hours: 3)),
+            type: 'Support Group',
+            note: 'Stable, Consistent',
+            status: AppointmentStatus.confirmed,
+            driftIndex: 0.18,
+          ),
+        ];
+      }
+
+      state = AppSession(
+        onboardingComplete: true,
+        appLockSet: state.appLockSet,
+        lockPin: state.lockPin,
+        lockTimeoutMinutes: state.lockTimeoutMinutes,
+        isLocked: false,
+        profile: AppProfile(
+          role: defaultRole,
+          name: defaultName,
+          email: email,
+          driftIndex: (email == 'alex.m@example.com') ? 0.82 :
+                      (email == 'casey.k@example.com') ? 0.61 :
+                      (email == 'jordan.l@example.com') ? 0.54 :
+                      (email == 'taylor.p@example.com') ? 0.24 :
+                      (email == 'sam.r@example.com') ? 0.18 : 0.0,
+          status: PatientStatus.active,
+        ),
+        moodEntries: [],
+        typingHistory: [],
+        breathingHistory: [],
+        driftHistory: [],
+        adherenceHistory: [],
+        journalEntries: initialJournals,
+        appointments: initialAppointments,
+        prescriptions: [],
+        clinicalNotes: [],
+      );
+    }
+    await _store.setActiveUser(email);
+    await _persist();
+  }
+
   void addJournalEntry(String content) {
     final entry = JournalEntry(
       createdAt: DateTime.now(),
@@ -690,7 +1289,7 @@ class AppSessionNotifier extends StateNotifier<AppSession> {
     );
     final updated = [...state.journalEntries, entry];
     state = state.copyWith(journalEntries: updated);
-    _persist();
+    recalculateDriftIndex('Journal Entry');
   }
 
   void updateJournalEntry(JournalEntry entry) {
@@ -701,7 +1300,15 @@ class AppSessionNotifier extends StateNotifier<AppSession> {
       return e;
     }).toList();
     state = state.copyWith(journalEntries: updated);
-    _persist();
+    recalculateDriftIndex('Journal Entry');
+  }
+
+  void removeJournalEntry(JournalEntry entry) {
+    final updated = state.journalEntries
+        .where((e) => e.createdAt != entry.createdAt)
+        .toList();
+    state = state.copyWith(journalEntries: updated);
+    recalculateDriftIndex('Journal Entry Removed');
   }
 
   void addMessage(ChatMessage message) {
@@ -756,7 +1363,35 @@ class AppSessionNotifier extends StateNotifier<AppSession> {
       currentStreak: streaks['current']!,
       longestStreak: streaks['longest']!,
     );
+    recalculateDriftIndex('Mood Check-in');
+  }
+
+  void addTypingHistoryEntry(TypingHistoryEntry entry) {
+    state = state.copyWith(typingHistory: [...state.typingHistory, entry]);
+    recalculateDriftIndex('Typing Stress Test');
+  }
+
+  void addBreathingHistoryEntry(BreathingHistoryEntry entry) {
+    state = state.copyWith(breathingHistory: [...state.breathingHistory, entry]);
+    recalculateDriftIndex('Breathing Session');
+  }
+
+  void logMedicationAdherence(AdherenceRecord record) {
+    state = state.copyWith(adherenceHistory: [...state.adherenceHistory, record]);
+    recalculateDriftIndex('Medication Compliance');
+  }
+
+  void addClinicalNote(ClinicalNote note) {
+    state = state.copyWith(clinicalNotes: [...state.clinicalNotes, note]);
     _persist();
+  }
+
+  void updatePatientStatus(PatientStatus status) {
+    final profile = state.profile;
+    if (profile != null) {
+      state = state.copyWith(profile: profile.copyWith(status: status));
+      _persist();
+    }
   }
 
   Map<String, int> _calculateStreaks(List<MoodEntry> entries) {

@@ -1,14 +1,14 @@
 part of '../screens/appointments_screen.dart';
 
-class _PrescriptionCard extends StatelessWidget {
+class _PrescriptionCard extends ConsumerWidget {
   final Prescription prescription;
 
   const _PrescriptionCard({required this.prescription});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => _showPrescriptionDetails(context),
+      onTap: () => _showPrescriptionDetails(context, ref),
       child: SmoothCard(
         borderRadius: 20,
         backgroundColor:
@@ -34,17 +34,26 @@ class _PrescriptionCard extends StatelessWidget {
                   Text(
                     'From ${prescription.prescribedByName}',
                     style: AppTypography.labelLarge,
+                    softWrap: true,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     prescription.medicines.take(2).join(', ') +
                         (prescription.medicines.length > 2 ? '...' : ''),
                     style: AppTypography.bodySmall,
+                    softWrap: true,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Issued ${prescription.createdAt.day}/${prescription.createdAt.month}/${prescription.createdAt.year}',
                     style: AppTypography.caption,
+                    softWrap: true,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -56,7 +65,7 @@ class _PrescriptionCard extends StatelessWidget {
     );
   }
 
-  void _showPrescriptionDetails(BuildContext context) {
+  void _showPrescriptionDetails(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -77,18 +86,50 @@ class _PrescriptionCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Medicines:',
+                'Medicines & Log Adherence:',
                 style: AppTypography.labelMedium,
               ),
               const SizedBox(height: 4),
               ...prescription.medicines.map((medicine) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.only(bottom: 8),
                     child: Row(
                       children: [
                         const Icon(Icons.medication,
                             size: 16, color: AppColors.success),
                         const SizedBox(width: 8),
-                        Text(medicine, style: AppTypography.bodyMedium),
+                        Expanded(
+                          child: Text(medicine, style: AppTypography.bodyMedium),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
+                          tooltip: 'Log taken',
+                          onPressed: () {
+                            ref.read(appSessionProvider.notifier).logMedicationAdherence(
+                              AdherenceRecord(
+                                timestamp: DateTime.now(),
+                                medicineName: medicine,
+                                taken: true,
+                              ),
+                            );
+                            Navigator.of(context).pop();
+                            AppSnackBar.showSuccess(context, message: 'Logged: Took $medicine');
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.highlight_off, color: Colors.red, size: 20),
+                          tooltip: 'Log missed',
+                          onPressed: () {
+                            ref.read(appSessionProvider.notifier).logMedicationAdherence(
+                              AdherenceRecord(
+                                timestamp: DateTime.now(),
+                                medicineName: medicine,
+                                taken: false,
+                              ),
+                            );
+                            Navigator.of(context).pop();
+                            AppSnackBar.showInfo(context, title: 'Missed Medication', message: 'Logged: Missed $medicine');
+                          },
+                        ),
                       ],
                     ),
                   )),
