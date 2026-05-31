@@ -14,6 +14,8 @@ import '../../../calmora/presentation/screens/calmora_ai_sheet.dart';
 import '../../../mood_log/presentation/screens/mood_log_screen.dart';
 import 'stats_screen.dart';
 import 'weekly_report_screen.dart';
+import '../../../../core/services/ai_service.dart';
+import '../../../../core/services/ai_settings.dart';
 
 part '../widgets/section_label.dart';
 part '../widgets/mood_bar.dart';
@@ -30,6 +32,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
+  String? _dailyInsight;
 
   @override
   void initState() {
@@ -39,6 +42,55 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       vsync: this,
     );
     _animationController.forward();
+    Future.microtask(() => _loadOrGenerateInsight());
+  }
+
+  Future<void> _loadOrGenerateInsight() async {
+    final session = ref.read(appSessionProvider);
+    final profile = session.profile;
+    if (profile == null) return;
+
+    final currentDrift = profile.driftIndex;
+    final avgMood = session.moodEntries.isEmpty 
+        ? 3.0 
+        : session.moodEntries.map((e) => e.value).reduce((a, b) => a + b) / session.moodEntries.length;
+    
+    setState(() => _isRefreshingInsight = true);
+    try {
+      final manager = ref.read(aiManagerProvider);
+      final prompt = '''
+You are Calmora, a warm, supportive mental wellness assistant.
+Provide a single-sentence daily mental health insight for the user based on their current stats.
+Keep it extremely concise (max 20 words), practical, and highly personalized.
+
+Current Metrics:
+- Drift Index: ${currentDrift.toStringAsFixed(2)}
+- Average Mood: ${avgMood.toStringAsFixed(1)}/5
+- Guided Breathing Sessions: ${session.breathingHistory.length} completed this week
+- Medication Adherence: ${session.adherenceHistory.length} logs recorded
+''';
+      final response = await manager.generate(prompt);
+      if (mounted) {
+        setState(() {
+          _dailyInsight = response.trim();
+          _isRefreshingInsight = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          // Fallback insight based on drift
+          if (currentDrift < 0.35) {
+            _dailyInsight = 'Your emotional coherence is stable. Keep prioritizing consistency in your wellness rituals today.';
+          } else if (currentDrift < 0.65) {
+            _dailyInsight = 'A slight decline in coherence has been detected. Consider taking a 2-minute physiological sigh break.';
+          } else {
+            _dailyInsight = 'Your stress markers are elevated today. Please slow down and practice a deep guided box breathing cycle.';
+          }
+          _isRefreshingInsight = false;
+        });
+      }
+    }
   }
 
   @override
@@ -111,6 +163,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         ),
         child: FloatingActionButton.extended(
           onPressed: () {
+            if (profile?.status == PatientStatus.completed) {
+              AppSnackBar.showInfo(context, message: 'Treatment Completed. Active logging is locked.');
+              return;
+            }
             Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const MoodLogScreen(),
@@ -206,6 +262,45 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   children: [
                     _buildScrollableHeader(context, profile, scheme),
                 const SizedBox(height: 16),
+                if (profile?.role == UserRole.patient && profile?.status == PatientStatus.completed) ...[
+                  SmoothCard(
+                    borderRadius: 20,
+                    padding: const EdgeInsets.all(18),
+                    backgroundColor: Colors.teal.withOpacity(0.12),
+                    borderColor: Colors.teal.withOpacity(0.3),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.check_circle_rounded, color: Colors.teal, size: 24),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Treatment Completed',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: theme.brightness == Brightness.dark ? Colors.white : Colors.black,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Your primary therapist has marked your case as completed. All active logging, journaling, and appointment actions are locked. However, all your historical logs, reports, and insights remain fully accessible to you.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87,
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 if (profile?.role == UserRole.patient) ...[
                   _AiHeroCard(onTap: () => _showAiChat(context)),
                   const SizedBox(height: 18),
@@ -511,28 +606,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   }
 
   // ── Helper: Calculate Drift For A Specific Day of the current week ──
-  double _driftForDay(List<MoodEntry> entries, double currentDrift, int dayIndex) {
+  double _driftForDay(List<DriftHistoryEntry> history, double currentDrift, int dayIndex) {
     final now = DateTime.now();
     final weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
     final day = weekStart.add(Duration(days: dayIndex));
     
-    final dayEntries = entries.where((entry) =>
-      entry.createdAt.year == day.year &&
-      entry.createdAt.month == day.month &&
-      entry.createdAt.day == day.day,
+    final dayEntries = history.where((entry) =>
+      entry.timestamp.year == day.year &&
+      entry.timestamp.month == day.month &&
+      entry.timestamp.day == day.day,
     ).toList();
 
     if (dayEntries.isEmpty) {
-      final baseDrift = currentDrift * 100.0;
-      
-      // Deterministic beautiful variation to keep chart full and organic
-      final variations = [2.0, -1.5, 4.0, 1.5, 5.0, -3.0, 0.0];
-      return (baseDrift + variations[dayIndex % 7]).clamp(5.0, 95.0);
+      if (history.isEmpty) {
+        return -1.0;
+      }
+      return currentDrift * 100.0;
     }
 
-    final averageMood = dayEntries.map((e) => e.value).reduce((a, b) => a + b) / dayEntries.length;
-    final computedDrift = 90.0 - (averageMood - 1.0) * 18.0;
-    return computedDrift.clamp(5.0, 98.0);
+    final averageDrift = dayEntries.map((e) => e.driftValue * 100.0).reduce((a, b) => a + b) / dayEntries.length;
+    return averageDrift.clamp(0.0, 100.0);
   }
 
   // ── Helper: Legend Item Builder ──
@@ -808,7 +901,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final currentDrift = profile?.driftIndex ?? 0.18;
-    final List<double> driftValues = List.generate(7, (i) => _driftForDay(session.moodEntries, currentDrift, i));
+    final List<double> driftValues = List.generate(7, (i) => _driftForDay(session.driftHistory, currentDrift, i));
 
     Color activeColor;
     if (currentDrift < 0.35) {
@@ -1106,6 +1199,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   Widget _buildAiDailyInsight(BuildContext context, ColorScheme scheme) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    final isGeminiConfigured = ref.watch(geminiConfiguredProvider);
+    final ollamaEndpointAsync = ref.watch(ollamaEndpointProvider);
+    final ollamaEndpoint = ollamaEndpointAsync.asData?.value;
+    final isOllamaConfigured = ollamaEndpoint != null && ollamaEndpoint.isNotEmpty;
+    final hasAnyProvider = isGeminiConfigured || isOllamaConfigured;
+
+    final activeProviderText = isGeminiConfigured 
+        ? 'Gemini Active' 
+        : (isOllamaConfigured ? 'Ollama Active' : 'Offline Mode');
+
     return SmoothCard(
       backgroundColor: scheme.surface.withValues(alpha: 0.72),
       borderColor: scheme.primary.withValues(alpha: isDark ? 0.22 : 0.15),
@@ -1155,16 +1259,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                           const SizedBox(height: 3),
                           Row(
                             children: [
-                              const Icon(
-                                Icons.wifi_off_rounded,
-                                color: Color(0xFFF59E0B),
+                              Icon(
+                                hasAnyProvider ? Icons.auto_awesome : Icons.wifi_off_rounded,
+                                color: hasAnyProvider ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
                                 size: 14,
                               ),
                               const SizedBox(width: 4),
-                              const Text(
-                                'Smart fallback',
+                              Text(
+                                activeProviderText,
                                 style: TextStyle(
-                                  color: Color(0xFFF59E0B),
+                                  color: hasAnyProvider ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -1183,14 +1287,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 onPressed: _isRefreshingInsight
                     ? null
                     : () async {
-                        setState(() => _isRefreshingInsight = true);
-                        await Future.delayed(const Duration(milliseconds: 1200));
+                        await _loadOrGenerateInsight();
                         if (mounted) {
-                          setState(() => _isRefreshingInsight = false);
                           AppSnackBar.showSuccess(
                             context,
                             title: 'Insights Updated',
-                            message: 'AI Daily Insights compiled via smart fallback successfully.',
+                            message: 'AI Daily Insights compiled successfully.',
                           );
                         }
                       },
@@ -1244,33 +1346,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
-              'Add an Ollama model or Gemini key to get personalised AI insights',
+              _dailyInsight ?? (hasAnyProvider
+                  ? 'Compiling daily insight...'
+                  : 'Add an Ollama model or Gemini key to get personalised AI insights'),
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: isDark ? Colors.white.withOpacity(0.32) : scheme.onSurface.withOpacity(0.48),
-                fontSize: 13.5,
-                fontWeight: FontWeight.w500,
-                height: 1.4,
+                color: isDark ? Colors.white.withOpacity(0.85) : scheme.onSurface,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                height: 1.45,
               ),
             ),
           ),
           const SizedBox(height: 14),
 
-          // Environment code tag pill
-          const SizedBox(height: 10),
-          SmoothButton(
-            onPressed: () {
-              ref.read(selectedTabProvider.notifier).state = 4; // Settings tab
-              AppSnackBar.showInfo(
-                context,
-                title: 'AI Settings',
-                message: 'Scroll down to NFC/Lock or AI options to configure.',
-              );
-            },
-            icon: const Icon(Icons.settings_suggest_rounded, size: 16, color: Colors.white),
-            label: 'Configure AI Model',
-            backgroundColor: scheme.primary,
-          ),
+          // Configure button - ONLY shown when no provider exists
+          if (!hasAnyProvider) ...[
+            const SizedBox(height: 10),
+            SmoothButton(
+              onPressed: () {
+                ref.read(selectedTabProvider.notifier).state = 4; // Settings tab
+                AppSnackBar.showInfo(
+                  context,
+                  title: 'AI Settings',
+                  message: 'Scroll down to NFC/Lock or AI options to configure.',
+                );
+              },
+              icon: const Icon(Icons.settings_suggest_rounded, size: 16, color: Colors.white),
+              label: 'Configure AI Model',
+              backgroundColor: scheme.primary,
+            ),
+          ],
         ],
       ),
     );
@@ -1636,9 +1742,32 @@ class _TrendLinePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0 || size.height <= 0) return;
 
-    // Clean and validate input values against NaN or Infinities
     final cleanValues = values.map((val) => val.isNaN || val.isInfinite ? 50.0 : val).toList();
     if (cleanValues.isEmpty) return;
+
+    final allEmpty = cleanValues.every((val) => val < 0);
+    if (allEmpty) {
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: 'No logs recorded. Keep using Calmora to populate stats.',
+          style: TextStyle(
+            color: isDark ? Colors.white38 : Colors.black45,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout(maxWidth: size.width - 20);
+      textPainter.paint(
+        canvas,
+        Offset(
+          (size.width - textPainter.width) / 2,
+          (size.height - textPainter.height) / 2,
+        ),
+      );
+      return;
+    }
 
     final lineShader = const LinearGradient(
       begin: Alignment.bottomCenter,

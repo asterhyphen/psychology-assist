@@ -104,6 +104,10 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
 
   Future<void> _bookSlot(_DoctorSlot slot) async {
     final profile = ref.read(appSessionProvider).profile;
+    if (profile?.status == PatientStatus.completed) {
+      AppSnackBar.showInfo(context, message: 'Treatment Completed. Booking new appointments is locked.');
+      return;
+    }
     _noteController.clear();
 
     final confirmed = await showGeneralDialog<bool>(
@@ -277,7 +281,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
         startsAt: startsAt,
         type: slot.type == 'In-Person' ? 'In-person visit' : 'Video session',
         note: _noteController.text.trim(),
-        confirmed: false,
+        status: AppointmentStatus.pending,
         driftIndex: profile?.driftIndex ?? 0.0,
       ),
     );
@@ -304,7 +308,9 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
     final driftPercent = (currentDrift * 100).toInt();
 
     final appointments = session.appointments
-        .where((appointment) => appointment.startsAt.isAfter(DateTime.now()))
+        .where((appointment) =>
+            appointment.startsAt.isAfter(DateTime.now()) &&
+            appointment.status != AppointmentStatus.cancelled)
         .toList()
         ..sort((a, b) => b.driftIndex.compareTo(a.driftIndex));
 

@@ -114,11 +114,14 @@ class _AppointmentCard extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Status: ${appointment.confirmed ? 'Confirmed' : 'Pending'}',
+                'Status: ${appointment.status.name.toUpperCase()}',
                 style: AppTypography.bodyMedium.copyWith(
-                  color: appointment.confirmed
+                  color: appointment.status == AppointmentStatus.confirmed ||
+                          appointment.status == AppointmentStatus.completed
                       ? AppColors.success
-                      : AppColors.warning,
+                      : appointment.status == AppointmentStatus.cancelled
+                          ? Colors.red
+                          : AppColors.warning,
                 ),
               ),
               if (appointment.note.isNotEmpty) ...[
@@ -137,7 +140,7 @@ class _AppointmentCard extends ConsumerWidget {
           ),
         ),
         actions: [
-          if (isPsychologist && !appointment.confirmed)
+          if (isPsychologist && appointment.status == AppointmentStatus.pending)
             TextButton(
               onPressed: () {
                 ref
@@ -146,6 +149,38 @@ class _AppointmentCard extends ConsumerWidget {
                 Navigator.of(context).pop();
               },
               child: const Text('Approve'),
+            ),
+          if (isPsychologist && appointment.status == AppointmentStatus.confirmed)
+            TextButton(
+              onPressed: () {
+                ref
+                    .read(appSessionProvider.notifier)
+                    .completeAppointment(appointment);
+                Navigator.of(context).pop();
+                AppSnackBar.showSuccess(context, message: 'Appointment marked as completed.');
+              },
+              child: const Text('Complete Session'),
+            ),
+          if (!isPsychologist &&
+              appointment.status != AppointmentStatus.cancelled &&
+              appointment.status != AppointmentStatus.completed)
+            TextButton(
+              onPressed: () {
+                final timeDiff = appointment.startsAt.difference(DateTime.now());
+                final isLate = timeDiff.inHours < 24;
+                ref.read(appSessionProvider.notifier).cancelAppointment(appointment);
+                Navigator.of(context).pop();
+                if (isLate) {
+                  AppSnackBar.showInfo(context,
+                      title: 'Warning',
+                      message: 'Cancelled with <24h notice. Drift Index increased.');
+                } else {
+                  AppSnackBar.showSuccess(context,
+                      message: 'Appointment cancelled successfully.');
+                }
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Cancel Appointment'),
             ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

@@ -219,20 +219,7 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
   }
 
   void _updateWritingDrift(String notes) {
-    final profile = ref.read(appSessionProvider).profile;
-    if (profile == null) return;
-
-    double stressFactor = 0.0;
-    if (_backspaceCount > 10) stressFactor += 0.1;
-    if (_backspaceCount > 20) stressFactor += 0.2;
-    if (notes.length < 50 && _backspaceCount > 5) stressFactor += 0.2;
-
-    if (stressFactor > 0) {
-      final newDriftIndex = (profile.driftIndex + stressFactor).clamp(0.0, 1.0);
-      ref.read(appSessionProvider.notifier).updateProfile(
-            profile.copyWith(driftIndex: newDriftIndex),
-          );
-    }
+    // Deprecated: driftIndex is recalculated centrally inside AppSessionNotifier when journal is saved
   }
 
   void _startNewNoteWithoutSheet() {
@@ -247,6 +234,11 @@ class _JournalingScreenState extends ConsumerState<JournalingScreen> {
   }
 
   void _openEditorSheet({JournalEntry? entry}) {
+    final profile = ref.read(appSessionProvider).profile;
+    if (profile?.status == PatientStatus.completed) {
+      AppSnackBar.showInfo(context, message: 'Treatment Completed. Writing wellness journals is locked.');
+      return;
+    }
     _autosaveDebounceTimer?.cancel();
     if (entry != null) {
       setState(() {

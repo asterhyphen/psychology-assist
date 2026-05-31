@@ -89,6 +89,12 @@ class _BreathingExerciseScreenState extends ConsumerState<BreathingExerciseScree
   }
 
   void _startExercise() {
+    final profile = ref.read(appSessionProvider).profile;
+    if (profile?.status == PatientStatus.completed) {
+      AppSnackBar.showInfo(context, message: 'Treatment Completed. Breathing coach is locked.');
+      return;
+    }
+
     final technique = _techniques[_selectedTechniqueIndex];
     setState(() {
       _isRunning = true;
@@ -113,6 +119,25 @@ class _BreathingExerciseScreenState extends ConsumerState<BreathingExerciseScree
   void _stopExercise() {
     _timer?.cancel();
     _scaleController.animateTo(1.0, duration: const Duration(milliseconds: 360));
+    
+    if (_cycleCount > 0) {
+      final activeTechnique = _techniques[_selectedTechniqueIndex];
+      int phaseTotal = activeTechnique.inhaleSeconds +
+          activeTechnique.holdSeconds1 +
+          activeTechnique.exhaleSeconds +
+          activeTechnique.holdSeconds2;
+      int durationSec = _cycleCount * phaseTotal;
+
+      ref.read(appSessionProvider.notifier).addBreathingHistoryEntry(
+            BreathingHistoryEntry(
+              timestamp: DateTime.now(),
+              technique: activeTechnique.name,
+              durationSeconds: durationSec,
+              cyclesCompleted: _cycleCount,
+            ),
+          );
+    }
+
     setState(() {
       _isRunning = false;
       _currentPhaseIndex = 0;

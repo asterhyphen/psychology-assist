@@ -1,9 +1,12 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/services/ollama_service.dart';
+import '../../../../core/services/ai_service.dart';
+import '../../../../core/services/ai_settings.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 
 class CalmoraAiSheet extends ConsumerStatefulWidget {
   const CalmoraAiSheet({super.key});
@@ -14,13 +17,11 @@ class CalmoraAiSheet extends ConsumerStatefulWidget {
 
 class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
   final _controller = TextEditingController();
-  final _endpoint = Uri.parse('http://10.16.209.73:8000/chat');
   String _chatHistory =
       'CalmoraAI: Hello! I am CalmoraAI, your privacy-focused assistant. Let\'s explore what\'s on your mind together.\n\n';
   String _aiContext =
       'You are Calmora, a concise mental wellness assistant. Use Cognitive Behavioral Therapy (CBT) guided responses. Focus on cognitive restructuring, identifying cognitive distortions, and gentle behavioral activation. Be warm, practical, non-clinical, and suggest emergency help for crisis risk.\n\n';
   bool _loading = false;
-  final String _selectedModel = OllamaService.defaultQuantizedModel;
 
   @override
   void dispose() {
@@ -28,16 +29,9 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
     super.dispose();
   }
 
-  Future<String> _queryOllama(String prompt) async {
-    final ai = OllamaService(endpoint: _endpoint);
-    return await ai.summarize(prompt: prompt);
-  }
-
   Future<void> _send() async {
     final text = _controller.text.trim();
-    if (text.isEmpty || _loading) {
-      return;
-    }
+    if (text.isEmpty || _loading) return;
 
     setState(() {
       _loading = true;
@@ -48,7 +42,24 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
 
     try {
       _aiContext += 'User: $text\nCalmoraAI:';
-      final response = await _queryOllama(_aiContext);
+      final manager = ref.read(aiManagerProvider);
+      if (kDebugMode) {
+        debugPrint(
+            'CalmoraAI: selected mode=${ref.read(aiModeProvider)}, primary=${manager.primary.runtimeType}, secondary=${manager.secondary.runtimeType}, allowFallback=${manager.allowFallback}, primaryBackend=${manager.primaryBackend}');
+      }
+      String response;
+      try {
+        response = await manager.generate(_aiContext);
+      } catch (e, st) {
+        if (kDebugMode) {
+          debugPrint(
+              'CalmoraAI: manager.generate exception=${e.runtimeType}: ${e.toString()}');
+          debugPrint(
+              'CalmoraAI: provider primary=${manager.primary.runtimeType} secondary=${manager.secondary.runtimeType} allowFallback=${manager.allowFallback}');
+          debugPrint('CalmoraAI: stack=${st.toString()}');
+        }
+        response = '';
+      }
 
       final replyText = response.trim().isEmpty
           ? 'I could not generate a useful response. Try again in a moment.'
@@ -57,17 +68,29 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
       _aiContext += ' $replyText\n\n';
       setState(() => _chatHistory += 'CalmoraAI: $replyText\n\n');
     } catch (_) {
-      final mockResponse = _generateMockResponse(text);
-      final errorNote =
-          '(Quantized model is configured for $_selectedModel, but Ollama is not reachable. Start Ollama on port 8000 or update the endpoint.)';
-      final fullReply = '$mockResponse\n\n$errorNote';
+      final mode = ref.read(aiModeProvider);
+      if (mode == AiMode.auto) {
+        // Auto: preserve UX with local fallback
+        final mockResponse = _generateMockResponse(text);
+        final errorNote = '(AI backends unreachable. Using local fallback.)';
+        final fullReply = '$mockResponse\n\n$errorNote';
 
-      _aiContext += ' $fullReply\n\n';
-      setState(() => _chatHistory += 'CalmoraAI: $fullReply\n\n');
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
+        _aiContext += ' $fullReply\n\n';
+        setState(() => _chatHistory += 'CalmoraAI: $fullReply\n\n');
+      } else {
+        // Manual mode: inform user the selected provider is unavailable
+        final providerName =
+            mode == AiMode.calmora ? 'CalmoraAI (Ollama)' : 'Gemini';
+        final errorReply =
+            '$providerName is currently unavailable. Please check your settings or try Auto mode.';
+        _aiContext += ' $errorReply\n\n';
+        setState(() => _chatHistory += 'CalmoraAI: $errorReply\n\n');
+        AppSnackBar.showInfo(context,
+            title: 'Provider Unavailable',
+            message: '$providerName is not reachable.');
       }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -96,7 +119,8 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
 
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 14, 14, 18),
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
@@ -206,25 +230,26 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                         ],
                       ),
                       const SizedBox(height: 18),
-                      // Beautiful Scrollable Message Panel
                       Container(
                         width: double.infinity,
                         constraints: const BoxConstraints(
                           minHeight: 180,
                           maxHeight: 320,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 12),
                         decoration: BoxDecoration(
                           color: isDark
                               ? const Color(0xFF131A26).withValues(alpha: 0.6)
-                              : scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                              : scheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(22),
                           border: Border.all(
                             color: scheme.primary.withValues(alpha: 0.12),
                           ),
                         ),
                         child: SingleChildScrollView(
-                          reverse: true, // Auto scroll to bottom
+                          reverse: true,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -236,21 +261,26 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                                 final isUser = bubble.startsWith('You:');
                                 final cleanContent = isUser
                                     ? bubble.replaceFirst('You:', '').trim()
-                                    : bubble.replaceFirst('CalmoraAI:', '').trim();
+                                    : bubble
+                                        .replaceFirst('CalmoraAI:', '')
+                                        .trim();
 
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 6),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 6),
                                   child: Row(
                                     mainAxisAlignment: isUser
                                         ? MainAxisAlignment.end
                                         : MainAxisAlignment.start,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       if (!isUser) ...[
                                         Container(
                                           padding: const EdgeInsets.all(6),
                                           decoration: BoxDecoration(
-                                            color: scheme.primary.withValues(alpha: 0.16),
+                                            color: scheme.primary
+                                                .withValues(alpha: 0.16),
                                             shape: BoxShape.circle,
                                           ),
                                           child: Icon(
@@ -269,13 +299,16 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                                           ),
                                           decoration: BoxDecoration(
                                             color: isUser
-                                                ? scheme.secondary.withValues(alpha: 0.14)
+                                                ? scheme.secondary
+                                                    .withValues(alpha: 0.14)
                                                 : scheme.primary.withValues(
                                                     alpha: isDark ? 0.18 : 0.08,
                                                   ),
                                             borderRadius: BorderRadius.only(
-                                              topLeft: const Radius.circular(16),
-                                              topRight: const Radius.circular(16),
+                                              topLeft:
+                                                  const Radius.circular(16),
+                                              topRight:
+                                                  const Radius.circular(16),
                                               bottomLeft: isUser
                                                   ? const Radius.circular(16)
                                                   : const Radius.circular(4),
@@ -285,13 +318,16 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                                             ),
                                             border: Border.all(
                                               color: isUser
-                                                  ? scheme.secondary.withValues(alpha: 0.22)
-                                                  : scheme.primary.withValues(alpha: 0.16),
+                                                  ? scheme.secondary
+                                                      .withValues(alpha: 0.22)
+                                                  : scheme.primary
+                                                      .withValues(alpha: 0.16),
                                             ),
                                           ),
                                           child: Text(
                                             cleanContent,
-                                            style: theme.textTheme.bodyMedium?.copyWith(
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
                                               color: scheme.onSurface,
                                               height: 1.45,
                                               fontWeight: FontWeight.w600,
@@ -304,7 +340,8 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                                         Container(
                                           padding: const EdgeInsets.all(6),
                                           decoration: BoxDecoration(
-                                            color: scheme.secondary.withValues(alpha: 0.16),
+                                            color: scheme.secondary
+                                                .withValues(alpha: 0.16),
                                             shape: BoxShape.circle,
                                           ),
                                           child: Icon(
@@ -326,7 +363,8 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                                     Container(
                                       padding: const EdgeInsets.all(6),
                                       decoration: BoxDecoration(
-                                        color: scheme.primary.withValues(alpha: 0.16),
+                                        color: scheme.primary
+                                            .withValues(alpha: 0.16),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
@@ -352,7 +390,8 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                                           bottomRight: Radius.circular(16),
                                         ),
                                         border: Border.all(
-                                          color: scheme.primary.withValues(alpha: 0.16),
+                                          color: scheme.primary
+                                              .withValues(alpha: 0.16),
                                         ),
                                       ),
                                       child: Row(
@@ -364,13 +403,15 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2.0,
                                               valueColor:
-                                                  AlwaysStoppedAnimation(Color(0xFF0FA58A)),
+                                                  AlwaysStoppedAnimation(
+                                                      Color(0xFF0FA58A)),
                                             ),
                                           ),
                                           const SizedBox(width: 10),
                                           Text(
                                             'Calmora is reflecting...',
-                                            style: theme.textTheme.bodySmall?.copyWith(
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
                                               color: scheme.primary,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -386,7 +427,6 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      // Premium Glowing Input field
                       Container(
                         decoration: BoxDecoration(
                           color: scheme.surface.withValues(alpha: 0.96),
@@ -435,7 +475,8 @@ class _CalmoraAiSheetState extends ConsumerState<CalmoraAiSheet> {
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: scheme.primary.withValues(alpha: 0.35),
+                                        color: scheme.primary
+                                            .withValues(alpha: 0.35),
                                         blurRadius: 6,
                                       ),
                                     ],

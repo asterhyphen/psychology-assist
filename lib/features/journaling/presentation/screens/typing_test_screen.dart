@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../app/app_state.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/smooth_widgets.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 
 class TypingTestScreen extends ConsumerStatefulWidget {
   const TypingTestScreen({super.key});
@@ -72,6 +73,14 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
 
   void _onTextChanged() {
     if (_isFinished) return;
+
+    final profile = ref.read(appSessionProvider).profile;
+    if (profile?.status == PatientStatus.completed) {
+      _controller.clear();
+      _focusNode.unfocus();
+      AppSnackBar.showInfo(context, message: 'Treatment Completed. Typing stress test is locked.');
+      return;
+    }
 
     final text = _controller.text;
     if (_startTime == null && _normalize(text).isNotEmpty) {
@@ -141,9 +150,13 @@ class _TypingTestScreenState extends ConsumerState<TypingTestScreen>
 
     final profile = ref.read(appSessionProvider).profile;
     if (profile != null) {
-      ref.read(appSessionProvider.notifier).updateProfile(
-            profile.copyWith(
-              driftIndex: (profile.driftIndex + stressScore) / 2.0,
+      ref.read(appSessionProvider.notifier).addTypingHistoryEntry(
+            TypingHistoryEntry(
+              timestamp: DateTime.now(),
+              wpm: result.wpm,
+              accuracy: result.accuracy,
+              corrections: result.corrections,
+              stressScore: stressScore,
             ),
           );
     }

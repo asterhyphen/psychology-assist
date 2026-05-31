@@ -75,7 +75,7 @@ Future<AppSession> _loadInitialSession(AppSessionStore store) async {
             startsAt: now.subtract(const Duration(hours: 2)),
             type: 'Therapy',
             note: 'Burnout Risk, Sleep Issues, High Stress',
-            confirmed: true,
+            status: AppointmentStatus.confirmed,
             driftIndex: 0.82,
           ),
           Appointment(
@@ -86,7 +86,7 @@ Future<AppSession> _loadInitialSession(AppSessionStore store) async {
             startsAt: now.subtract(const Duration(hours: 5)),
             type: 'Consultation',
             note: 'Work Stress, Fatigue',
-            confirmed: true,
+            status: AppointmentStatus.confirmed,
             driftIndex: 0.61,
           ),
           Appointment(
@@ -97,7 +97,7 @@ Future<AppSession> _loadInitialSession(AppSessionStore store) async {
             startsAt: now.subtract(const Duration(days: 1)),
             type: 'CBT Session',
             note: 'Anxiety, Rumination',
-            confirmed: true,
+            status: AppointmentStatus.confirmed,
             driftIndex: 0.54,
           ),
           Appointment(
@@ -108,7 +108,7 @@ Future<AppSession> _loadInitialSession(AppSessionStore store) async {
             startsAt: now.subtract(const Duration(minutes: 30)),
             type: 'General Check-up',
             note: 'Stable, Positive',
-            confirmed: true,
+            status: AppointmentStatus.confirmed,
             driftIndex: 0.24,
           ),
           Appointment(
@@ -119,7 +119,7 @@ Future<AppSession> _loadInitialSession(AppSessionStore store) async {
             startsAt: now.subtract(const Duration(hours: 3)),
             type: 'Support Group',
             note: 'Stable, Consistent',
-            confirmed: true,
+            status: AppointmentStatus.confirmed,
             driftIndex: 0.18,
           ),
         ],

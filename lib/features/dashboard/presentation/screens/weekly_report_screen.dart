@@ -1,11 +1,17 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../app/app_state.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/smooth_widgets.dart';
 import '../../../../core/widgets/app_snackbar.dart';
+import '../../../../core/services/ai_service.dart';
 
 class WeeklyReportScreen extends ConsumerStatefulWidget {
   const WeeklyReportScreen({super.key});
@@ -18,6 +24,14 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
   bool _isGenerating = false;
   bool _reportGenerated = false;
   int _generationStep = 0;
+
+  String _statusTitle = 'Stable Coherence';
+  Color _statusColor = const Color(0xFF10B981);
+  String _reportSummary = '';
+  List<String> _recommendations = [];
+  double _avgMood = 6.0;
+  int _journalCount = 0;
+  int _driftPercent = 0;
 
   final List<String> _steps = [
     'Scanning weekly mood logs...',
@@ -32,8 +46,24 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
       _generationStep = 0;
     });
 
-    for (int i = 0; i < _steps.length; i++) {
-      await Future.delayed(const Duration(milliseconds: 700));
+    final session = ref.read(appSessionProvider);
+    final profile = session.profile;
+    final currentDrift = profile?.driftIndex ?? 0.18;
+    final driftPct = (currentDrift * 100).toInt();
+
+    // Avg Mood Calculation: mapping out of 5 to out of 10
+    double avgMood = 6.0;
+    if (session.moodEntries.isNotEmpty) {
+      final sum = session.moodEntries.map((e) => e.value).reduce((a, b) => a + b);
+      avgMood = (sum / session.moodEntries.length) * 2.0;
+    }
+
+    // Journal entries counted
+    final journalCount = session.journalEntries.length;
+
+    // Simulate AI generation steps for user feedback
+    for (int i = 0; i < _steps.length - 1; i++) {
+      await Future.delayed(const Duration(milliseconds: 400));
       if (mounted) {
         setState(() {
           _generationStep = i + 1;
@@ -41,17 +71,187 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
       }
     }
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final manager = ref.read(aiManagerProvider);
+      final avgWPM = session.typingHistory.isEmpty 
+          ? 0.0 
+          : session.typingHistory.map((e) => e.wpm).reduce((a, b) => a + b) / session.typingHistory.length;
+      final adherencePct = session.adherenceHistory.isEmpty 
+          ? 100.0
+          : (session.adherenceHistory.where((r) => r.taken).length / session.adherenceHistory.length) * 100.0;
+
+      final prompt = '''
+You are Calmora AI, a clinical-grade mental health analytics engine.
+Analyze the following patient wellness metrics for the past week and generate a structured clinical summary.
+
+Patient Weekly History:
+- Current Drift Index: $currentDrift
+- Mood Entries count: ${session.moodEntries.length} (Average mood: ${session.moodEntries.isEmpty ? "No logs" : (session.moodEntries.map((e) => e.value).reduce((a, b) => a + b) / session.moodEntries.length).toStringAsFixed(1)}/5)
+- Typing Stress Tests: ${session.typingHistory.length} entries (Recent average WPM: ${avgWPM.toStringAsFixed(1)})
+- Breathing Sessions: ${session.breathingHistory.length} sessions completed
+- Medication Adherence: ${session.adherenceHistory.length} logs (${adherencePct.toStringAsFixed(0)}% adherence)
+
+You MUST respond strictly using the following format:
+STATUS: <Choose one: Stable Coherence | Mild Stress Fluctuation | Elevated Cognitive Friction>
+SUMMARY: <A paragraph of 3-4 sentences summarizing their emotional resilience, stress metrics, typing cadence pauses, and breathing engagement.>
+REC 1: <Actionable recommendation 1>
+REC 2: <Actionable recommendation 2>
+REC 3: <Actionable recommendation 3>
+''';
+
+      final response = await manager.generate(prompt);
+      
+      String status = '';
+      String summary = '';
+      List<String> recs = [];
+      
+      final lines = response.split('\n');
+      for (var line in lines) {
+        final trimmed = line.trim();
+        if (trimmed.startsWith('STATUS:')) {
+          status = trimmed.substring('STATUS:'.length).trim();
+        } else if (trimmed.startsWith('SUMMARY:')) {
+          summary = trimmed.substring('SUMMARY:'.length).trim();
+        } else if (trimmed.startsWith('REC 1:')) {
+          recs.add(trimmed.substring('REC 1:'.length).trim());
+        } else if (trimmed.startsWith('REC 2:')) {
+          recs.add(trimmed.substring('REC 2:'.length).trim());
+        } else if (trimmed.startsWith('REC 3:')) {
+          recs.add(trimmed.substring('REC 3:'.length).trim());
+        }
+      }
+
+      if (status.isNotEmpty && summary.isNotEmpty && recs.length >= 3) {
+        if (mounted) {
+          setState(() {
+            _statusTitle = status;
+            if (status.toLowerCase().contains('stable')) {
+              _statusColor = const Color(0xFF10B981);
+            } else if (status.toLowerCase().contains('mild')) {
+              _statusColor = const Color(0xFFF59E0B);
+            } else {
+              _statusColor = const Color(0xFFEF4444);
+            }
+            _reportSummary = summary;
+            _recommendations = recs;
+            _avgMood = avgMood;
+            _journalCount = journalCount;
+            _driftPercent = driftPct;
+            _generationStep = _steps.length;
+            _isGenerating = false;
+            _reportGenerated = true;
+          });
+        }
+      } else {
+        throw FormatException('Invalid AI response format');
+      }
+    } catch (_) {
+      // Graceful local calculation fallback
+      String statusTitle;
+      Color statusColor;
+      String reportSummary;
+      List<String> recommendations;
+
+      if (currentDrift < 0.35) {
+        statusTitle = 'Stable Coherence';
+        statusColor = const Color(0xFF10B981);
+        reportSummary = 'Excellent emotional coherence has been maintained. Your active engagement with guided breathing has reinforced autonomic resilience, keeping your stress index under 30%. Typing cadence dynamics reflect healthy cognitive focus with zero signs of performance strain.';
+        recommendations = [
+          'Maintain current routine of guided box breathing',
+          'Log mood check-ins daily to sustain long-term bio-feedback records',
+          'Engage in weekly high-intensity calmora exercises'
+        ];
+      } else if (currentDrift < 0.65) {
+        statusTitle = 'Mild Stress Fluctuation';
+        statusColor = const Color(0xFFF59E0B);
+        reportSummary = 'Mild stress anomalies have been logged. Cognitive fatigue was observed via a slightly elevated backspace rate (8%) in AI Chat. Emotional entries indicate fluctuating energy levels. We highly recommend incorporating physiological sighs into your daily routine to balance vagal tone.';
+        recommendations = [
+          'Practice Physiological Sigh breathing twice daily',
+          'Initiate a 5-minute typing stress test session mid-week',
+          'Schedule a light check-in conversation with your counselor'
+        ];
+      } else {
+        statusTitle = 'Elevated Cognitive Friction';
+        statusColor = const Color(0xFFEF4444);
+        reportSummary = 'Elevated cognitive and emotional tension was observed. Your Drift Index indicates high stress levels. Backspace rates and prolonged typing pauses reflect severe mental fatigue. We strongly advise taking a proactive break, practicing 4-7-8 breathing, and scheduling a check-in.';
+        recommendations = [
+          'Engage in deep 4-7-8 breathing for 10 minutes immediately',
+          'Pause active typing logs for a dedicated mental-health break',
+          'Schedule a clinical consultation appointment with Dr. Panipuri'
+        ];
+      }
+
+      if (mounted) {
+        setState(() {
+          _statusTitle = statusTitle;
+          _statusColor = statusColor;
+          _reportSummary = reportSummary;
+          _recommendations = recommendations;
+          _avgMood = avgMood;
+          _journalCount = journalCount;
+          _driftPercent = driftPct;
+          _generationStep = _steps.length;
+          _isGenerating = false;
+          _reportGenerated = true;
+        });
+      }
+    }
+
     if (mounted) {
-      setState(() {
-        _isGenerating = false;
-        _reportGenerated = true;
-      });
       AppSnackBar.showSuccess(
         context,
         title: 'Report Compiled',
         message: 'Your weekly AI clinical analysis is ready.',
       );
+    }
+  }
+
+  Future<void> _exportPdfAndShare(bool shareOnly) async {
+    try {
+      final pdf = pw.Document();
+      
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('Calmora - Mental Health Weekly Report', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 20),
+                pw.Text('Date: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}'),
+                pw.Text('Status: $_statusTitle'),
+                pw.Text('Average Drift Index: $_driftPercent%'),
+                pw.Text('Average Mood: ${_avgMood.toStringAsFixed(1)}/10'),
+                pw.Text('Journals Logged: $_journalCount'),
+                pw.SizedBox(height: 20),
+                pw.Text('Weekly Summary:', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                pw.Text(_reportSummary),
+                pw.SizedBox(height: 20),
+                pw.Text('Recommended Clinical Actions:', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                ..._recommendations.map((rec) => pw.Bullet(text: rec)),
+              ],
+            );
+          },
+        ),
+      );
+
+      final output = await getTemporaryDirectory();
+      final file = File('${output.path}/calmora_weekly_report.pdf');
+      await file.writeAsBytes(await pdf.save());
+
+      if (shareOnly) {
+        await Share.shareXFiles([XFile(file.path)], text: 'My Calmora Weekly Mental Health Report');
+      } else {
+        await Share.shareXFiles([XFile(file.path)], text: 'Exported Calmora Weekly Mental Health Report');
+        if (mounted) {
+          AppSnackBar.showSuccess(context, title: 'Export Complete', message: 'Report exported as PDF successfully.');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.showError(context, title: 'Failed', message: 'Could not export or share PDF: $e');
+      }
     }
   }
 
@@ -63,54 +263,20 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
     final session = ref.watch(appSessionProvider);
     final profile = session.profile;
 
-    // Calculate dynamic values based on provider session data
     final currentDrift = profile?.driftIndex ?? 0.18;
-    final driftPercent = (currentDrift * 100).toInt();
+    final driftPct = _reportGenerated ? _driftPercent : (currentDrift * 100).toInt();
 
-    // Avg Mood Calculation: mapping out of 5 to out of 10
-    double avgMood = 6.0;
-    if (session.moodEntries.isNotEmpty) {
+    double aMood = 6.0;
+    if (_reportGenerated) {
+      aMood = _avgMood;
+    } else if (session.moodEntries.isNotEmpty) {
       final sum = session.moodEntries.map((e) => e.value).reduce((a, b) => a + b);
-      avgMood = (sum / session.moodEntries.length) * 2.0;
+      aMood = (sum / session.moodEntries.length) * 2.0;
     }
 
-    // Journal entries counted by mood entry notes
-    final journalCount = session.moodEntries.where((e) => e.note != null && e.note!.isNotEmpty).length;
-
-    // Clinical diagnostics mapping based on Drift Index
-    String statusTitle;
-    Color statusColor;
-    String reportSummary;
-    List<String> recommendations;
-
-    if (currentDrift < 0.35) {
-      statusTitle = 'Stable Coherence';
-      statusColor = const Color(0xFF10B981);
-      reportSummary = 'Excellent emotional coherence has been maintained. Your active engagement with guided breathing has reinforced autonomic resilience, keeping your stress index under 30%. Typing cadence dynamics reflect healthy cognitive focus with zero signs of performance strain.';
-      recommendations = [
-        'Maintain current routine of guided box breathing',
-        'Log mood check-ins daily to sustain long-term bio-feedback records',
-        'Engage in weekly high-intensity calmora exercises'
-      ];
-    } else if (currentDrift < 0.65) {
-      statusTitle = 'Mild Stress Fluctuation';
-      statusColor = const Color(0xFFF59E0B);
-      reportSummary = 'Mild stress anomalies have been logged. Cognitive fatigue was observed via a slightly elevated backspace rate (8%) in AI Chat. Emotional entries indicate fluctuating energy levels. We highly recommend incorporating physiological sighs into your daily routine to balance vagal tone.';
-      recommendations = [
-        'Practice Physiological Sigh breathing twice daily',
-        'Initiate a 5-minute typing stress test session mid-week',
-        'Schedule a light check-in conversation with your counselor'
-      ];
-    } else {
-      statusTitle = 'Elevated Cognitive Friction';
-      statusColor = const Color(0xFFEF4444);
-      reportSummary = 'Elevated cognitive and emotional tension was observed. Your Drift Index indicates high stress levels. Backspace rates and prolonged typing pauses reflect severe mental fatigue. We strongly advise taking a proactive break, practicing 4-7-8 breathing, and scheduling a check-in.';
-      recommendations = [
-        'Engage in deep 4-7-8 breathing for 10 minutes immediately',
-        'Pause active typing logs for a dedicated mental-health break',
-        'Schedule a clinical consultation appointment with Dr. Panipuri'
-      ];
-    }
+    final jCount = _reportGenerated 
+        ? _journalCount 
+        : session.journalEntries.length;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -239,16 +405,16 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
                             children: [
                               Icon(
                                 Icons.trending_down_rounded,
-                                color: statusColor,
+                                color: _reportGenerated ? _statusColor : scheme.primary,
                                 size: 14,
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '$driftPercent',
+                                '$driftPct',
                                 style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,
-                                  color: statusColor,
+                                  color: _reportGenerated ? _statusColor : scheme.primary,
                                 ),
                               ),
                               Text(
@@ -275,7 +441,7 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
                             textBaseline: TextBaseline.alphabetic,
                             children: [
                               Text(
-                                avgMood.toStringAsFixed(1),
+                                aMood.toStringAsFixed(1),
                                 style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w900,
@@ -301,7 +467,7 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
                         child: _buildReportMetricBox(
                           label: 'Journals',
                           valueWidget: Text(
-                            '$journalCount',
+                            '$jCount',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 22,
@@ -326,10 +492,10 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
                             ? _buildReportResultCard(
                                 isDark: isDark,
                                 scheme: scheme,
-                                statusTitle: statusTitle,
-                                statusColor: statusColor,
-                                reportSummary: reportSummary,
-                                recommendations: recommendations,
+                                statusTitle: _statusTitle,
+                                statusColor: _statusColor,
+                                reportSummary: _reportSummary,
+                                recommendations: _recommendations,
                               )
                             : _buildGeneratePromptCard(isDark, scheme),
                   ),
@@ -654,9 +820,7 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    AppSnackBar.showInfo(context, title: 'Share Report', message: 'Ready to share report with Dr. Panipuri.');
-                  },
+                  onPressed: () => _exportPdfAndShare(true),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -670,9 +834,7 @@ class _WeeklyReportScreenState extends ConsumerState<WeeklyReportScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () {
-                    AppSnackBar.showSuccess(context, title: 'Export Complete', message: 'Weekly Report exported as PDF successfully.');
-                  },
+                  onPressed: () => _exportPdfAndShare(false),
                   style: FilledButton.styleFrom(
                     backgroundColor: scheme.primary,
                     foregroundColor: Colors.white,
